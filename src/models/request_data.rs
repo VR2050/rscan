@@ -1,5 +1,6 @@
 // 定义请求数据的类型，支持查询参数、表单、JSON 和无数据
-
+use reqwest::Result;
+use reqwest::{Method,Client};
 use serde_json::Value;
 use serde_json::from_str;
 #[derive(Debug, Clone)]
@@ -9,6 +10,17 @@ pub enum Data<'a> {
     Json(Value),                    // JSON 数据结构
     None,
 }
+
+
+// 请求参数结构体，包含客户端、URL、方法和数据
+#[derive(Debug, Clone)]
+pub struct RequestParms<'a> {
+    pub request_data: Data<'a>,
+    pub url: &'a str,
+    pub client: &'a Client,
+    pub method: Method,
+}
+
 
 
 impl<'a> Data<'a> {
@@ -36,4 +48,14 @@ impl<'a> Data<'a> {
             }
         }
     }
+}
+
+
+
+// Crawl trait 定义了不同请求方式的行为
+pub trait Crawl<T, U> {
+    async fn crawl(request: T, url: &str) -> Result<U>;
+    async fn crawl_with_query(request: T, url: &str, request_data: Data<'_>) -> Result<U>;
+    async fn crawl_with_json(request: T, url: &str, request_data: Data<'_>) -> Result<U>;
+    async fn crawl_with_form(request: T, url: &str, request_data: Data<'_>) -> Result<U>;
 }
