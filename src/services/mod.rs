@@ -1,6 +1,4 @@
-pub mod shell;
-pub mod dir_scan;
-pub mod dns_scan;
-pub mod live_scan;
-pub mod fuzz_scan;
+pub mod shell_generation;
+
 pub mod poc_scan;
+pub mod web_scan;
