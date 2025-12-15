@@ -1,6 +1,6 @@
 // DNS 结构体用于子域名爆破
 use crate::models::request_data::RequestParms;
-use crate::services::web_scan::live_scan::ping;
+use crate::modules::web_scan::live_scan::ping;
 use reqwest::Result;
 pub struct DNS<'a> {
     pub request_base: RequestParms<'a>,
