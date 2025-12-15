@@ -3,4 +3,7 @@ mod services;
 mod models;
 
 
-fn main() {}
+fn main() {
+
+    println!("echo hello world");
+}

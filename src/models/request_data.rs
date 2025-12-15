@@ -11,7 +11,6 @@ pub enum Data<'a> {
     None,
 }
 
-
 // 请求参数结构体，包含客户端、URL、方法和数据
 #[derive(Debug, Clone)]
 pub struct RequestParms<'a> {
