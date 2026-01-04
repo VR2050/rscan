@@ -26,6 +26,8 @@ pub enum RustpenError {
     
     #[error("网络错误: {0}")]
     NetworkError(String),
+    #[error("Parse error: {0}")]
+    ParseError(String),
     #[error("HTTP request failed to '{url}': {source}")]
     HttpRequest {
         url: String,

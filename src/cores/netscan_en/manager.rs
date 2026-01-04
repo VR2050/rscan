@@ -5,13 +5,15 @@ use tokio::net::lookup_host;
 use crate::errors::RustpenError;
 use super::tcp_scanner::{TcpScanner, TcpConfig};
 use super::udp_scanner::{UdpScanner, UdpConfig};
+use super::syn_scan::{SynScanner, SynConfig};
 use super::models::{ScanResult, Protocol};
 use super::PortScanner;
 
-/// 扫描管理器 - 同时支持TCP和UDP扫描
+/// 扫描管理器 - 同时支持TCP、UDP 和可选的 SYN 扫描
 pub struct ScanManager {
     tcp_scanner: TcpScanner,
     udp_scanner: Option<UdpScanner>,
+    syn_scanner: Option<SynScanner>,
 }
 
 impl ScanManager {
@@ -20,6 +22,7 @@ impl ScanManager {
         Self {
             tcp_scanner: TcpScanner::new(config),
             udp_scanner: None,
+            syn_scanner: None,
         }
     }
     
@@ -30,6 +33,17 @@ impl ScanManager {
         Self {
             tcp_scanner: TcpScanner::new(tcp_config),
             udp_scanner,
+            syn_scanner: None,
+        }
+    }
+
+    /// 创建支持 TCP + UDP + 可选 SYN 的扫描管理器
+    pub fn new_with_syn(tcp_config: TcpConfig, syn_config: Option<SynConfig>) -> Self {
+        let syn_scanner = syn_config.map(SynScanner::new);
+        Self {
+            tcp_scanner: TcpScanner::new(tcp_config),
+            udp_scanner: None,
+            syn_scanner,
         }
     }
     
@@ -56,6 +70,21 @@ impl ScanManager {
     /// UDP扫描是否启用
     pub fn is_udp_enabled(&self) -> bool {
         self.udp_scanner.is_some()
+    }
+
+    /// 启用 SYN 扫描
+    pub fn enable_syn(&mut self, config: SynConfig) {
+        self.syn_scanner = Some(SynScanner::new(config));
+    }
+
+    /// 禁用 SYN 扫描
+    pub fn disable_syn(&mut self) {
+        self.syn_scanner = None;
+    }
+
+    /// SYN 扫描是否启用
+    pub fn is_syn_enabled(&self) -> bool {
+        self.syn_scanner.is_some()
     }
     
     /// 解析主机名
@@ -155,6 +184,42 @@ impl ScanManager {
         
         self.udp_scan(host, &common_udp_ports).await
     }
+
+    /// === SYN 扫描方法 ===
+
+    /// 执行SYN扫描（如果已启用）
+    pub async fn syn_scan(
+        &self,
+        host: &str,
+        ports: &[u16],
+    ) -> Result<ScanResult, RustpenError> {
+        let syn_scanner = self.syn_scanner.as_ref()
+            .ok_or_else(|| RustpenError::ScanError("SYN扫描未启用".to_string()))?;
+        
+        let ip = self.resolve_host(host).await?;
+        syn_scanner.scan_ports(ip, ports).await
+    }
+
+    /// 扫描单个 SYN 端口（如果已启用）
+    pub async fn syn_scan_port(
+        &self,
+        host: &str,
+        port: u16,
+    ) -> Result<ScanResult, RustpenError> {
+        let syn_scanner = self.syn_scanner.as_ref()
+            .ok_or_else(|| RustpenError::ScanError("SYN扫描未启用".to_string()))?;
+        
+        let ip = self.resolve_host(host).await?;
+        syn_scanner.scan_port(ip, port).await
+    }
+
+    /// 快速扫描常见 TCP 端口 使用 SYN
+    pub async fn quick_syn_scan(&self, host: &str) -> Result<ScanResult, RustpenError> {
+        use super::ports::common_ports;
+        let ip = self.resolve_host(host).await?;
+        let syn_scanner = self.syn_scanner.as_ref().ok_or_else(|| RustpenError::ScanError("SYN扫描未启用".to_string()))?;
+        syn_scanner.scan_ports(ip, &common_ports()).await
+    }
     
     /// 扫描DNS服务器
     pub async fn scan_dns_server(&self, host: &str) -> Result<ScanResult, RustpenError> {
@@ -163,6 +228,7 @@ impl ScanManager {
         let scanner = UdpScanner::new(config);
         scanner.scan_ports(ip, &[53]).await
     }
+
     
     /// 扫描NTP服务器
     pub async fn scan_ntp_server(&self, host: &str) -> Result<ScanResult, RustpenError> {
@@ -237,6 +303,12 @@ impl ScanManager {
         Ok((tcp_result, udp_result))
     }
     
+    /// ARP 扫描方法（对局域网 CIDR 扫描 IP->MAC）
+    pub async fn arp_scan_cidr(&self, cidr: &str) -> Result<Vec<super::ArpHost>, RustpenError> {
+        let scanner = super::ArpScanner::default();
+        scanner.scan_cidr(cidr).await
+    }
+
     /// === 配置访问器 ===
     
     /// 获取TCP配置
@@ -325,5 +397,33 @@ mod tests {
         assert_eq!(tcp_res.open_ports_count(), 1);
         assert_eq!(udp_res.total_scanned, 0);
         assert!(matches!(udp_res.protocol, Protocol::Udp));
+    }
+
+    #[tokio::test]
+    async fn syn_scan_via_manager_when_enabled_returns_open_port() {
+        // 启动监听器模拟开放端口
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { let _ = listener.accept().await; });
+
+        let mut manager = ScanManager::default();
+        manager.enable_syn(SynConfig::default());
+
+        let res = manager.syn_scan("127.0.0.1", &[addr.port()]).await.unwrap();
+        assert!(res.open_ports_count() >= 1);
+    }
+
+    #[tokio::test]
+    async fn syn_scan_ipv6_via_manager_when_enabled_returns_open_port() {
+        // IPv6 回环监听
+        let listener = tokio::net::TcpListener::bind("[::1]:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { let _ = listener.accept().await; });
+
+        let mut manager = ScanManager::default();
+        manager.enable_syn(SynConfig::default());
+
+        let res = manager.syn_scan("::1", &[addr.port()]).await.unwrap();
+        assert!(res.open_ports_count() >= 1);
     }
 }

@@ -2,9 +2,10 @@
 // mod modules;
 pub mod errors;
 mod cores;
+
 fn main() {
 
-    // let cli=clap::Command
+     
 
 }
 
@@ -21,5 +22,7 @@ pub mod tests{
             let s=cores::netscan_en::manager::ScanManager::default();
             
 
-    }   
+    }  
+
+     
 }

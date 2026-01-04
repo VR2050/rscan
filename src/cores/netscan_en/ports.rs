@@ -59,6 +59,8 @@ pub fn common_ports() -> Vec<u16> {
     ]
 }
 
+//解析扫描目标
+// pub fn parse_addresses()
 #[cfg(test)]
 mod tests {
     use super::*;
