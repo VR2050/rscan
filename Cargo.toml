@@ -19,6 +19,9 @@ bytes = "1.11.0"
 pnet = "0.35.0"
 socket2 = "0.6.1"
 ipnetwork = "0.18.0"
+httpdate = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 [[test]]
 name ="cli_test"    
 path = "./src/main.rs"

@@ -16,6 +16,13 @@ pub struct FetcherConfig {
     pub accept_invalid_certs: bool,
     /// per-host concurrency limit
     pub per_host_concurrency: usize,
+    /// 可选默认 headers，会设置到 reqwest Client 的 default_headers
+    pub default_headers: Option<HeaderMap>,
+    /// 是否尊重服务器返回的 Retry-After 头（对于 429 响应）
+    pub honor_retry_after: bool,
+    /// backoff 参数（单位毫秒），用于指数退避
+    pub backoff_base_ms: u64,
+    pub backoff_max_ms: u64,
 }
 
 impl Default for FetcherConfig {
@@ -26,6 +33,10 @@ impl Default for FetcherConfig {
             max_retries: 1,
             accept_invalid_certs: false,
             per_host_concurrency: 2,
+            default_headers: None,
+            honor_retry_after: true,
+            backoff_base_ms: 100,
+            backoff_max_ms: 10_000,
         }
     }
 }
@@ -70,6 +81,10 @@ impl Fetcher {
             builder = builder.user_agent(ua);
         }
 
+        if let Some(hdrs) = &config.default_headers {
+            builder = builder.default_headers(hdrs.clone());
+        }
+
         let client = builder.build().map_err(|e| RustpenError::NetworkError(e.to_string()))?;
 
         Ok(Self { client, config, per_host_semaphores: Arc::new(RwLock::new(HashMap::new())), })
@@ -97,10 +112,16 @@ impl Fetcher {
             timeout_ms: None,
             max_retries: None,
         };
+        // 默认使用 config 中的 max_retries
         self.fetch_with_request(req).await
     }
 
     /// 使用更灵活的请求结构进行抓取（支持 method/headers/body/timeout/retry）
+    /// 使用更灵活的请求结构进行抓取（支持 method/headers/body/timeout/retry）
+    ///
+    /// 行为说明：
+    /// - 如果 `timeout_ms` 被设置，单次请求会在该超时后视为失败并根据 `max_retries` 重试；超时最终会返回 `RustpenError::TargetUnreachable`。
+    /// - 对于 HTTP 5xx 响应视为可重试错误；当重试次数耗尽后会返回 `RustpenError::NetworkError`。
     pub async fn fetch_with_request(&self, req: FetchRequest) -> Result<FetchResponse, RustpenError> {
         // 按 host 限流
         let url = req.url.clone();
@@ -150,12 +171,48 @@ impl Fetcher {
             };
 
             match res {
-                Ok(resp) => return Ok(Self::normalize_response(&req.url, resp).await?),
+                Ok(resp) => {
+                    // 处理 429 Retry-After（优先）和 5xx
+                    if resp.status().as_u16() == 429 {
+                        if attempts > max_retries {
+                            return Err(RustpenError::NetworkError(format!("too many 429 responses")));
+                        }
+
+                        // 尝试解析 Retry-After 头
+                        if self.config.honor_retry_after {
+                            if let Some(ra) = resp.headers().get("retry-after") {
+                                if let Ok(s) = ra.to_str() {
+                                    if let Some(dur) = Self::parse_retry_after_seconds_or_date(s) {
+                                        tokio::time::sleep(dur).await;
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+
+                        // 如果没有可用的 Retry-After，则退回到指数退避
+                        let backoff = Self::exponential_backoff_ms(self.config.backoff_base_ms, self.config.backoff_max_ms, attempts);
+                        tokio::time::sleep(Duration::from_millis(backoff)).await;
+                        continue;
+                    }
+
+                    if resp.status().is_server_error() {
+                        if attempts > max_retries {
+                            return Err(RustpenError::NetworkError(format!("server error {}", resp.status())));
+                        }
+                        let backoff = Self::exponential_backoff_ms(self.config.backoff_base_ms, self.config.backoff_max_ms, attempts);
+                        tokio::time::sleep(Duration::from_millis(backoff)).await;
+                        continue;
+                    }
+
+                    return Ok(Self::normalize_response(&req.url, resp).await?);
+                }
                 Err(e) => {
                     if attempts > max_retries {
                         return Err(RustpenError::NetworkError(e.to_string()));
                     }
-                    tokio::time::sleep(Duration::from_millis(100 * attempts as u64)).await;
+                    let backoff = Self::exponential_backoff_ms(self.config.backoff_base_ms, self.config.backoff_max_ms, attempts);
+                    tokio::time::sleep(Duration::from_millis(backoff)).await;
                     continue;
                 }
             }
@@ -194,6 +251,40 @@ impl Fetcher {
             body,
         })
     }
+
+    // Helper: exponential backoff calculation. attempts starts at 1 for first try.
+    fn exponential_backoff_ms(base: u64, max: u64, attempts: u32) -> u64 {
+        // base * 2^(attempts-1)
+        let exp = attempts.saturating_sub(1);
+        let mul = 1u128.checked_shl(exp).unwrap_or(0) as u128; // safe bound
+        let mut backoff = (base as u128).saturating_mul(mul) as u64;
+        if backoff == 0 {
+            backoff = base;
+        }
+        std::cmp::min(backoff, max)
+    }
+
+    // Helper: parse Retry-After header value (either seconds or HTTP-date). Returns duration from now.
+    fn parse_retry_after_seconds_or_date(s: &str) -> Option<std::time::Duration> {
+        // try parse as integer seconds
+        if let Ok(sec) = s.trim().parse::<u64>() {
+            return Some(std::time::Duration::from_secs(sec));
+        }
+
+        // try parse as HTTP-date
+        if let Ok(t) = httpdate::parse_http_date(s) {
+            let now = std::time::SystemTime::now();
+            if t > now {
+                if let Ok(dur) = t.duration_since(now) {
+                    return Some(dur);
+                }
+            } else {
+                return Some(std::time::Duration::from_secs(0));
+            }
+        }
+
+        None
+    }
 }
 
 #[cfg(test)]
@@ -210,7 +301,7 @@ mod tests {
 
         let url = format!("http://{}", addr);
 
-        let cfg = FetcherConfig { timeout: Duration::from_secs(2), user_agent: None, max_retries: 0, accept_invalid_certs: false, per_host_concurrency: 2 };
+        let cfg = FetcherConfig { timeout: Duration::from_secs(2), user_agent: None, max_retries: 0, accept_invalid_certs: false, per_host_concurrency: 2, default_headers: None, honor_retry_after: true, backoff_base_ms: 100, backoff_max_ms: 10_000 };
         let fetcher = Fetcher::new(cfg).unwrap();
 
         let resp = fetcher.fetch(&url).await.unwrap();
@@ -252,7 +343,7 @@ mod tests {
         tokio::spawn(server);
 
         let url = format!("http://{}", addr);
-        let cfg = FetcherConfig { timeout: Duration::from_secs(5), user_agent: None, max_retries: 0, accept_invalid_certs: false, per_host_concurrency: 2 };
+        let cfg = FetcherConfig { timeout: Duration::from_secs(5), user_agent: None, max_retries: 0, accept_invalid_certs: false, per_host_concurrency: 2, default_headers: None, honor_retry_after: true, backoff_base_ms: 100, backoff_max_ms: 10_000 };
         let fetcher = Fetcher::new(cfg).unwrap();
 
         // create 6 requests to same host

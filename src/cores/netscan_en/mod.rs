@@ -1,5 +1,6 @@
 pub mod config;
 pub mod manager;
+pub use manager::ScanManager;
 pub mod models;
 pub mod ports;
 pub mod targets;

@@ -1,12 +1,12 @@
 
-// mod modules;
-pub mod errors;
-mod cores;
+use rscan::cli;
 
-fn main() {
-
-     
-
+#[tokio::main]
+async fn main() {
+    if let Err(e) = cli::run().await {
+        eprintln!("Error: {:?}", e);
+        std::process::exit(1);
+    }
 }
 
 
@@ -19,7 +19,7 @@ pub mod tests{
          let target ="192.168.128.56";
          let ports="22,80,443,8080";
             println!("测试主机扫描引擎，目标主机：{}，端口：{}",target,ports);
-            let s=cores::netscan_en::manager::ScanManager::default();
+            let s=rscan::cores::netscan_en::manager::ScanManager::default();
             
 
     }  
