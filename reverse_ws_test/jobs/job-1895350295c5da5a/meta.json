@@ -1,0 +1,33 @@
+{
+  "id": "job-1895350295c5da5a",
+  "kind": "decompile",
+  "backend": "ghidra",
+  "mode": "index",
+  "function": null,
+  "target": "./easy",
+  "workspace": "./reverse_ws_test",
+  "status": "Failed",
+  "created_at": 1771380313,
+  "started_at": 1771380313,
+  "ended_at": 1771380319,
+  "exit_code": 0,
+  "program": "/usr/share/ghidra/support/analyzeHeadless",
+  "args": [
+    "/home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out",
+    "rscan_job-1895350295c5da5a",
+    "-import",
+    "./easy",
+    "-scriptPath",
+    "/home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out",
+    "-postScript",
+    "ghidra_export_index.java",
+    "/home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/index.jsonl"
+  ],
+  "note": "Headless Ghidra decompile pipeline. Generate script via `rscan reverse ghidra-script --out <dir>/ghidra_export_pseudocode.java` first.",
+  "artifacts": [
+    "./reverse_ws_test/reverse_out/index.jsonl",
+    "./reverse_ws_test/jobs/job-1895350295c5da5a/stdout.log",
+    "./reverse_ws_test/jobs/job-1895350295c5da5a/stderr.log"
+  ],
+  "error": "decompile finished but pseudocode artifact missing/empty: ./reverse_ws_test/reverse_out/index.jsonl"
+}

@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use rscan::cores::web_en::fetcher::{Fetcher, FetcherConfig};
+use criterion::{Criterion, criterion_group, criterion_main};
+use rscan::cores::web::fetcher::{Fetcher, FetcherConfig};
 use std::time::Duration;
 use warp::Filter;
 

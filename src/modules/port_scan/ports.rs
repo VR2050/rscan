@@ -1,4 +1,4 @@
-//! modules::port_scan - wrapper over cores::netscan_en for higher-level usage
+//! modules::port_scan - wrapper over cores::host for higher-level usage
 //!
 //! 提供一个简单的 `HostScanner` API，便于上层模块或 CLI 调用。
 //!
@@ -19,7 +19,7 @@
 //! }
 //! ```
 
-use crate::cores::netscan_en::{ScanManager, ScanResult, Protocol};
+use crate::cores::host::{ScanManager, ScanResult};
 use crate::errors::RustpenError;
 
 /// 模块级主机扫描器封装，内部复用 `ScanManager`。
@@ -30,7 +30,9 @@ pub struct HostScanner {
 impl HostScanner {
     /// 使用默认配置创建模块扫描器
     pub fn default() -> Self {
-        Self { manager: ScanManager::default() }
+        Self {
+            manager: ScanManager::default(),
+        }
     }
 
     /// 创建使用自定义 `ScanManager` 的封装（便于测试/注入）
@@ -52,7 +54,7 @@ impl HostScanner {
     /// ```rust,no_run
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let manager = rscan::cores::netscan_en::ScanManager::new_with_udp(rscan::cores::netscan_en::TcpConfig::default(), Some(rscan::cores::netscan_en::UdpConfig::default()));
+    ///     let manager = rscan::cores::host::ScanManager::new_with_udp(rscan::cores::host::TcpConfig::default(), Some(rscan::cores::host::UdpConfig::default()));
     ///     let scanner = rscan::modules::HostScanner::with_manager(manager);
     ///     let res = scanner.scan_udp("127.0.0.1", &[53]).await?;
     ///     Ok(())
@@ -69,7 +71,7 @@ impl HostScanner {
     /// ```rust,no_run
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let manager = rscan::cores::netscan_en::ScanManager::new_with_syn(rscan::cores::netscan_en::TcpConfig::default(), Some(rscan::cores::netscan_en::SynConfig::default()));
+    ///     let manager = rscan::cores::host::ScanManager::new_with_syn(rscan::cores::host::TcpConfig::default(), Some(rscan::cores::host::SynConfig::default()));
     ///     let scanner = rscan::modules::HostScanner::with_manager(manager);
     ///     let res = scanner.scan_syn("127.0.0.1", &[22]).await?;
     ///     Ok(())
@@ -85,7 +87,10 @@ impl HostScanner {
     }
 
     /// 通过 ARP 扫描 CIDR（局域网主机发现）
-    pub async fn arp_scan_cidr(&self, cidr: &str) -> Result<Vec<crate::cores::netscan_en::ArpHost>, RustpenError> {
+    pub async fn arp_scan_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<Vec<crate::cores::host::ArpHost>, RustpenError> {
         self.manager.arp_scan_cidr(cidr).await
     }
 }
@@ -134,7 +139,7 @@ mod tests {
     // UDP 测试：在本地启动 UDP 服务并验证 HostScanner 能发现开放端口
     #[tokio::test]
     async fn hostscanner_udp_open_port() {
-        use crate::cores::netscan_en::{ScanManager, UdpConfig, TcpConfig};
+        use crate::cores::host::{ScanManager, TcpConfig, UdpConfig};
 
         let server = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
         let port = server.local_addr().unwrap().port();
@@ -156,7 +161,7 @@ mod tests {
     // SYN 测试：在本地启动 TCP listener，并使用 Syn 扫描（回退到 TCP connect）验证开放端口
     #[tokio::test]
     async fn hostscanner_syn_detects_open_port() {
-        use crate::cores::netscan_en::{ScanManager, TcpConfig, SynConfig};
+        use crate::cores::host::{ScanManager, SynConfig, TcpConfig};
 
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
@@ -180,7 +185,7 @@ mod tests {
 
     #[tokio::test]
     async fn hostscanner_udp_filtered_when_no_server() {
-        use crate::cores::netscan_en::{ScanManager, UdpConfig, TcpConfig};
+        use crate::cores::host::{ScanManager, TcpConfig, UdpConfig};
 
         let mut cfg = UdpConfig::default();
         cfg.send_timeout_seconds = 1;
@@ -196,7 +201,7 @@ mod tests {
 
     #[tokio::test]
     async fn hostscanner_syn_closed_port() {
-        use crate::cores::netscan_en::{ScanManager, TcpConfig, SynConfig};
+        use crate::cores::host::{ScanManager, SynConfig, TcpConfig};
 
         let port = 65001u16; // 高端口，通常未使用
         let manager = ScanManager::new_with_syn(TcpConfig::default(), Some(SynConfig::default()));
@@ -205,4 +210,3 @@ mod tests {
         assert_eq!(res.open_ports_count(), 0);
     }
 }
-

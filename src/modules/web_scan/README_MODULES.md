@@ -5,4 +5,4 @@ Exported functions:
 - `run_fuzz_scan(url_with_FUZZ, keywords, FetcherConfig) -> Vec<(url, status, content_len)>`
 - `run_subdomain_burst(domain, words, FetcherConfig) -> Vec<String>`
 
-These functions are thin wrappers around `cores::web_en::Fetcher` and return results in a simple structure suitable for CLI output and further processing.
+These functions are thin wrappers around `cores::web::Fetcher` and return results in a simple structure suitable for CLI output and further processing.

@@ -1,0 +1,163 @@
+INFO  Using log config file: jar:file:/usr/share/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/vr2050/.config/ghidra/ghidra_12.0.2_DEV/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/vr2050/.config/ghidra/ghidra_12.0.2_DEV/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (931 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1838 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 58 extension points (18 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /usr/share/ghidra/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/BytePatterns/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/FileFormats/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/Atmel/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/DATA/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/PyGhidra/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/Jython/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Debug/Debugger/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/PIC/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/8051/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/Base/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/PDB/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/JVM/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out
+    /usr/share/ghidra/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/BSim/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/Decompiler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/FunctionID/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/VersionTracking/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Creating project: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/rscan_job-189510cf5e4a3524 (HeadlessAnalyzer)  
+INFO  Creating project: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/rscan_job-189510cf5e4a3524 (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/rscan_job-189510cf5e4a3524 (HeadlessAnalyzer)  
+INFO  IMPORTING: file:///usr/bin/true (HeadlessAnalyzer)  
+INFO  Using Loader: Executable and Linking Format (ELF) (ProgramLoader)  
+INFO  Using Language/Compiler: x86:LE:64:default:gcc (ProgramLoader)  
+INFO  Using Library Search Path: [., /bin, /lib, /lib64, /lib/x86_64-linux-gnu, /lib/aarch64-linux-gnu, /usr/bin, /usr/lib, /usr/X11R6/bin, /usr/X11R6/lib, /home/vr2050/RUST/rscan_codex/target/debug/build/aws-lc-sys-6710ef9e71f5a6cd/out, /home/vr2050/RUST/rscan_codex/target/debug/deps, /home/vr2050/RUST/rscan_codex/target/debug, /home/vr2050/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib, /home/vr2050/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib, /usr/java/packages/lib, /usr/lib/x86_64-linux-gnu/jni, /usr/lib/x86_64-linux-gnu, /usr/lib/jni] (ProgramLoader)  
+INFO  Additional info:
+Loading file:///usr/bin/true?MD5=1e1563efab5e3891c7a1bbecea053104...
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 0010a1e0 (Symbol = __progname) - Runtime copy not supported (8-bytes)
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 0010a1e8 (Symbol = stdout) - Runtime copy not supported (8-bytes)
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 0010a1f0 (Symbol = __progname_full) - Runtime copy not supported (8-bytes)
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 0010a200 (Symbol = stderr) - Runtime copy not supported (8-bytes)
+Setting block .init_array to read-only
+Setting block .fini_array to read-only
+Setting block .data.rel.ro to read-only
+Setting block .dynamic to read-only
+------------------------------------------------
+
+Linking the External Programs of 'true' to imported libraries...
+  [libc.so.6] -> not found in project
+------------------------------------------------
+
+Resolving External Symbols of [/true] - 43 unresolved symbols, no external libraries configured - skipping
+ (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: file:///usr/bin/true (HeadlessAnalyzer)  
+INFO  DWARF external debug information found: ExternalDebugInfo [filename=a6a333d41f43e4c87828fe01f3282705294280.debug, crc=bcaf1e99, hash=9ea6a333d41f43e4c87828fe01f3282705294280] (ExternalDebugFileSectionProvider)  
+INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)  
+INFO  hit non-returning function, restarting decompiler switch analyzer later (DecompilerSwitchAnalyzer)  
+WARN  Decompiling 00105100, pcode error at 0010b140: Unable to disassemble EXTERNAL block location: 0010b140 (DecompileCallback)  
+WARN  Decompiling 00102430, pcode error at 0010b028: Unable to disassemble EXTERNAL block location: 0010b028 (DecompileCallback)  
+WARN  Decompiling 00102460, pcode error at 0010b148: Unable to disassemble EXTERNAL block location: 0010b148 (DecompileCallback)  
+INFO  Packed database cache: /home/vr2050/.cache/ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: generic_clib_64 (ApplyDataArchiveAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.293 secs
+    Apply Data Archives                        0.169 secs
+    Call Convention ID                         0.002 secs
+    Call-Fixup Installer                       0.005 secs
+    Create Address Tables                      0.018 secs
+    Create Address Tables - One Time           0.002 secs
+    Create Function                            0.015 secs
+    DWARF                                      0.007 secs
+    Data Reference                             0.014 secs
+    Decompiler Switch Analysis                 0.057 secs
+    Decompiler Switch Analysis - One Time      1.665 secs
+    Demangler GNU                              0.052 secs
+    Disassemble Entry Points                   0.167 secs
+    ELF Scalar Operand References              0.044 secs
+    Embedded Media                             0.006 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.066 secs
+    Function Start Pre Search                  0.005 secs
+    Function Start Search                      0.037 secs
+    Function Start Search After Code           0.006 secs
+    Function Start Search After Data           0.004 secs
+    GCC Exception Handlers                     0.120 secs
+    Non-Returning Functions - Discovered       0.046 secs
+    Non-Returning Functions - Known            0.002 secs
+    Reference                                  0.030 secs
+    Shared Return Calls                        0.037 secs
+    Stack                                      0.244 secs
+    Subroutine References                      0.010 secs
+    Subroutine References - One Time           0.000 secs
+    x86 Constant Reference Analyzer            0.347 secs
+-----------------------------------------------------
+     Total Time   3 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: file:///usr/bin/true (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: ghidra_export_pseudocode.java '/home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/pseudocode.jsonl'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/ghidra_export_pseudocode.java (HeadlessAnalyzer)  
+WARN  Decompiling 0010b000, pcode error at 0010b000: Unable to disassemble EXTERNAL block location: 0010b000 (DecompileCallback)  
+WARN  Decompiling 0010b008, pcode error at 0010b008: Unable to disassemble EXTERNAL block location: 0010b008 (DecompileCallback)  
+WARN  Decompiling 0010b010, pcode error at 0010b010: Unable to disassemble EXTERNAL block location: 0010b010 (DecompileCallback)  
+WARN  Decompiling 0010b018, pcode error at 0010b018: Unable to disassemble EXTERNAL block location: 0010b018 (DecompileCallback)  
+WARN  Decompiling 0010b020, pcode error at 0010b020: Unable to disassemble EXTERNAL block location: 0010b020 (DecompileCallback)  
+WARN  Decompiling 0010b028, pcode error at 0010b028: Unable to disassemble EXTERNAL block location: 0010b028 (DecompileCallback)  
+WARN  Decompiling 0010b030, pcode error at 0010b030: Unable to disassemble EXTERNAL block location: 0010b030 (DecompileCallback)  
+WARN  Decompiling 0010b038, pcode error at 0010b038: Unable to disassemble EXTERNAL block location: 0010b038 (DecompileCallback)  
+WARN  Decompiling 0010b040, pcode error at 0010b040: Unable to disassemble EXTERNAL block location: 0010b040 (DecompileCallback)  
+WARN  Decompiling 0010b048, pcode error at 0010b048: Unable to disassemble EXTERNAL block location: 0010b048 (DecompileCallback)  
+WARN  Decompiling 0010b050, pcode error at 0010b050: Unable to disassemble EXTERNAL block location: 0010b050 (DecompileCallback)  
+WARN  Decompiling 0010b058, pcode error at 0010b058: Unable to disassemble EXTERNAL block location: 0010b058 (DecompileCallback)  
+WARN  Decompiling 0010b060, pcode error at 0010b060: Unable to disassemble EXTERNAL block location: 0010b060 (DecompileCallback)  
+WARN  Decompiling 0010b068, pcode error at 0010b068: Unable to disassemble EXTERNAL block location: 0010b068 (DecompileCallback)  
+WARN  Decompiling 0010b070, pcode error at 0010b070: Unable to disassemble EXTERNAL block location: 0010b070 (DecompileCallback)  
+WARN  Decompiling 0010b078, pcode error at 0010b078: Unable to disassemble EXTERNAL block location: 0010b078 (DecompileCallback)  
+WARN  Decompiling 0010b080, pcode error at 0010b080: Unable to disassemble EXTERNAL block location: 0010b080 (DecompileCallback)  
+WARN  Decompiling 0010b088, pcode error at 0010b088: Unable to disassemble EXTERNAL block location: 0010b088 (DecompileCallback)  
+WARN  Decompiling 0010b090, pcode error at 0010b090: Unable to disassemble EXTERNAL block location: 0010b090 (DecompileCallback)  
+WARN  Decompiling 0010b098, pcode error at 0010b098: Unable to disassemble EXTERNAL block location: 0010b098 (DecompileCallback)  
+WARN  Decompiling 0010b0a0, pcode error at 0010b0a0: Unable to disassemble EXTERNAL block location: 0010b0a0 (DecompileCallback)  
+WARN  Decompiling 0010b0a8, pcode error at 0010b0a8: Unable to disassemble EXTERNAL block location: 0010b0a8 (DecompileCallback)  
+WARN  Decompiling 0010b0b0, pcode error at 0010b0b0: Unable to disassemble EXTERNAL block location: 0010b0b0 (DecompileCallback)  
+WARN  Decompiling 0010b0b8, pcode error at 0010b0b8: Unable to disassemble EXTERNAL block location: 0010b0b8 (DecompileCallback)  
+WARN  Decompiling 0010b0c0, pcode error at 0010b0c0: Unable to disassemble EXTERNAL block location: 0010b0c0 (DecompileCallback)  
+WARN  Decompiling 0010b0c8, pcode error at 0010b0c8: Unable to disassemble EXTERNAL block location: 0010b0c8 (DecompileCallback)  
+WARN  Decompiling 0010b0d0, pcode error at 0010b0d0: Unable to disassemble EXTERNAL block location: 0010b0d0 (DecompileCallback)  
+WARN  Decompiling 0010b0d8, pcode error at 0010b0d8: Unable to disassemble EXTERNAL block location: 0010b0d8 (DecompileCallback)  
+WARN  Decompiling 0010b0e0, pcode error at 0010b0e0: Unable to disassemble EXTERNAL block location: 0010b0e0 (DecompileCallback)  
+WARN  Decompiling 0010b0e8, pcode error at 0010b0e8: Unable to disassemble EXTERNAL block location: 0010b0e8 (DecompileCallback)  
+WARN  Decompiling 0010b0f0, pcode error at 0010b0f0: Unable to disassemble EXTERNAL block location: 0010b0f0 (DecompileCallback)  
+WARN  Decompiling 0010b0f8, pcode error at 0010b0f8: Unable to disassemble EXTERNAL block location: 0010b0f8 (DecompileCallback)  
+WARN  Decompiling 0010b100, pcode error at 0010b100: Unable to disassemble EXTERNAL block location: 0010b100 (DecompileCallback)  
+WARN  Decompiling 0010b108, pcode error at 0010b108: Unable to disassemble EXTERNAL block location: 0010b108 (DecompileCallback)  
+WARN  Decompiling 0010b110, pcode error at 0010b110: Unable to disassemble EXTERNAL block location: 0010b110 (DecompileCallback)  
+WARN  Decompiling 0010b118, pcode error at 0010b118: Unable to disassemble EXTERNAL block location: 0010b118 (DecompileCallback)  
+WARN  Decompiling 0010b120, pcode error at 0010b120: Unable to disassemble EXTERNAL block location: 0010b120 (DecompileCallback)  
+WARN  Decompiling 0010b128, pcode error at 0010b128: Unable to disassemble EXTERNAL block location: 0010b128 (DecompileCallback)  
+WARN  Decompiling 0010b130, pcode error at 0010b130: Unable to disassemble EXTERNAL block location: 0010b130 (DecompileCallback)  
+WARN  Decompiling 0010b138, pcode error at 0010b138: Unable to disassemble EXTERNAL block location: 0010b138 (DecompileCallback)  
+WARN  Decompiling 0010b140, pcode error at 0010b140: Unable to disassemble EXTERNAL block location: 0010b140 (DecompileCallback)  
+WARN  Decompiling 0010b148, pcode error at 0010b148: Unable to disassemble EXTERNAL block location: 0010b148 (DecompileCallback)  
+WARN  Decompiling 0010b150, pcode error at 0010b150: Unable to disassemble EXTERNAL block location: 0010b150 (DecompileCallback)  
+WARN  Decompiling 0010b158, pcode error at 0010b158: Unable to disassemble EXTERNAL block location: 0010b158 (DecompileCallback)  
+WARN  Decompiling 0010b160, pcode error at 0010b160: Unable to disassemble EXTERNAL block location: 0010b160 (DecompileCallback)  
+WARN  Decompiling 0010b168, pcode error at 0010b168: Unable to disassemble EXTERNAL block location: 0010b168 (DecompileCallback)  
+INFO  ghidra_export_pseudocode.java> [rscan] ghidra pseudocode exported: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/pseudocode.jsonl (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: file:///usr/bin/true (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: file:///usr/bin/true (HeadlessAnalyzer)  
+INFO  /true: file created (vr2050) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /true (rscan_job-189510cf5e4a3524:/true) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  

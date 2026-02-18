@@ -1,0 +1,1 @@
+{"ea":"004014c0","name":"_DT_INIT","pseudocode":"\nvoid _DT_INIT(void)\n\n{\n  if (PTR___gmon_start___00607548 != (undefined *)0x0) {\n    __gmon_start__();\n  }\n  return;\n}\n\n","signature":"undefined _DT_INIT(void)","size":26,"error":null}

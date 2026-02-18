@@ -1,6 +1,6 @@
 # modules::port_scan
 
-模块 `port_scan` 为上层提供了主机扫描（TCP/UDP/SYN/ARP）的简单封装，内部复用 `cores::netscan_en` 提供的扫描器。
+模块 `port_scan` 为上层提供了主机扫描（TCP/UDP/SYN/ARP）的简单封装，内部复用 `cores::host` 提供的扫描器。
 
 Features:
 - HostScanner: 简单异步 API（scan_tcp, scan_udp, scan_syn, quick_tcp, arp_scan_cidr）

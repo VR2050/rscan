@@ -9,5 +9,3 @@ where
     pub scan_func: F,  // 扫描匹配函数
     pub scan_match: T, // 匹配值
 }
-
-

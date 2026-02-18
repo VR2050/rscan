@@ -23,7 +23,7 @@ pub enum RustpenError {
 
     #[error("扫描错误: {0}")]
     ScanError(String),
-    
+
     #[error("网络错误: {0}")]
     NetworkError(String),
     #[error("Parse error: {0}")]

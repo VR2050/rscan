@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bitvec = "1.0.1"
 clap = { version = "4.5.54", features = ["derive"] }
+clap_complete = "4.5.44"
 futures = "0.3.31"
 rayon = "1.11.0"
 reqwest = { version = "0.13.1", features = ["json"] }
@@ -22,15 +23,19 @@ ipnetwork = "0.18.0"
 httpdate = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+regex = "1.12.2"
+goblin = "0.8.2"
+sha2 = "0.10.9"
+hex = "0.4.3"
+zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
+serde_yaml = "0.9.34"
 [[test]]
 name ="cli_test"    
 path = "./src/main.rs"
 
 [[bin]]
 name="bypass"
-path="./src/cores/netscan_en/bypass.rs"
+path="./src/cores/host/bypass.rs"
 [dev-dependencies]
 warp = "0.3"
 criterion = "0.8.1"
-
-

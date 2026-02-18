@@ -1,0 +1,108 @@
+INFO  Using log config file: jar:file:/usr/share/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/vr2050/.config/ghidra/ghidra_12.0.2_DEV/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/vr2050/.config/ghidra/ghidra_12.0.2_DEV/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (738 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1425 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 58 extension points (18 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /usr/share/ghidra/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/BytePatterns/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/FileFormats/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/Atmel/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/DATA/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/PyGhidra/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/Jython/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Debug/Debugger/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/PIC/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/8051/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/Base/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/PDB/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Processors/JVM/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out
+    /usr/share/ghidra/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/BSim/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/Decompiler/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/FunctionID/ghidra_scripts
+    /usr/share/ghidra/Ghidra/Features/VersionTracking/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Creating project: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/rscan_job-18953538a79934c4 (HeadlessAnalyzer)  
+INFO  Creating project: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/rscan_job-18953538a79934c4 (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/rscan_job-18953538a79934c4 (HeadlessAnalyzer)  
+INFO  IMPORTING: file:///home/vr2050/cscan (HeadlessAnalyzer)  
+INFO  Using Loader: Executable and Linking Format (ELF) (ProgramLoader)  
+INFO  Using Language/Compiler: x86:LE:64:default:gcc (ProgramLoader)  
+INFO  Using Library Search Path: [., /bin, /lib, /lib64, /lib/x86_64-linux-gnu, /lib/aarch64-linux-gnu, /usr/bin, /usr/lib, /usr/X11R6/bin, /usr/X11R6/lib, /home/vr2050/RUST/rscan_codex/target/debug/build/aws-lc-sys-6710ef9e71f5a6cd/out, /home/vr2050/RUST/rscan_codex/target/debug/deps, /home/vr2050/RUST/rscan_codex/target/debug, /home/vr2050/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib, /home/vr2050/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib, /usr/java/packages/lib, /usr/lib/x86_64-linux-gnu/jni, /usr/lib/x86_64-linux-gnu, /usr/lib/jni] (ProgramLoader)  
+INFO  Additional info:
+Loading file:///home/vr2050/cscan?MD5=134470f9b45bfb017088dc6a9d394526...
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 006077c0 (Symbol = stdout) - Runtime copy not supported (8-bytes)
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 006077c8 (Symbol = stdin) - Runtime copy not supported (8-bytes)
+ELF Relocation Failure: R_X86_64_COPY (5, 0x5) at 006077d0 (Symbol = stderr) - Runtime copy not supported (8-bytes)
+------------------------------------------------
+
+Linking the External Programs of 'cscan' to imported libraries...
+  [libdl.so.2] -> not found in project
+  [libz.so.1] -> not found in project
+  [libc.so.6] -> not found in project
+------------------------------------------------
+
+Resolving External Symbols of [/cscan] - 69 unresolved symbols, no external libraries configured - skipping
+ (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: file:///home/vr2050/cscan (HeadlessAnalyzer)  
+INFO  DWARF external debug information found: ExternalDebugInfo [filename=null, crc=0, hash=4485007e1df54173663f148d5840c963a7e868ee] (ExternalDebugFileSectionProvider)  
+INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)  
+INFO  Packed database cache: /home/vr2050/.cache/ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: generic_clib_64 (ApplyDataArchiveAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.237 secs
+    Apply Data Archives                        0.164 secs
+    Call Convention ID                         0.002 secs
+    Call-Fixup Installer                       0.014 secs
+    Create Address Tables                      0.013 secs
+    Create Address Tables - One Time           0.016 secs
+    Create Function                            0.026 secs
+    DWARF                                      0.014 secs
+    Data Reference                             0.014 secs
+    Decompiler Switch Analysis                 1.035 secs
+    Demangler GNU                              0.014 secs
+    Disassemble Entry Points                   0.160 secs
+    ELF Scalar Operand References              0.040 secs
+    Embedded Media                             0.008 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.096 secs
+    Function Start Pre Search                  0.006 secs
+    Function Start Search                      0.035 secs
+    Function Start Search After Code           0.005 secs
+    Function Start Search After Data           0.003 secs
+    GCC Exception Handlers                     0.077 secs
+    Non-Returning Functions - Discovered       0.011 secs
+    Non-Returning Functions - Known            0.001 secs
+    Reference                                  0.037 secs
+    Shared Return Calls                        0.015 secs
+    Stack                                      0.098 secs
+    Subroutine References                      0.010 secs
+    x86 Constant Reference Analyzer            0.248 secs
+-----------------------------------------------------
+     Total Time   2 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: file:///home/vr2050/cscan (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: ghidra_export_index.java '/home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/index.jsonl'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/ghidra_export_index.java (HeadlessAnalyzer)  
+INFO  ghidra_export_index.java> [rscan] ghidra index exported: /home/vr2050/RUST/rscan_codex/reverse_ws_test/reverse_out/index.jsonl (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: file:///home/vr2050/cscan (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: file:///home/vr2050/cscan (HeadlessAnalyzer)  
+INFO  /cscan: file created (vr2050) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /cscan (rscan_job-18953538a79934c4:/cscan) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  
