@@ -20,6 +20,11 @@ pub(crate) struct IcmpBackend {
     hub: Arc<RawPacketHub>,
 }
 
+fn lock_sender<T>(tx: &Arc<Mutex<T>>) -> std::sync::MutexGuard<'_, T> {
+    // Recover from poisoning to avoid panics in scan paths.
+    tx.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 impl IcmpBackend {
     pub(crate) fn new(hub: Arc<RawPacketHub>) -> Result<Self, String> {
         if !hub.has_icmp() {
@@ -65,10 +70,10 @@ impl IcmpBackend {
                     dispatcher.remove(&key);
                 }
             }
-            if _attempt < retries {
-                if let Some(d) = retry_delay_ms {
-                    tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-                }
+            if _attempt < retries
+                && let Some(d) = retry_delay_ms
+            {
+                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
             }
         }
         ScanStatus::Filtered
@@ -108,10 +113,10 @@ impl IcmpBackend {
                     dispatcher.remove(&key);
                 }
             }
-            if _attempt < retries {
-                if let Some(d) = retry_delay_ms {
-                    tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-                }
+            if _attempt < retries
+                && let Some(d) = retry_delay_ms
+            {
+                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
             }
         }
         ScanStatus::Filtered
@@ -137,7 +142,7 @@ fn send_echo_v4(
     let csum = checksum(&icmp_packet);
     pkt.set_checksum(csum);
 
-    let mut guard = tx.lock().unwrap();
+    let mut guard = lock_sender(tx);
     guard
         .send_to(pkt, IpAddr::V4(remote_ip))
         .map_err(|e| format!("icmp send_to failed: {e}"))?;
@@ -166,7 +171,7 @@ fn send_echo_v6(
     let csum = checksum_v6(&icmp_packet, &local_ip, &remote_ip);
     pkt.set_checksum(csum);
 
-    let mut guard = tx.lock().unwrap();
+    let mut guard = lock_sender(tx);
     guard
         .send_to(pkt, IpAddr::V6(remote_ip))
         .map_err(|e| format!("icmpv6 send_to failed: {e}"))?;

@@ -1,8 +1,8 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::io::{BufRead, BufReader};
 
 use crate::errors::RustpenError;
 
@@ -561,7 +561,9 @@ fn resolve_pseudocode_path(workspace: &Path, job: &ReverseJobMeta) -> PathBuf {
         .artifacts
         .iter()
         .find(|a| {
-            a.ends_with("function.jsonl") || a.ends_with("pseudocode.jsonl") || a.ends_with("index.jsonl")
+            a.ends_with("function.jsonl")
+                || a.ends_with("pseudocode.jsonl")
+                || a.ends_with("index.jsonl")
         })
         .map(PathBuf::from)
         .unwrap_or_else(|| workspace.join("reverse_out").join("pseudocode.jsonl"));
@@ -647,9 +649,9 @@ fn run_with_logs_and_timeout(
         .map_err(|e| RustpenError::ScanError(format!("failed to launch {}: {}", program, e)))?;
 
     let Some(timeout_secs) = timeout_secs else {
-        let status = child.wait().map_err(|e| {
-            RustpenError::ScanError(format!("wait failed for {}: {}", program, e))
-        })?;
+        let status = child
+            .wait()
+            .map_err(|e| RustpenError::ScanError(format!("wait failed for {}: {}", program, e)))?;
         return Ok(status.code());
     };
 

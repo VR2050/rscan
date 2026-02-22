@@ -1,2 +1,14 @@
 /target
 .gdb_history
+
+# runtime artifacts
+/jobs/
+/reverse_out/
+/reverse_ws_test/
+/out.txt
+/pseudocode.jsonl
+/easy
+
+# local temp
+*.tmp
+*.swp

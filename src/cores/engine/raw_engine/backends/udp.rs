@@ -13,6 +13,14 @@ pub(crate) struct UdpReply {
     pub(crate) payload: Option<Vec<u8>>,
 }
 
+pub(crate) struct UdpProbeParams<'a> {
+    pub(crate) payload: &'a [u8],
+    pub(crate) timeout_ms: u64,
+    pub(crate) retries: u32,
+    pub(crate) retry_delay_ms: Option<u64>,
+    pub(crate) source_port: Option<u16>,
+}
+
 use super::dispatcher::CorrKey;
 use super::hub::RawPacketHub;
 use super::local_addr::{local_ipv4_for_destination, local_ipv6_for_destination};
@@ -37,11 +45,7 @@ impl UdpBackend {
         &self,
         remote_ip: Ipv4Addr,
         remote_port: u16,
-        payload: &[u8],
-        timeout_ms: u64,
-        retries: u32,
-        retry_delay_ms: Option<u64>,
-        source_port: Option<u16>,
+        params: &UdpProbeParams<'_>,
     ) -> UdpReply {
         let Some(tx_udp_v4) = self.hub.udp_sender_for(IpAddr::V4(remote_ip)) else {
             return UdpReply {
@@ -51,8 +55,8 @@ impl UdpBackend {
         };
         let dispatcher = self.hub.dispatcher();
 
-        for _attempt in 0..=retries {
-            let local_port = source_port.unwrap_or_else(|| self.next_src_port());
+        for _attempt in 0..=params.retries {
+            let local_port = params.source_port.unwrap_or_else(|| self.next_src_port());
             let key = CorrKey::Udp {
                 remote_ip: IpAddr::V4(remote_ip),
                 remote_port,
@@ -60,13 +64,15 @@ impl UdpBackend {
             };
             let rx_done = dispatcher.register(key.clone());
 
-            let payload_vec = payload.to_vec();
+            let payload_vec = params.payload.to_vec();
             if send_udp_v4(&tx_udp_v4, remote_ip, remote_port, local_port, &payload_vec).is_err() {
                 dispatcher.remove(&key);
                 continue;
             }
 
-            match tokio::time::timeout(Duration::from_millis(timeout_ms.max(1)), rx_done).await {
+            match tokio::time::timeout(Duration::from_millis(params.timeout_ms.max(1)), rx_done)
+                .await
+            {
                 Ok(Ok(reply)) => {
                     return UdpReply {
                         status: reply.status,
@@ -80,10 +86,10 @@ impl UdpBackend {
                     dispatcher.remove(&key);
                 }
             }
-            if _attempt < retries {
-                if let Some(d) = retry_delay_ms {
-                    tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-                }
+            if _attempt < params.retries
+                && let Some(d) = params.retry_delay_ms
+            {
+                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
             }
         }
 
@@ -97,11 +103,7 @@ impl UdpBackend {
         &self,
         remote_ip: Ipv6Addr,
         remote_port: u16,
-        payload: &[u8],
-        timeout_ms: u64,
-        retries: u32,
-        retry_delay_ms: Option<u64>,
-        source_port: Option<u16>,
+        params: &UdpProbeParams<'_>,
     ) -> UdpReply {
         let Some(tx_udp_v6) = self.hub.udp_sender_for(IpAddr::V6(remote_ip)) else {
             return UdpReply {
@@ -111,8 +113,8 @@ impl UdpBackend {
         };
         let dispatcher = self.hub.dispatcher();
 
-        for _attempt in 0..=retries {
-            let local_port = source_port.unwrap_or_else(|| self.next_src_port());
+        for _attempt in 0..=params.retries {
+            let local_port = params.source_port.unwrap_or_else(|| self.next_src_port());
             let key = CorrKey::Udp {
                 remote_ip: IpAddr::V6(remote_ip),
                 remote_port,
@@ -120,13 +122,15 @@ impl UdpBackend {
             };
             let rx_done = dispatcher.register(key.clone());
 
-            let payload_vec = payload.to_vec();
+            let payload_vec = params.payload.to_vec();
             if send_udp_v6(&tx_udp_v6, remote_ip, remote_port, local_port, &payload_vec).is_err() {
                 dispatcher.remove(&key);
                 continue;
             }
 
-            match tokio::time::timeout(Duration::from_millis(timeout_ms.max(1)), rx_done).await {
+            match tokio::time::timeout(Duration::from_millis(params.timeout_ms.max(1)), rx_done)
+                .await
+            {
                 Ok(Ok(reply)) => {
                     return UdpReply {
                         status: reply.status,
@@ -140,10 +144,10 @@ impl UdpBackend {
                     dispatcher.remove(&key);
                 }
             }
-            if _attempt < retries {
-                if let Some(d) = retry_delay_ms {
-                    tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-                }
+            if _attempt < params.retries
+                && let Some(d) = params.retry_delay_ms
+            {
+                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
             }
         }
 
@@ -160,6 +164,11 @@ impl UdpBackend {
         let span = 20000u16;
         base + (v % span)
     }
+}
+
+fn lock_sender<T>(tx: &Arc<Mutex<T>>) -> std::sync::MutexGuard<'_, T> {
+    // Recover from poisoning to avoid panics in scan paths.
+    tx.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 fn send_udp_v4(
@@ -180,7 +189,7 @@ fn send_udp_v4(
     let csum = pnet::packet::udp::ipv4_checksum(&pkt.to_immutable(), &local_ip, &remote_ip);
     pkt.set_checksum(csum);
 
-    let mut guard = tx_udp.lock().unwrap();
+    let mut guard = lock_sender(tx_udp);
     guard
         .send_to(pkt, IpAddr::V4(remote_ip))
         .map_err(|e| format!("udp send_to failed: {e}"))?;
@@ -205,7 +214,7 @@ fn send_udp_v6(
     let csum = pnet::packet::udp::ipv6_checksum(&pkt.to_immutable(), &local_ip, &remote_ip);
     pkt.set_checksum(csum);
 
-    let mut guard = tx_udp.lock().unwrap();
+    let mut guard = lock_sender(tx_udp);
     guard
         .send_to(pkt, IpAddr::V6(remote_ip))
         .map_err(|e| format!("udp send_to failed: {e}"))?;

@@ -127,7 +127,7 @@ mod tests {
             recursive_max_depth: 2,
         };
         let url = format!("{}/FUZZ.html", base);
-        let res = run_fuzz_scan(&url, &["a", "b", "c", "d", "e", "f"], cfg)
+        let _res = run_fuzz_scan(&url, &["a", "b", "c", "d", "e", "f"], cfg)
             .await
             .unwrap();
         let mv = max_seen.load(Ordering::SeqCst);
@@ -141,6 +141,13 @@ use crate::modules::web_scan::common::{
     is_wildcard_match,
 };
 use crate::modules::web_scan::resume::{load_or_new, maybe_resume_path, save};
+
+fn summarize_errors(total: usize, errors: usize, first: Option<&str>) -> RustpenError {
+    let hint = first.unwrap_or("unknown error");
+    RustpenError::NetworkError(format!(
+        "fuzz scan failed for all requests (errors={errors}, total={total}): {hint}"
+    ))
+}
 
 pub async fn run_fuzz_scan(
     url_with_fuzz: &str,
@@ -182,6 +189,8 @@ pub async fn run_fuzz_scan(
     let mut seen = std::collections::HashSet::new();
     let mut seen_fingerprints: Vec<ResponseFingerprint> = Vec::new();
     let mut adaptive_delay_ms = cfg.adaptive_initial_delay_ms;
+    let mut error_count = 0usize;
+    let mut first_error: Option<String> = None;
     for chunk in reqs.chunks(cfg.concurrency.max(1)) {
         if cfg.adaptive_rate && adaptive_delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
@@ -240,7 +249,12 @@ pub async fn run_fuzz_scan(
                         content_len: Some(content_len),
                     })
                 }
-                Err(_) => {}
+                Err(e) => {
+                    error_count += 1;
+                    if first_error.is_none() {
+                        first_error = Some(e.to_string());
+                    }
+                }
             }
         }
         if let Some(st) = resume_state.as_mut() {
@@ -259,6 +273,13 @@ pub async fn run_fuzz_scan(
                 adaptive_delay_ms /= 2;
             }
         }
+    }
+    if out.is_empty() && error_count > 0 {
+        return Err(summarize_errors(
+            reqs.len(),
+            error_count,
+            first_error.as_deref(),
+        ));
     }
     Ok(out)
 }

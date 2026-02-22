@@ -64,31 +64,6 @@ pub fn common_ports() -> Vec<u16> {
     ]
 }
 
-//解析扫描目标
-// pub fn parse_addresses()
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parse_ports_single_and_range() {
-        assert_eq!(parse_ports("22").unwrap(), vec![22]);
-        assert_eq!(parse_ports("20-22").unwrap(), vec![20, 21, 22]);
-        assert_eq!(
-            parse_ports("22,80,1000-1002").unwrap(),
-            vec![22, 80, 1000, 1001, 1002]
-        );
-    }
-
-    #[test]
-    fn parse_ports_invalid() {
-        assert!(parse_ports("0").is_err());
-        assert!(parse_ports("70000").is_err());
-        assert!(parse_ports("10-5").is_err());
-        assert!(parse_ports("bad").is_err());
-    }
-}
-
 pub struct PortIterator<'a> {
     host: IpAddr,
     ports: &'a [u16],
@@ -116,5 +91,30 @@ impl<'a> Iterator for PortIterator<'a> {
         } else {
             None
         }
+    }
+}
+
+//解析扫描目标
+// pub fn parse_addresses()
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_ports_single_and_range() {
+        assert_eq!(parse_ports("22").unwrap(), vec![22]);
+        assert_eq!(parse_ports("20-22").unwrap(), vec![20, 21, 22]);
+        assert_eq!(
+            parse_ports("22,80,1000-1002").unwrap(),
+            vec![22, 80, 1000, 1001, 1002]
+        );
+    }
+
+    #[test]
+    fn parse_ports_invalid() {
+        assert!(parse_ports("0").is_err());
+        assert!(parse_ports("70000").is_err());
+        assert!(parse_ports("10-5").is_err());
+        assert!(parse_ports("bad").is_err());
     }
 }

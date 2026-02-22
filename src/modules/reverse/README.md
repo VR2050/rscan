@@ -87,15 +87,65 @@
   - `rscan reverse gdb-plugin --out ./rscan_gdb_plugin.py`
   - `rscan reverse debug-script --input ./sample.bin --profile pwndbg --script-out ./debug.gdb`
   - `rscan reverse ida-script --out ./ida_export_pseudocode.py`
-  - `rscan reverse ghidra-script --out ./ghidra_export_pseudocode.java`
-  - `rscan reverse ghidra-index-script --out ./ghidra_export_index.java`
-  - `rscan reverse ghidra-function-script --out ./ghidra_export_function.java`
+- `rscan reverse ghidra-script --out ./ghidra_export_pseudocode.java`
+- `rscan reverse ghidra-index-script --out ./ghidra_export_index.java`
+- `rscan reverse ghidra-function-script --out ./ghidra_export_function.java`
+
+### Ghidra Headless（精简版）集成
+
+如果你使用精简版 headless 运行时，可通过环境变量指定路径：
+
+- `RSCAN_GHIDRA_HOME=/home/vr2050/ghidra_core_headless_x86_min`  
+  自动选择 `run-headless.sh` 或 `support/analyzeHeadless`
+
+- `RSCAN_GHIDRA_HEADLESS=/home/vr2050/ghidra_core_headless_x86_min/support/analyzeHeadless`  
+  直接指定 headless 可执行文件
+
+当前精简版仅保留 `x86/x64` 处理器与 Decompiler 相关模块。
+
+运行时回退：
+
+- 若 `RSCAN_GHIDRA_HOME`/`RSCAN_GHIDRA_HEADLESS` 指向的目录缺少 `Decompiler/Base/x86` 组件，将自动回退到系统 PATH 中的 `analyzeHeadless`。
+
+CLI 也支持覆盖：
+
+- `rscan reverse console --ghidra-home /home/vr2050/ghidra_core_headless_x86_min`
 
 ## 4. 交互控制台
 
 启动：
 
 - `rscan reverse console --input ./sample.bin --workspace ./reverse_ws`
+- `rscan reverse console --input ./sample.bin --workspace ./reverse_ws --tui`
+
+TUI 键位：
+
+- `j/k` 或方向键：上下移动函数
+- `h/l` 或方向键：左右切换焦点
+- `b` 或 `Backspace`：返回左侧
+- `n/p`：切换上/下一个已完成的作业
+- `/`：过滤函数（按名称/地址/签名）
+- `s`：搜索（伪代码/调用/外部引用）
+- `c`：注释当前函数（持久化）
+- `;`：注释当前伪代码行
+- `C`：清除当前注释
+- `PageUp/PageDown/Home/End`：快速滚动
+- `x`：清空过滤/搜索
+- `g`：跳转到函数（name/ea）
+- `1..6`：切换右侧 Tab（伪代码/调用/Xrefs/外部引用/字符串/Asm）
+- `Tab`：左右面板切换焦点
+- `Enter`：在 Calls/Xrefs 面板中跳转到目标函数
+- `:`：命令模式（`filter|grep|goto|find|search|index|reindex|refresh|job|note|note-line|decompile|tab`）
+- `:index` 构建项目级索引（增量，仅新增 job）
+- `:find <kw>` 基于 JSONL 索引搜索并跳转
+- `:search <kw>` 基于 Tantivy 全文检索并跳转
+- `:graph <calls|xrefs> <out> [job_id]` 导出调用/引用图
+- `:note-line <n> <text>` 添加伪代码/汇编行注释（清除用 `:note-line <n> clear`）
+- `d`：触发 decompile（参数由环境变量控制）
+- `r`：刷新作业与函数
+- `R`：刷新并重建索引
+- `?`：显示快捷键提示
+- `q`：退出
 
 控制台内推荐：
 
@@ -122,6 +172,7 @@
 - `strings [pattern] [limit]`
 - `job-doctor [job_id]`
 - `prune-jobs [keep_count|keep=N] [days=N] [running]`
+- `delete <job_id>` / `open <job_id>`
 
 ## 5. 大文件优化（Ghidra）
 
@@ -130,6 +181,44 @@
 - `RSCAN_GHIDRA_AUTO_INDEX_MB=50`
   - 把自动降级阈值设为 50MB
 - `RSCAN_GHIDRA_AUTO_INDEX_MB=0`
+
+额外性能开关（可选）：
+
+- `RSCAN_GHIDRA_DECOMP_TIMEOUT_SEC=10`  
+  缩短单函数反编译超时（默认 20 秒），可显著加速大样本全量导出，但可能牺牲部分函数结果。
+
+- `RSCAN_GHIDRA_SKIP_IF_EXISTS=1`  
+  若输出文件已存在且非空，则跳过本次导出（适合重复执行/重跑场景）。
+
+- `RSCAN_GHIDRA_INCREMENTAL=1`  
+  启用增量导出，已导出的函数会被跳过，结果会追加写入 JSONL（适合断点续跑与批量扩展）。
+
+- `RSCAN_GHIDRA_MAX_FUNC_SIZE=800`  
+  跳过超过指定地址数的函数（函数体过大时反编译耗时极高）。
+
+- `RSCAN_GHIDRA_ONLY_NAMED=1`  
+  跳过默认命名函数（`FUN_`/`sub_`），优先导出有意义命名的函数。
+
+- `RSCAN_GHIDRA_ASM_LIMIT=2000`  
+  限制每个函数导出的汇编行数（默认 4000），减少超大函数耗时。
+
+- `RSCAN_GHIDRA_SKIP_ASM=1`  
+  跳过汇编导出，仅保留伪代码。
+
+Ghidra 项目缓存（大幅提升重复分析速度）：
+
+- 默认启用项目缓存与复用（无需设置环境变量）。
+- `RSCAN_GHIDRA_PROJECT_CACHE=0`  
+  关闭项目缓存（恢复每次创建独立工程）。
+
+- `RSCAN_GHIDRA_PROJECT_ROOT=/path/to/cache`  
+  指定缓存工程目录；建议放在高速磁盘。
+
+- `RSCAN_GHIDRA_REUSE_PROJECT=0`  
+  禁用复用（强制重新导入）。
+
+- `RSCAN_GHIDRA_NO_ANALYSIS=1`  
+  不执行自动分析（仅适合你已做过分析并复用工程的情况）。
   - 关闭自动降级
 
 默认行为：

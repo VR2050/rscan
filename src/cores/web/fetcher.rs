@@ -194,21 +194,19 @@ impl Fetcher {
                     // 处理 429 Retry-After（优先）和 5xx
                     if resp.status().as_u16() == 429 {
                         if attempts > max_retries {
-                            return Err(RustpenError::NetworkError(format!(
-                                "too many 429 responses"
-                            )));
+                            return Err(RustpenError::NetworkError(
+                                "too many 429 responses".to_string(),
+                            ));
                         }
 
                         // 尝试解析 Retry-After 头
-                        if self.config.honor_retry_after {
-                            if let Some(ra) = resp.headers().get("retry-after") {
-                                if let Ok(s) = ra.to_str() {
-                                    if let Some(dur) = Self::parse_retry_after_seconds_or_date(s) {
-                                        tokio::time::sleep(dur).await;
-                                        continue;
-                                    }
-                                }
-                            }
+                        if self.config.honor_retry_after
+                            && let Some(ra) = resp.headers().get("retry-after")
+                            && let Ok(s) = ra.to_str()
+                            && let Some(dur) = Self::parse_retry_after_seconds_or_date(s)
+                        {
+                            tokio::time::sleep(dur).await;
+                            continue;
                         }
 
                         // 如果没有可用的 Retry-After，则退回到指数退避
@@ -237,7 +235,7 @@ impl Fetcher {
                         continue;
                     }
 
-                    return Ok(Self::normalize_response(&req.url, resp).await?);
+                    return Self::normalize_response(&req.url, resp).await;
                 }
                 Err(e) => {
                     if attempts > max_retries {
@@ -299,7 +297,7 @@ impl Fetcher {
     fn exponential_backoff_ms(base: u64, max: u64, attempts: u32) -> u64 {
         // base * 2^(attempts-1)
         let exp = attempts.saturating_sub(1);
-        let mul = 1u128.checked_shl(exp).unwrap_or(0) as u128; // safe bound
+        let mul = 1u128.checked_shl(exp).unwrap_or(0); // safe bound
         let mut backoff = (base as u128).saturating_mul(mul) as u64;
         if backoff == 0 {
             backoff = base;

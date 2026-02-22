@@ -8,6 +8,7 @@ pub mod tcp_scanner;
 pub mod udp_scanner;
 pub use models::{PortResult, PortStatus, Protocol, ScanResult};
 pub use ports::parse_ports;
+pub use targets::parse_targets;
 pub use tcp_scanner::{PortScanner, TcpConfig, TcpScanner};
 pub use udp_scanner::{UdpConfig, UdpScanner};
 pub mod icmp_scan;

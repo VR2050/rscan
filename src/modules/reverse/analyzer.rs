@@ -2,12 +2,17 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 use goblin::Object;
 use sha2::{Digest, Sha256};
 use zip::ZipArchive;
 
 use crate::errors::RustpenError;
+
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 
 use super::model::{
     ApkReport, BinaryFormat, BinaryReport, FileHashes, HardeningReport, SecuritySignals,
@@ -123,6 +128,7 @@ impl ReverseAnalyzer {
         let strings = extract_ascii_strings(&bytes, 4, 4096);
 
         let anti_debug = find_keywords(&imports, &strings, &rules.anti_debug_keywords);
+        let obfuscation = find_string_keywords(&strings, &rules.obfuscation_keywords);
         let suspicious_strings = find_string_keywords(&strings, &rules.suspicious_string_keywords);
         let suspicious_imports = find_import_keywords(&imports, &rules.suspicious_import_keywords);
         let packer_indicators = packer_hints(
@@ -135,6 +141,15 @@ impl ReverseAnalyzer {
             rules.thresholds.high_entropy,
             rules.thresholds.tiny_import_table_max,
         );
+        let obfuscation_hints = obfuscation_hints(
+            &strings,
+            &imports,
+            entropy,
+            md.len(),
+            &obfuscation,
+            rules.thresholds.high_entropy,
+        );
+        let dynamic_indicators = dynamic_indicators(path, &format);
 
         let malware_score = compute_malware_score(
             entropy,
@@ -159,7 +174,9 @@ impl ReverseAnalyzer {
             hardening,
             security: SecuritySignals {
                 anti_debug_indicators: anti_debug,
+                dynamic_indicators,
                 packer_indicators,
+                obfuscation_indicators: obfuscation_hints,
                 suspicious_imports,
                 suspicious_strings,
                 entropy,
@@ -218,6 +235,7 @@ impl ReverseAnalyzer {
         let strings = extract_ascii_strings(&bytes, 4, 4096);
         let suspicious_strings = find_string_keywords(&strings, &rules.suspicious_string_keywords);
         let anti_debug = find_string_keywords(&strings, &rules.anti_debug_keywords);
+        let obfuscation = find_string_keywords(&strings, &rules.obfuscation_keywords);
         let mut packer_indicators = find_string_keywords(&strings, &rules.packer_string_keywords)
             .into_iter()
             .map(|s| format!("packer string: {}", s))
@@ -232,6 +250,15 @@ impl ReverseAnalyzer {
 
         packer_indicators.sort();
         packer_indicators.dedup();
+        let obfuscation_hints = obfuscation_hints(
+            &strings,
+            &Vec::new(),
+            entropy,
+            md.len(),
+            &obfuscation,
+            rules.thresholds.apk_high_entropy,
+        );
+        let dynamic_indicators = dynamic_indicators(path, &BinaryFormat::Apk);
 
         let malware_score = compute_malware_score(
             entropy,
@@ -255,7 +282,9 @@ impl ReverseAnalyzer {
             native_libs,
             security: SecuritySignals {
                 anti_debug_indicators: anti_debug,
+                dynamic_indicators,
                 packer_indicators,
+                obfuscation_indicators: obfuscation_hints,
                 suspicious_imports: Vec::new(),
                 suspicious_strings,
                 entropy,
@@ -454,6 +483,145 @@ fn compute_malware_score(
     score += (packer_hits as f64 * 10.0).min(30.0);
 
     score.clamp(0.0, 100.0) as u8
+}
+
+fn obfuscation_hints(
+    strings: &[String],
+    imports: &[String],
+    entropy: f64,
+    file_size: u64,
+    keyword_hits: &[String],
+    high_entropy_threshold: f64,
+) -> Vec<String> {
+    let mut hints = Vec::new();
+    for hit in keyword_hits {
+        hints.push(format!("obfuscation keyword: {}", hit));
+    }
+    if entropy > high_entropy_threshold {
+        hints.push(format!("high entropy {:.3}", entropy));
+    }
+    if imports.is_empty() && file_size > 512 * 1024 {
+        hints.push("no imports in large binary".to_string());
+    }
+    if strings.len() < (file_size / 20000).max(8) as usize {
+        hints.push("low strings density".to_string());
+    }
+    hints.sort();
+    hints.dedup();
+    hints
+}
+
+fn dynamic_indicators(path: &Path, format: &BinaryFormat) -> Vec<String> {
+    if std::env::var("RSCAN_REVERSE_DYNAMIC").ok().as_deref() != Some("1") {
+        return Vec::new();
+    }
+    match format {
+        BinaryFormat::Elf => dynamic_indicators_linux(path),
+        BinaryFormat::Pe => vec!["dynamic check not supported for PE".to_string()],
+        _ => Vec::new(),
+    }
+}
+
+fn dynamic_indicators_linux(path: &Path) -> Vec<String> {
+    if which("strace").is_none() {
+        return vec!["strace not found; dynamic checks skipped".to_string()];
+    }
+    if let Ok(list) = std::env::var("RSCAN_REVERSE_DYNAMIC_BLOCKLIST") {
+        let list = list
+            .split(',')
+            .map(|v| v.trim().to_ascii_lowercase())
+            .filter(|v| !v.is_empty())
+            .collect::<Vec<_>>();
+        if !list.is_empty() {
+            if let Ok(bytes) = std::fs::read(path) {
+                let strings = extract_ascii_strings(&bytes, 4, 20_000);
+                for s in strings {
+                    let s_lc = s.to_ascii_lowercase();
+                    if let Some(hit) = list.iter().find(|needle| s_lc.contains(*needle)) {
+                        return vec![format!("dynamic: skipped (blocklist match: {})", hit)];
+                    }
+                }
+            }
+        }
+    }
+    let timeout_ms = std::env::var("RSCAN_REVERSE_DYNAMIC_TIMEOUT_MS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(1500);
+    let trace_list = std::env::var("RSCAN_REVERSE_DYNAMIC_SYSCALLS")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or_else(|| "ptrace,prctl,seccomp".to_string());
+    let tmp = std::env::temp_dir().join(format!(
+        "rscan_dyn_{}.log",
+        std::process::id()
+    ));
+    let mut cmd = Command::new("strace");
+    cmd.arg("-f")
+        .arg("-qq")
+        .arg("-e")
+        .arg(format!("trace={}", trace_list))
+        .arg("-o")
+        .arg(&tmp)
+        .arg(path)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    #[cfg(unix)]
+    {
+        unsafe {
+            cmd.pre_exec(|| {
+                if libc::setsid() == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+    }
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(_) => return vec!["strace spawn failed".to_string()],
+    };
+    let start = Instant::now();
+    loop {
+        if let Ok(Some(_)) = child.try_wait() {
+            break;
+        }
+        if start.elapsed() > Duration::from_millis(timeout_ms.max(1)) {
+            #[cfg(unix)]
+            {
+                let _ = unsafe { libc::kill(-(child.id() as i32), libc::SIGKILL) };
+            }
+            let _ = child.kill();
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let mut out = Vec::new();
+    if let Ok(text) = std::fs::read_to_string(&tmp) {
+        if text.contains("ptrace") {
+            out.push("dynamic: ptrace syscall".to_string());
+        }
+        if text.contains("prctl") {
+            out.push("dynamic: prctl syscall".to_string());
+        }
+        if text.contains("seccomp") {
+            out.push("dynamic: seccomp syscall".to_string());
+        }
+    }
+    let _ = std::fs::remove_file(&tmp);
+    out
+}
+
+fn which(bin: &str) -> Option<String> {
+    let paths = std::env::var_os("PATH")?;
+    for p in std::env::split_paths(&paths) {
+        let candidate = p.join(bin);
+        if candidate.exists() {
+            return Some(candidate.to_string_lossy().to_string());
+        }
+    }
+    None
 }
 
 #[cfg(test)]

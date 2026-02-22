@@ -1,4 +1,4 @@
-pub mod cli;
+mod app;
 
 // re-export commonly used helpers
-pub use cli::{run, run_from_args};
+pub use app::{run, run_from_args};

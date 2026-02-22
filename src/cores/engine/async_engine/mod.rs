@@ -90,8 +90,8 @@ impl ScanEngine for AsyncConnectEngine {
             .map_err(|e| RustpenError::Generic(format!("submit failed: {e}")))
     }
 
-    fn take_results(&mut self) -> mpsc::Receiver<ScanResult> {
-        self.rx.take().expect("results receiver already taken")
+    fn take_results(&mut self) -> Result<mpsc::Receiver<ScanResult>, RustpenError> {
+        self.rx.take().ok_or(RustpenError::ResultsReceiverTaken)
     }
 }
 
@@ -149,10 +149,10 @@ async fn scan_connect(job: ScanJob) -> ScanResult {
                 }
             }
         }
-        if attempt < job.retries {
-            if let Some(d) = job.retry_delay_ms {
-                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-            }
+        if attempt < job.retries
+            && let Some(d) = job.retry_delay_ms
+        {
+            tokio::time::sleep(Duration::from_millis(d.max(1))).await;
         }
     }
 
@@ -233,39 +233,10 @@ async fn scan_udp(job: ScanJob, is_dns: bool) -> ScanResult {
         }
 
         let mut buf = vec![0u8; 1500];
-        match timeout(
-            Duration::from_millis(job.timeout_ms),
-            socket.recv_from(&mut buf),
-        )
-        .await
-        {
-            Ok(Ok((n, _))) => {
-                buf.truncate(n);
-                return ScanResult::new(
-                    job.target_ip,
-                    if is_dns { Protocol::Dns } else { Protocol::Udp },
-                    ScanStatus::Open,
-                )
-                .with_port(port)
-                .with_latency_ms(start.elapsed().as_millis() as u64)
-                .with_response(buf)
-                .with_meta("attempt", attempt.to_string())
-                .with_meta("engine", "async");
-            }
-            Ok(Err(e)) => {
-                if attempt == job.retries {
-                    return ScanResult::new(
-                        job.target_ip,
-                        if is_dns { Protocol::Dns } else { Protocol::Udp },
-                        ScanStatus::Error,
-                    )
-                    .with_port(port)
-                    .with_meta("attempt", attempt.to_string())
-                    .with_meta("error", e.to_string())
-                    .with_meta("engine", "async");
-                }
-            }
-            Err(_) => {
+        let deadline = tokio::time::Instant::now() + Duration::from_millis(job.timeout_ms);
+        loop {
+            let now = tokio::time::Instant::now();
+            if now >= deadline {
                 if attempt == job.retries {
                     return ScanResult::new(
                         job.target_ip,
@@ -277,12 +248,61 @@ async fn scan_udp(job: ScanJob, is_dns: bool) -> ScanResult {
                     .with_meta("error", "timeout_on_recv")
                     .with_meta("engine", "async");
                 }
+                break;
+            }
+
+            let remaining = deadline.saturating_duration_since(now);
+            match timeout(remaining, socket.recv_from(&mut buf)).await {
+                Ok(Ok((n, from))) => {
+                    if from.ip() != addr.ip() || from.port() != addr.port() {
+                        continue;
+                    }
+                    buf.truncate(n);
+                    return ScanResult::new(
+                        job.target_ip,
+                        if is_dns { Protocol::Dns } else { Protocol::Udp },
+                        ScanStatus::Open,
+                    )
+                    .with_port(port)
+                    .with_latency_ms(start.elapsed().as_millis() as u64)
+                    .with_response(buf)
+                    .with_meta("attempt", attempt.to_string())
+                    .with_meta("engine", "async");
+                }
+                Ok(Err(e)) => {
+                    if attempt == job.retries {
+                        return ScanResult::new(
+                            job.target_ip,
+                            if is_dns { Protocol::Dns } else { Protocol::Udp },
+                            ScanStatus::Error,
+                        )
+                        .with_port(port)
+                        .with_meta("attempt", attempt.to_string())
+                        .with_meta("error", e.to_string())
+                        .with_meta("engine", "async");
+                    }
+                    break;
+                }
+                Err(_) => {
+                    if attempt == job.retries {
+                        return ScanResult::new(
+                            job.target_ip,
+                            if is_dns { Protocol::Dns } else { Protocol::Udp },
+                            ScanStatus::Filtered,
+                        )
+                        .with_port(port)
+                        .with_meta("attempt", attempt.to_string())
+                        .with_meta("error", "timeout_on_recv")
+                        .with_meta("engine", "async");
+                    }
+                    break;
+                }
             }
         }
-        if attempt < job.retries {
-            if let Some(d) = job.retry_delay_ms {
-                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-            }
+        if attempt < job.retries
+            && let Some(d) = job.retry_delay_ms
+        {
+            tokio::time::sleep(Duration::from_millis(d.max(1))).await;
         }
     }
 
@@ -310,7 +330,7 @@ mod tests {
         });
 
         let mut engine = AsyncConnectEngine::new(16, 2);
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             Protocol::Tcp,
@@ -338,7 +358,7 @@ mod tests {
         });
 
         let mut engine = AsyncConnectEngine::new(16, 2);
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             Protocol::Udp,
@@ -372,7 +392,7 @@ match http m|^HTTP/1\.[01] \d\d\d|
 "#;
         let probe = Arc::new(ServiceProbeEngine::from_nmap_text(probe_text).unwrap());
         let mut engine = AsyncConnectEngine::new_with_probe(16, 2, Some(probe));
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             Protocol::Udp,

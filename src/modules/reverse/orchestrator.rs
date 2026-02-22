@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 use crate::errors::RustpenError;
 
 use super::backends::{BackendKind, BackendRegistry, ReverseBackend};
-use super::model::{DebugProfile, DecompilerEngine, DecompileMode, ToolInvocation};
+use super::model::{DebugProfile, DecompileMode, DecompilerEngine, ToolInvocation};
 use super::tooling::ReverseTooling;
 
 pub struct ReverseOrchestrator {
@@ -33,9 +33,7 @@ impl ReverseOrchestrator {
                 _ => None,
             }
             .ok_or_else(|| {
-                RustpenError::ParseError(
-                    "invalid pseudocode backend. use ghidra|ida".to_string(),
-                )
+                RustpenError::ParseError("invalid pseudocode backend. use ghidra|ida".to_string())
             })?;
 
             if let Some(b) = self.registry.by_kind(kind)
@@ -80,15 +78,13 @@ impl ReverseOrchestrator {
             DecompilerEngine::Objdump => Ok(ReverseTooling::build_decompile_invocation(
                 engine, input, output_dir,
             )),
-            DecompilerEngine::Radare2 => {
-                self.build_pseudocode_plan(
-                    input,
-                    output_dir.unwrap_or(Path::new(".")),
-                    Some("r2"),
-                    DecompileMode::Full,
-                    None,
-                )
-            }
+            DecompilerEngine::Radare2 => self.build_pseudocode_plan(
+                input,
+                output_dir.unwrap_or(Path::new(".")),
+                Some("r2"),
+                DecompileMode::Full,
+                None,
+            ),
             DecompilerEngine::Ghidra => self.build_pseudocode_plan(
                 input,
                 output_dir.unwrap_or(Path::new("./ghidra_out")),

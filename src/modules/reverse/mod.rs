@@ -10,7 +10,9 @@ pub mod tooling;
 
 pub use analyzer::ReverseAnalyzer;
 pub use backends::{BackendCatalog, BackendRegistry, ReverseBackend};
-pub use console::{ReverseConsoleConfig, run_interactive as run_reverse_interactive};
+pub use console::{
+    ReverseConsoleConfig, run_interactive as run_reverse_interactive, run_tui as run_reverse_tui,
+};
 pub use jobs::{
     DecompileBatchReport, DecompileRunReport, JobPrunePolicy, ReverseJobHealth, ReverseJobMeta,
     ReverseJobStatus, clear_jobs, inspect_job_health, inspect_jobs_health, list_jobs,
@@ -19,7 +21,8 @@ pub use jobs::{
 };
 pub use malware::{MalwareAnalyzer, MalwareTriageReport, ShellIndicator};
 pub use model::{
-    ApkReport, BinaryFormat, BinaryReport, DebugProfile, DecompileMode, DecompilerEngine, ToolInvocation,
+    ApkReport, BinaryFormat, BinaryReport, DebugProfile, DecompileMode, DecompilerEngine,
+    ToolInvocation,
 };
 pub use orchestrator::ReverseOrchestrator;
 pub use rules::{RuleHotReloader, RuleLibrary};

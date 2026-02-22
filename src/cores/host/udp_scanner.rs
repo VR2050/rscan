@@ -46,6 +46,99 @@ impl Default for UdpConfig {
     }
 }
 
+impl UdpConfig {
+    /// DNS服务探测（端口53）
+    pub fn dns_probe() -> Self {
+        // DNS查询：example.com的A记录查询
+        let dns_query = vec![
+            0x00, 0x01, // Transaction ID
+            0x01, 0x00, // Flags: Standard query
+            0x00, 0x01, // Questions: 1
+            0x00, 0x00, // Answer RRs: 0
+            0x00, 0x00, // Authority RRs: 0
+            0x00, 0x00, // Additional RRs: 0
+            // Query: example.com
+            0x07, b'e', b'x', b'a', b'm', b'p', b'l', b'e', // example
+            0x03, b'c', b'o', b'm', // com
+            0x00, // Null terminator
+            0x00, 0x01, // Type: A
+            0x00, 0x01, // Class: IN
+        ];
+
+        Self {
+            send_timeout_seconds: 3,
+            receive_timeout_seconds: 5,
+            concurrent: false,
+            concurrency: 10,
+            probe_data: dns_query,
+            max_retries: 2,
+            delay_ms: Some(100), // DNS服务器通常需要限制请求频率
+        }
+    }
+
+    /// NTP服务探测（端口123）
+    pub fn ntp_probe() -> Self {
+        // NTP客户端模式请求（简化版本）
+        let ntp_request = vec![
+            0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+
+        Self {
+            send_timeout_seconds: 3,
+            receive_timeout_seconds: 5,
+            concurrent: false,
+            concurrency: 10,
+            probe_data: ntp_request,
+            max_retries: 1,
+            delay_ms: None,
+        }
+    }
+
+    /// SNMP服务探测（端口161）
+    pub fn snmp_probe() -> Self {
+        // SNMP GET请求（社区字符串public，OID 1.3.6.1.2.1.1.1.0）
+        let snmp_request = vec![
+            0x30, 0x29, // SEQUENCE length 41
+            0x02, 0x01, 0x00, // INTEGER version 0 (SNMPv1)
+            0x04, 0x06, 0x70, 0x75, 0x62, 0x6C, 0x69, 0x63, // OCTET STRING "public"
+            0xA0, 0x1C, // GetRequest PDU
+            0x02, 0x01, 0x00, // request-id 0
+            0x02, 0x01, 0x00, // error-status 0
+            0x02, 0x01, 0x00, // error-index 0
+            0x30, 0x11, // SEQUENCE length 17
+            0x30, 0x0F, // SEQUENCE length 15
+            0x06, 0x08, 0x2B, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00, // OID
+            0x05, 0x00, // NULL value
+        ];
+
+        Self {
+            send_timeout_seconds: 3,
+            receive_timeout_seconds: 5,
+            concurrent: false,
+            concurrency: 10,
+            probe_data: snmp_request,
+            max_retries: 1,
+            delay_ms: Some(50), // SNMP服务器可能有速率限制
+        }
+    }
+
+    /// 创建快速扫描配置（扫描常见UDP端口）
+    pub fn fast_scan() -> Self {
+        Self {
+            send_timeout_seconds: 1,
+            receive_timeout_seconds: 2,
+            concurrent: true,
+            concurrency: 100,
+            probe_data: vec![0x00], // 简单的单字节探测
+            max_retries: 0,
+            delay_ms: None,
+        }
+    }
+}
+
 /// UDP扫描器
 #[derive(Debug, Clone)]
 pub struct UdpScanner {
@@ -57,10 +150,6 @@ impl UdpScanner {
         Self { config }
     }
 
-    pub fn default() -> Self {
-        Self::new(UdpConfig::default())
-    }
-
     /// 根据目标 host 创建适当的本地 socket（支持 IPv4/IPv6）
     async fn create_udp_socket_for_host(&self, host: IpAddr) -> Result<UdpSocket, RustpenError> {
         let bind_addr = match host {
@@ -68,10 +157,8 @@ impl UdpScanner {
             IpAddr::V6(_) => "[::]:0",
         };
 
-        let socket = UdpSocket::bind(bind_addr)
-            .await
-            .map_err(|e| RustpenError::Io(e))?;
-        socket.set_ttl(64).map_err(|e| RustpenError::Io(e))?;
+        let socket = UdpSocket::bind(bind_addr).await.map_err(RustpenError::Io)?;
+        socket.set_ttl(64).map_err(RustpenError::Io)?;
         Ok(socket)
     }
 
@@ -232,6 +319,12 @@ impl UdpScanner {
     }
 }
 
+impl Default for UdpScanner {
+    fn default() -> Self {
+        Self::new(UdpConfig::default())
+    }
+}
+
 /// 实现PortScanner trait
 impl super::PortScanner for UdpScanner {
     async fn scan_port(&self, host: IpAddr, port: u16) -> Result<ScanResult, RustpenError> {
@@ -299,7 +392,8 @@ mod tests {
     }
 
     #[test]
-    //靶机udp扫描测试模拟
+    #[ignore]
+    // 靶机 UDP 扫描测试（需要真实网络环境）
     fn test_udp_scanner() {
         let target = "192.168.1.1";
         let ports = "1-65535";
@@ -320,98 +414,5 @@ mod tests {
             .block_on(scanner.scan_ports(target.parse().unwrap(), &port_vec))
             .unwrap();
         println!("UDP扫描结果：{:#?}", scan_result.open_port_details());
-    }
-}
-// 在同一个文件中添加
-impl UdpConfig {
-    /// DNS服务探测（端口53）
-    pub fn dns_probe() -> Self {
-        // DNS查询：example.com的A记录查询
-        let dns_query = vec![
-            0x00, 0x01, // Transaction ID
-            0x01, 0x00, // Flags: Standard query
-            0x00, 0x01, // Questions: 1
-            0x00, 0x00, // Answer RRs: 0
-            0x00, 0x00, // Authority RRs: 0
-            0x00, 0x00, // Additional RRs: 0
-            // Query: example.com
-            0x07, b'e', b'x', b'a', b'm', b'p', b'l', b'e', // example
-            0x03, b'c', b'o', b'm', // com
-            0x00, // Null terminator
-            0x00, 0x01, // Type: A
-            0x00, 0x01, // Class: IN
-        ];
-
-        Self {
-            send_timeout_seconds: 3,
-            receive_timeout_seconds: 5,
-            concurrent: false,
-            concurrency: 10,
-            probe_data: dns_query,
-            max_retries: 2,
-            delay_ms: Some(100), // DNS服务器通常需要限制请求频率
-        }
-    }
-
-    /// NTP服务探测（端口123）
-    pub fn ntp_probe() -> Self {
-        // NTP客户端模式请求（简化版本）
-        let ntp_request = vec![
-            0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ];
-
-        Self {
-            send_timeout_seconds: 3,
-            receive_timeout_seconds: 5,
-            concurrent: false,
-            concurrency: 10,
-            probe_data: ntp_request,
-            max_retries: 1,
-            delay_ms: None,
-        }
-    }
-
-    /// SNMP服务探测（端口161）
-    pub fn snmp_probe() -> Self {
-        // SNMP GET请求（社区字符串public，OID 1.3.6.1.2.1.1.1.0）
-        let snmp_request = vec![
-            0x30, 0x29, // SEQUENCE length 41
-            0x02, 0x01, 0x00, // INTEGER version 0 (SNMPv1)
-            0x04, 0x06, 0x70, 0x75, 0x62, 0x6C, 0x69, 0x63, // OCTET STRING "public"
-            0xA0, 0x1C, // GetRequest PDU
-            0x02, 0x01, 0x00, // request-id 0
-            0x02, 0x01, 0x00, // error-status 0
-            0x02, 0x01, 0x00, // error-index 0
-            0x30, 0x11, // SEQUENCE length 17
-            0x30, 0x0F, // SEQUENCE length 15
-            0x06, 0x08, 0x2B, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00, // OID
-            0x05, 0x00, // NULL value
-        ];
-
-        Self {
-            send_timeout_seconds: 3,
-            receive_timeout_seconds: 5,
-            concurrent: false,
-            concurrency: 10,
-            probe_data: snmp_request,
-            max_retries: 1,
-            delay_ms: Some(50), // SNMP服务器可能有速率限制
-        }
-    }
-
-    /// 创建快速扫描配置（扫描常见UDP端口）
-    pub fn fast_scan() -> Self {
-        Self {
-            send_timeout_seconds: 1,
-            receive_timeout_seconds: 2,
-            concurrent: true,
-            concurrency: 100,
-            probe_data: vec![0x00], // 简单的单字节探测
-            max_retries: 0,
-            delay_ms: None,
-        }
     }
 }

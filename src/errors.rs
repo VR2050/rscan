@@ -100,6 +100,9 @@ pub enum RustpenError {
     #[error("Shell interaction error: {0}")]
     ShellInteraction(String),
 
+    #[error("Result receiver already taken")]
+    ResultsReceiverTaken,
+
     // === 通用兜底 ===
     #[error("Operation failed: {0}")]
     Generic(String),

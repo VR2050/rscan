@@ -191,6 +191,12 @@ impl ServiceProbeEngine {
     }
 }
 
+impl Default for ServiceProbeEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn parse_probe_line(line: &str) -> Result<ProbeSignature, RustpenError> {
     // 例: Probe TCP GetRequest q|GET / HTTP/1.0\r\n\r\n|
     let mut parts = line.splitn(4, ' ');

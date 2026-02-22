@@ -82,6 +82,47 @@ impl ReverseTooling {
         }
     }
 
+    pub fn build_ghidra_invocation(
+        project_dir: &Path,
+        project_name: &str,
+        input: &Path,
+        script_dir: &Path,
+        reuse_project: bool,
+        no_analysis: bool,
+    ) -> ToolInvocation {
+        let script_name = "ghidra_export_pseudocode.java";
+        let project_file = project_dir.join(format!("{}.gpr", project_name));
+        let mut args = vec![project_dir.display().to_string(), project_name.to_string()];
+
+        if reuse_project && project_file.exists() {
+            let target = input
+                .file_name()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_else(|| input.display().to_string());
+            args.push("-process".to_string());
+            args.push(target);
+        } else {
+            args.push("-import".to_string());
+            args.push(input.display().to_string());
+        }
+
+        if no_analysis {
+            args.push("-noanalysis".to_string());
+        }
+
+        args.push("-scriptPath".to_string());
+        args.push(script_dir.display().to_string());
+        args.push("-postScript".to_string());
+        args.push(script_name.to_string());
+        args.push("pseudocode.jsonl".to_string());
+
+        ToolInvocation {
+            program: "analyzeHeadless".to_string(),
+            args,
+            note: "Headless Ghidra decompile pipeline (supports project reuse/cache).".to_string(),
+        }
+    }
+
     pub fn generate_debug_script(profile: DebugProfile, target: &Path) -> String {
         match profile {
             DebugProfile::PwnGdbLike => pwngdb_like_script(target),
@@ -233,7 +274,9 @@ if __name__ == "__main__":
 // analyzeHeadless <project_dir> <project_name> -import <binary> \
 //   -scriptPath <script_dir> -postScript ghidra_export_pseudocode.java pseudocode.jsonl
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -260,32 +303,73 @@ public class ghidra_export_pseudocode extends GhidraScript {
             outFile = new File(currentProgram.getExecutablePath()).getParentFile().toPath().resolve(outName).toFile();
         }
 
+        if ("1".equals(System.getenv("RSCAN_GHIDRA_SKIP_IF_EXISTS")) && outFile.exists() && outFile.length() > 0) {
+            println("[rscan] output exists, skip: " + outFile.getAbsolutePath());
+            return;
+        }
+
+        int timeoutSec = envInt("RSCAN_GHIDRA_DECOMP_TIMEOUT_SEC", 20);
+        boolean incremental = "1".equals(System.getenv("RSCAN_GHIDRA_INCREMENTAL"));
+        boolean onlyNamed = "1".equals(System.getenv("RSCAN_GHIDRA_ONLY_NAMED"));
+        long maxFuncSize = envLong("RSCAN_GHIDRA_MAX_FUNC_SIZE", -1);
+        int asmLimit = envInt("RSCAN_GHIDRA_ASM_LIMIT", 4000);
+        boolean skipAsm = "1".equals(System.getenv("RSCAN_GHIDRA_SKIP_ASM"));
+        Set<String> existing = incremental ? loadExistingEas(outFile) : new LinkedHashSet<>();
+
         DecompInterface ifc = new DecompInterface();
         ifc.openProgram(currentProgram);
 
-        try (PrintWriter pw = new PrintWriter(new FileWriter(outFile))) {
+        boolean append = incremental && outFile.exists();
+        try (PrintWriter pw = new PrintWriter(new FileWriter(outFile, append))) {
             FunctionIterator funcs = currentProgram.getFunctionManager().getFunctions(true);
             while (funcs.hasNext()) {
                 Function f = funcs.next();
+                String ea = f.getEntryPoint().toString();
+                if (f.isExternal()) {
+                    String name = f.getName();
+                    String signature = f.getSignature().getPrototypeString();
+                    long size = f.getBody().getNumAddresses();
+                    String json = "{\"ea\":\"" + esc(ea) + "\",\"name\":\"" + esc(name) + "\",\"pseudocode\":null" +
+                        ",\"signature\":\"" + esc(signature) + "\"" +
+                        ",\"size\":" + size +
+                        ",\"calls\":[]" +
+                        ",\"call_names\":[]" +
+                        ",\"ext_refs\":[]" +
+                        ",\"asm\":[]" +
+                        ",\"error\":\"external_function\"}";
+                    pw.println(json);
+                    continue;
+                }
+                if (incremental && existing.contains(ea)) {
+                    continue;
+                }
                 String body = null;
                 String err = null;
                 String signature = f.getSignature().getPrototypeString();
                 long size = f.getBody().getNumAddresses();
+                if (maxFuncSize > 0 && size > maxFuncSize) {
+                    err = "skipped_large_function";
+                }
+                String name = f.getName();
+                if (onlyNamed && (name.startsWith("FUN_") || name.startsWith("sub_"))) {
+                    err = "skipped_unnamed_function";
+                }
                 List<String> calls = collectCalls(f);
                 List<String> callNames = collectCallNames(f);
                 List<String> extRefs = collectExternalRefs(f);
-                try {
-                    DecompileResults res = ifc.decompileFunction(f, 30, monitor);
-                    if (res != null && res.decompileCompleted() && res.getDecompiledFunction() != null) {
-                        body = res.getDecompiledFunction().getC();
-                    } else {
-                        err = res == null ? "null_result" : res.getErrorMessage();
+                List<String> asm = skipAsm ? new ArrayList<>() : collectAsm(f, asmLimit);
+                if (err == null) {
+                    try {
+                        DecompileResults res = ifc.decompileFunction(f, timeoutSec, monitor);
+                        if (res != null && res.decompileCompleted() && res.getDecompiledFunction() != null) {
+                            body = res.getDecompiledFunction().getC();
+                        } else {
+                            err = res == null ? "null_result" : res.getErrorMessage();
+                        }
+                    } catch (Exception ex) {
+                        err = ex.toString();
                     }
-                } catch (Exception ex) {
-                    err = ex.toString();
                 }
-                String ea = f.getEntryPoint().toString();
-                String name = f.getName();
                 String json = "{\"ea\":\"" + esc(ea) + "\",\"name\":\"" + esc(name) + "\",\"pseudocode\":" +
                     (body == null ? "null" : "\"" + esc(body) + "\"") +
                     ",\"signature\":\"" + esc(signature) + "\"" +
@@ -293,6 +377,7 @@ public class ghidra_export_pseudocode extends GhidraScript {
                     ",\"calls\":" + toJsonArray(calls) +
                     ",\"call_names\":" + toJsonArray(callNames) +
                     ",\"ext_refs\":" + toJsonArray(extRefs) +
+                    ",\"asm\":" + toJsonArray(asm) +
                     ",\"error\":" +
                     (err == null ? "null" : "\"" + esc(err) + "\"") + "}";
                 pw.println(json);
@@ -300,6 +385,53 @@ public class ghidra_export_pseudocode extends GhidraScript {
         }
 
         println("[rscan] ghidra pseudocode exported: " + outFile.getAbsolutePath());
+    }
+
+    private int envInt(String key, int fallback) {
+        try {
+            String v = System.getenv(key);
+            if (v == null || v.isEmpty()) return fallback;
+            return Integer.parseInt(v);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private long envLong(String key, long fallback) {
+        try {
+            String v = System.getenv(key);
+            if (v == null || v.isEmpty()) return fallback;
+            return Long.parseLong(v);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private Set<String> loadExistingEas(File f) {
+        Set<String> out = new LinkedHashSet<>();
+        if (!f.exists()) return out;
+        try {
+            java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(f));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String ea = extractEa(line);
+                if (ea != null && !ea.isEmpty()) out.add(ea);
+            }
+            br.close();
+        } catch (Exception e) {
+            // ignore parse errors; full re-export will still work
+        }
+        return out;
+    }
+
+    private String extractEa(String line) {
+        if (line == null) return null;
+        int idx = line.indexOf("\"ea\":\"");
+        if (idx < 0) return null;
+        int start = idx + 6;
+        int end = line.indexOf("\"", start);
+        if (end <= start) return null;
+        return line.substring(start, end);
     }
 
     private String esc(String s) {
@@ -380,6 +512,28 @@ public class ghidra_export_pseudocode extends GhidraScript {
         return new ArrayList<>(out);
     }
 
+    private List<String> collectAsm(Function f, int limit) {
+        List<String> out = new ArrayList<>();
+        int count = 0;
+        boolean truncated = false;
+        InstructionIterator it = currentProgram.getListing().getInstructions(f.getBody(), true);
+        while (it.hasNext()) {
+            if (limit > 0 && count >= limit) {
+                truncated = true;
+                break;
+            }
+            Instruction ins = it.next();
+            String line = ins.getAddress().toString() + " " + ins.toString();
+            out.add(line);
+            count++;
+        }
+        if (truncated) {
+            out.add("<asm truncated: limit " + limit + ">");
+        }
+        return out;
+    }
+
+
     private String toJsonArray(List<String> items) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
@@ -407,9 +561,15 @@ public class ghidra_export_pseudocode extends GhidraScript {
 // analyzeHeadless <project_dir> <project_name> -import <binary> \
 //   -scriptPath <script_dir> -postScript ghidra_export_index.java index.jsonl
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -427,6 +587,11 @@ public class ghidra_export_index extends GhidraScript {
         File outFile = new File(outName);
         if (!outFile.isAbsolute()) {
             outFile = new File(currentProgram.getExecutablePath()).getParentFile().toPath().resolve(outName).toFile();
+        }
+
+        if ("1".equals(System.getenv("RSCAN_GHIDRA_SKIP_IF_EXISTS")) && outFile.exists() && outFile.length() > 0) {
+            println("[rscan] output exists, skip: " + outFile.getAbsolutePath());
+            return;
         }
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(outFile))) {
@@ -468,9 +633,15 @@ public class ghidra_export_index extends GhidraScript {
 // analyzeHeadless <project_dir> <project_name> -import <binary> \
 //   -scriptPath <script_dir> -postScript ghidra_export_function.java function.jsonl <name_or_ea>
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
@@ -478,6 +649,8 @@ import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
+import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.InstructionIterator;
 
 public class ghidra_export_function extends GhidraScript {
     @Override
@@ -494,6 +667,11 @@ public class ghidra_export_function extends GhidraScript {
             outFile = new File(currentProgram.getExecutablePath()).getParentFile().toPath().resolve(outName).toFile();
         }
 
+        if ("1".equals(System.getenv("RSCAN_GHIDRA_SKIP_IF_EXISTS")) && outFile.exists() && outFile.length() > 0) {
+            println("[rscan] output exists, skip: " + outFile.getAbsolutePath());
+            return;
+        }
+
         FunctionManager fm = currentProgram.getFunctionManager();
         Function f = getFunction(target);
         if (f == null) {
@@ -503,7 +681,16 @@ public class ghidra_export_function extends GhidraScript {
             }
         }
 
-        try (PrintWriter pw = new PrintWriter(new FileWriter(outFile))) {
+        int timeoutSec = envInt("RSCAN_GHIDRA_DECOMP_TIMEOUT_SEC", 20);
+        boolean incremental = "1".equals(System.getenv("RSCAN_GHIDRA_INCREMENTAL"));
+        boolean onlyNamed = "1".equals(System.getenv("RSCAN_GHIDRA_ONLY_NAMED"));
+        long maxFuncSize = envLong("RSCAN_GHIDRA_MAX_FUNC_SIZE", -1);
+        int asmLimit = envInt("RSCAN_GHIDRA_ASM_LIMIT", 4000);
+        boolean skipAsm = "1".equals(System.getenv("RSCAN_GHIDRA_SKIP_ASM"));
+        Set<String> existing = incremental ? loadExistingEas(outFile) : new LinkedHashSet<>();
+        boolean append = incremental && outFile.exists();
+
+        try (PrintWriter pw = new PrintWriter(new FileWriter(outFile, append))) {
             if (f == null) {
                 pw.println("{\"error\":\"function_not_found\",\"target\":\"" + esc(target) + "\"}");
                 println("[rscan] function not found: " + target);
@@ -515,11 +702,29 @@ public class ghidra_export_function extends GhidraScript {
             String body = null;
             String err = null;
             try {
-                DecompileResults res = ifc.decompileFunction(f, 30, monitor);
-                if (res != null && res.decompileCompleted() && res.getDecompiledFunction() != null) {
-                    body = res.getDecompiledFunction().getC();
-                } else {
-                    err = res == null ? "null_result" : res.getErrorMessage();
+                if (f.isExternal()) {
+                    err = "external_function";
+                }
+                String ea = f.getEntryPoint().toString();
+                if (incremental && existing.contains(ea)) {
+                    println("[rscan] function already exported: " + ea);
+                    return;
+                }
+                long size = f.getBody().getNumAddresses();
+                if (maxFuncSize > 0 && size > maxFuncSize) {
+                    err = "skipped_large_function";
+                }
+                String name = f.getName();
+                if (onlyNamed && (name.startsWith("FUN_") || name.startsWith("sub_"))) {
+                    err = "skipped_unnamed_function";
+                }
+                if (err == null) {
+                    DecompileResults res = ifc.decompileFunction(f, timeoutSec, monitor);
+                    if (res != null && res.decompileCompleted() && res.getDecompiledFunction() != null) {
+                        body = res.getDecompiledFunction().getC();
+                    } else {
+                        err = res == null ? "null_result" : res.getErrorMessage();
+                    }
                 }
             } catch (Exception ex) {
                 err = ex.toString();
@@ -528,15 +733,96 @@ public class ghidra_export_function extends GhidraScript {
             String name = f.getName();
             String signature = f.getSignature().getPrototypeString();
             long size = f.getBody().getNumAddresses();
+            List<String> asm = skipAsm ? new ArrayList<>() : collectAsm(f, asmLimit);
             String json = "{\"ea\":\"" + esc(ea) + "\",\"name\":\"" + esc(name) +
                 "\",\"pseudocode\":" + (body == null ? "null" : "\"" + esc(body) + "\"") +
                 ",\"signature\":\"" + esc(signature) + "\"" +
                 ",\"size\":" + size +
+                ",\"asm\":" + toJsonArray(asm) +
                 ",\"error\":" + (err == null ? "null" : "\"" + esc(err) + "\"") + "}";
             pw.println(json);
         }
 
         println("[rscan] ghidra function exported: " + outFile.getAbsolutePath());
+    }
+
+    private int envInt(String key, int fallback) {
+        try {
+            String v = System.getenv(key);
+            if (v == null || v.isEmpty()) return fallback;
+            return Integer.parseInt(v);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private long envLong(String key, long fallback) {
+        try {
+            String v = System.getenv(key);
+            if (v == null || v.isEmpty()) return fallback;
+            return Long.parseLong(v);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private Set<String> loadExistingEas(File f) {
+        Set<String> out = new LinkedHashSet<>();
+        if (!f.exists()) return out;
+        try {
+            java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(f));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String ea = extractEa(line);
+                if (ea != null && !ea.isEmpty()) out.add(ea);
+            }
+            br.close();
+        } catch (Exception e) {
+            // ignore parse errors; full re-export will still work
+        }
+        return out;
+    }
+
+    private List<String> collectAsm(Function f, int limit) {
+        List<String> out = new ArrayList<>();
+        int count = 0;
+        boolean truncated = false;
+        InstructionIterator it = currentProgram.getListing().getInstructions(f.getBody(), true);
+        while (it.hasNext()) {
+            if (limit > 0 && count >= limit) {
+                truncated = true;
+                break;
+            }
+            Instruction ins = it.next();
+            String line = ins.getAddress().toString() + " " + ins.toString();
+            out.add(line);
+            count++;
+        }
+        if (truncated) {
+            out.add("<asm truncated: limit " + limit + ">");
+        }
+        return out;
+    }
+
+    private String toJsonArray(List<String> items) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(esc(items.get(i))).append("\"");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private String extractEa(String line) {
+        if (line == null) return null;
+        int idx = line.indexOf("\"ea\":\"");
+        if (idx < 0) return null;
+        int start = idx + 6;
+        int end = line.indexOf("\"", start);
+        if (end <= start) return null;
+        return line.substring(start, end);
     }
 
     private String esc(String s) {

@@ -29,7 +29,7 @@ pub struct HostScanner {
 
 impl HostScanner {
     /// 使用默认配置创建模块扫描器
-    pub fn default() -> Self {
+    pub fn new() -> Self {
         Self {
             manager: ScanManager::default(),
         }
@@ -95,6 +95,12 @@ impl HostScanner {
     }
 }
 
+impl Default for HostScanner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,7 +123,7 @@ mod tests {
     #[tokio::test]
     async fn quick_tcp_on_local_loopback() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
+        let _addr = listener.local_addr().unwrap();
 
         tokio::spawn(async move {
             let _ = listener.accept().await;

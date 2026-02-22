@@ -18,10 +18,10 @@ impl Parser {
             Selector::parse("a[href]").map_err(|e| RustpenError::ParseError(format!("{}", e)))?;
         let mut links = Vec::new();
         for el in document.select(&selector) {
-            if let Some(href) = el.value().attr("href") {
-                if let Ok(resolved) = base.join(href) {
-                    links.push(resolved.to_string())
-                }
+            if let Some(href) = el.value().attr("href")
+                && let Ok(resolved) = base.join(href)
+            {
+                links.push(resolved.to_string())
             }
         }
         Ok(ParsedPage { base, links })

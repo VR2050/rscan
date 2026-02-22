@@ -57,10 +57,10 @@ impl SynBackend {
                     dispatcher.remove(&key);
                 }
             }
-            if attempt < retries {
-                if let Some(d) = retry_delay_ms {
-                    tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-                }
+            if attempt < retries
+                && let Some(d) = retry_delay_ms
+            {
+                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
             }
         }
 
@@ -102,10 +102,10 @@ impl SynBackend {
                     dispatcher.remove(&key);
                 }
             }
-            if attempt < retries {
-                if let Some(d) = retry_delay_ms {
-                    tokio::time::sleep(Duration::from_millis(d.max(1))).await;
-                }
+            if attempt < retries
+                && let Some(d) = retry_delay_ms
+            {
+                tokio::time::sleep(Duration::from_millis(d.max(1))).await;
             }
         }
 
@@ -121,6 +121,11 @@ fn choose_src_port(remote_port: u16, attempt: u32) -> u16 {
         .wrapping_mul(37)
         .wrapping_add(attempt as u16 * 101);
     base + (v % span)
+}
+
+fn lock_sender<T>(tx: &Arc<Mutex<T>>) -> std::sync::MutexGuard<'_, T> {
+    // Recover from poisoning to avoid panics in scan paths.
+    tx.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 fn send_syn_v4(
@@ -145,9 +150,9 @@ fn send_syn_v4(
         pnet::packet::tcp::ipv4_checksum(&tcp_packet.to_immutable(), &local_ip, &remote_ip);
     tcp_packet.set_checksum(checksum);
 
-    let mut guard = tx.lock().unwrap();
+    let mut guard = lock_sender(tx);
     guard
-        .send_to(&tcp_packet.to_immutable(), IpAddr::V4(remote_ip))
+        .send_to(tcp_packet.to_immutable(), IpAddr::V4(remote_ip))
         .map_err(|e| format!("send_to failed: {e}"))?;
     Ok(())
 }
@@ -174,9 +179,9 @@ fn send_syn_v6(
         pnet::packet::tcp::ipv6_checksum(&tcp_packet.to_immutable(), &local_ip, &remote_ip);
     tcp_packet.set_checksum(checksum);
 
-    let mut guard = tx.lock().unwrap();
+    let mut guard = lock_sender(tx);
     guard
-        .send_to(&tcp_packet.to_immutable(), IpAddr::V6(remote_ip))
+        .send_to(tcp_packet.to_immutable(), IpAddr::V6(remote_ip))
         .map_err(|e| format!("send_to failed: {e}"))?;
     Ok(())
 }

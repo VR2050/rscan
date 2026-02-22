@@ -40,10 +40,6 @@ impl SynScanner {
         Self { config }
     }
 
-    pub fn default() -> Self {
-        Self::new(SynConfig::default())
-    }
-
     /// 内部：检查单个端口，优先使用 pnet 原始包发送 SYN 并解析返回（SYN/ACK -> Open, RST -> Closed）
     /// 在无法使用原始套接字时回退到普通 TCP connect（与 `TcpScanner` 类似）
     async fn check_single_port(&self, host: IpAddr, port: u16) -> PortResult {
@@ -55,7 +51,6 @@ impl SynScanner {
         let pnet_res = match host {
             IpAddr::V4(dest_v4) => {
                 let src_port = src_port_config;
-                let timeout_dur = timeout_dur;
                 tokio::task::spawn_blocking(move || -> Result<PortStatus, String> {
                     use pnet::packet::ip::IpNextHeaderProtocols;
                     use pnet::packet::tcp::{MutableTcpPacket, TcpFlags};
@@ -82,7 +77,8 @@ impl SynScanner {
                     let seq_num: u32 = 0x1234_5678;
 
                     let mut tcp_buffer = [0u8; 20];
-                    let mut tcp_packet = MutableTcpPacket::new(&mut tcp_buffer[..]).unwrap();
+                    let mut tcp_packet = MutableTcpPacket::new(&mut tcp_buffer[..])
+                        .ok_or_else(|| "构造 TCP SYN 包失败".to_string())?;
                     tcp_packet.set_source(source_port);
                     tcp_packet.set_destination(port);
                     tcp_packet.set_sequence(seq_num);
@@ -96,7 +92,7 @@ impl SynScanner {
                     );
                     tcp_packet.set_checksum(checksum);
 
-                    if let Err(e) = tx.send_to(&tcp_packet.to_immutable(), IpAddr::V4(dest_v4)) {
+                    if let Err(e) = tx.send_to(tcp_packet.to_immutable(), IpAddr::V4(dest_v4)) {
                         return Err(format!("发送 SYN 失败: {}", e));
                     }
 
@@ -134,7 +130,6 @@ impl SynScanner {
             }
             IpAddr::V6(dest_v6) => {
                 let src_port = src_port_config;
-                let timeout_dur = timeout_dur;
                 tokio::task::spawn_blocking(move || -> Result<PortStatus, String> {
                     use pnet::packet::ip::IpNextHeaderProtocols;
                     use pnet::packet::tcp::{MutableTcpPacket, TcpFlags};
@@ -161,7 +156,8 @@ impl SynScanner {
                     let seq_num: u32 = 0x1234_5678;
 
                     let mut tcp_buffer = [0u8; 20];
-                    let mut tcp_packet = MutableTcpPacket::new(&mut tcp_buffer[..]).unwrap();
+                    let mut tcp_packet = MutableTcpPacket::new(&mut tcp_buffer[..])
+                        .ok_or_else(|| "构造 TCP SYN 包失败".to_string())?;
                     tcp_packet.set_source(source_port);
                     tcp_packet.set_destination(port);
                     tcp_packet.set_sequence(seq_num);
@@ -177,7 +173,7 @@ impl SynScanner {
                     );
                     tcp_packet.set_checksum(checksum);
 
-                    if let Err(e) = tx.send_to(&tcp_packet.to_immutable(), IpAddr::V6(dest_v6)) {
+                    if let Err(e) = tx.send_to(tcp_packet.to_immutable(), IpAddr::V6(dest_v6)) {
                         return Err(format!("发送 IPv6 SYN 失败: {}", e));
                     }
 
@@ -285,6 +281,12 @@ impl SynScanner {
     }
 }
 
+impl Default for SynScanner {
+    fn default() -> Self {
+        Self::new(SynConfig::default())
+    }
+}
+
 // PortScanner trait 的实现（与 TcpScanner 保持一致）
 use super::tcp_scanner::PortScanner;
 
@@ -316,15 +318,12 @@ fn get_local_ipv4_for_destination(dest: Ipv4Addr) -> Result<Ipv4Addr, std::io::E
     let sock = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
     let addr = SocketAddr::new(IpAddr::V4(dest), 53); // 任意端口
     sock.connect(addr)?;
-    if let Ok(local_addr) = sock.local_addr() {
-        if let IpAddr::V4(v4) = local_addr.ip() {
-            return Ok(v4);
-        }
+    if let Ok(local_addr) = sock.local_addr()
+        && let IpAddr::V4(v4) = local_addr.ip()
+    {
+        return Ok(v4);
     }
-    Err(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "无法获取本地IPv4",
-    ))
+    Err(std::io::Error::other("无法获取本地IPv4"))
 }
 
 /// 获取本地 IPv6 地址，方法与 IPv4 相同但使用 IPv6 未指定地址
@@ -334,15 +333,12 @@ fn get_local_ipv6_for_destination(
     let sock = UdpSocket::bind((std::net::Ipv6Addr::UNSPECIFIED, 0))?;
     let addr = SocketAddr::new(IpAddr::V6(dest), 53);
     sock.connect(addr)?;
-    if let Ok(local_addr) = sock.local_addr() {
-        if let IpAddr::V6(v6) = local_addr.ip() {
-            return Ok(v6);
-        }
+    if let Ok(local_addr) = sock.local_addr()
+        && let IpAddr::V6(v6) = local_addr.ip()
+    {
+        return Ok(v6);
     }
-    Err(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "无法获取本地IPv6",
-    ))
+    Err(std::io::Error::other("无法获取本地IPv6"))
 }
 
 #[cfg(test)]
@@ -414,7 +410,8 @@ mod tests {
         assert!(r.is_ok());
     }
     #[test]
-    //测试主机扫描引擎
+    #[ignore]
+    // 测试主机扫描引擎（需要真实网络环境/权限）
     fn test_syn_scanner() {
         let target = "192.168.1.1";
         let ports = "1-65535";

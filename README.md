@@ -87,33 +87,37 @@ rscan 支持灵活的端口表示法：
 --ports 22,80,443,1000-2000
 ```
 
+更多 CLI 示例见 `CLI_USAGE.md`。
+
 ## 架构
 
 rscan 采用模块化架构设计：
 
-- **核心引擎层 (netscan_en, web_en)**: 实现底层扫描逻辑
-- **功能模块层 (port_scan, web_scan等)**: 提供上层应用功能
+- **核心能力层 (`src/cores`)**: 主机扫描、Web 抓取/爬虫、异步与原始包引擎
+- **功能模块层 (`src/modules`)**: 端口扫描、Web 扫描、漏洞检测、逆向、shell 生成
 - **命令行接口层 (cli)**: 提供用户交互接口
 
 ### 核心功能
 
-1. **网络扫描引擎 (netscan_en)**:
+1. **网络扫描引擎 (`cores::host` / `cores::engine`)**:
    - TCP 扫描（全连接扫描）
    - UDP 扫描
    - SYN 扫描（半开扫描）
    - ARP 扫描
    - ICMP 扫描
 
-2. **Web 扫描引擎 (web_en)**:
+2. **Web 扫描引擎 (`cores::web` + `modules::web_scan`)**:
    - 目录扫描
    - 子域名枚举
    - Web 指纹识别
 
-3. **模块层**:
+3. **模块层 (`src/modules`)**:
    - 端口扫描
    - Web 扫描
    - 漏洞检测
    - Shell 生成
+
+项目目录结构说明见 `docs/PROJECT_STRUCTURE.md`。
 
 ## 性能优化
 
@@ -139,7 +143,7 @@ rscan 在性能方面做了多项优化：
 - 请仅在授权范围内使用此工具
 - 遵守当地法律法规
 - 不要对未授权的系统进行扫描
-- SYN 扫描和 ARP 扫描需要 root 权限，使用时需谨慎
+- SYN/ARP/ICMP 等原始包扫描需要 root 或 CAP_NET_RAW 权限，使用时需谨慎
 
 ## 贡献
 

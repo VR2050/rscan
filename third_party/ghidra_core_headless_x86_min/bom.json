@@ -1,0 +1,2849 @@
+{
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.4",
+    "version": 1,
+    "metadata": {
+        "properties": [
+            
+        ]
+    },
+    "components": [
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "LaunchSupport",
+            "description": "Ghidra LaunchSupport module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3ee58bcfd3976d1498d3c82966818a38"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "adfc467fd227fabe5ee0c2c2b139b201667c66d0"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "support/LaunchSupport.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "gradle-wrapper",
+            "description": "",
+            "version": "",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "de20389de2cb6b5e4f0ac600e0f9af80"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1a5591754096883e87f8d5fdbf57ec2a6a99e724"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "support/gradle/gradle-wrapper.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "GhidraGo",
+            "description": "Ghidra GhidraGo module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "7285d2717f51326381d414f115912f22"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "3260ed5cc79b30a5fa73100a1709368fe008fba5"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GhidraGo/lib/GhidraGo.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "BytePatterns",
+            "description": "Ghidra BytePatterns module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "83c0f751a3df463566cc0d2d76a591d2"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b652cff0614d0a08ed6ee7c2312a2d78aef36f70"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BytePatterns/lib/BytePatterns.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "ProgramGraph",
+            "description": "Ghidra ProgramGraph module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "4fe4fd45675be12c82be16b88a860009"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "0f6dc17dcfae0500508bc0e2a4370d581c3f7213"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/ProgramGraph/lib/ProgramGraph.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "SourceCodeLookup",
+            "description": "Ghidra SourceCodeLookup module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2c59581c951e6bae22f26d53e9bda5d0"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "5746bca29ce8b8f3fc3705441004b277178542f9"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/SourceCodeLookup/lib/SourceCodeLookup.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "DebugUtils",
+            "description": "Ghidra DebugUtils module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "1afa339f14c1fb12a8496b746719cbb9"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "c30d86bf7757202fe0baf2901fac11bc961e0996"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/DebugUtils/lib/DebugUtils.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "GraphServices",
+            "description": "Ghidra GraphServices module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "f61796cb7de96ff4e838a37ef1e89472"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "7c6bc8a7077f28611cbaba01188334fcc6cecf35"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphServices/lib/GraphServices.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "com.github.tomnelson",
+            "name": "jungrapht-layout",
+            "description": "Core Layout support",
+            "version": "1.4",
+            "purl": "pkg:maven/com.github.tomnelson/jungrapht-layout@1.4",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "bd9a4347ba70e9fa0cd6894fe91ccb21"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e52617759d6f204f8528dc05f1286076a7f76acf"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphServices/lib/jungrapht-layout-1.4.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "jheaps",
+            "description": "A free, production-ready, efficient Java library containing a collection of heap data-structures.",
+            "version": "0.13",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "f9de36d8c9626414aeb996b7b78808de"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b30f6a9c1e99b2e102126060195469ef7fd7211b"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphServices/lib/jheaps-0.13.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.jgrapht",
+            "name": "jgrapht-core",
+            "description": "A Java class library for graph-theory data structures and algorithms.",
+            "version": "1.5.1",
+            "purl": "pkg:maven/org.jgrapht/jgrapht-core@1.5.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "59d556029659a754421f5aed4b7c37cb"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1b9abad9a3d052c6a5d7135cbe63916f5ed11bef"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphServices/lib/jgrapht-core-1.5.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "com.github.tomnelson",
+            "name": "jungrapht-visualization",
+            "description": "Core visualization support jgrapht",
+            "version": "1.4",
+            "purl": "pkg:maven/com.github.tomnelson/jungrapht-visualization@1.4",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "fa317da403fc5e99ea83d913cf106e4c"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "2f0f93f0bdd7accca1e4bfc9c29a2803570657b6"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphServices/lib/jungrapht-visualization-1.4.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.jgrapht",
+            "name": "jgrapht-io",
+            "description": "A Java class library for graph-theory data structures and algorithms.",
+            "version": "1.5.1",
+            "purl": "pkg:maven/org.jgrapht/jgrapht-io@1.5.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "50f3530df6cc4b6d33f66180ae2dabba"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "ffe3b7b0edc4f22268d15670840a211a7b0d87cd"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphServices/lib/jgrapht-io-1.5.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "CodeCompare",
+            "description": "Ghidra CodeCompare module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "992e33941a915fe84564d12eac2feb49"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "37a38371b22d9d3301051ff9539e4d0c0bd2428e"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/CodeCompare/lib/CodeCompare.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "PDB",
+            "description": "Ghidra PDB module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "b39bbb06fc51ab92add2b956846fd558"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "050d8499904004342128b27adae943bf09000f48"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/PDB/lib/PDB.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Recognizers",
+            "description": "Ghidra Recognizers module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "c861c01bbe760be378e3756ac43e97d3"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f8e5f3bc22c3c14916b361a52d88339a179f4e97"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Recognizers/lib/Recognizers.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "jython-standalone",
+            "description": "",
+            "version": "2.7.4",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "35af7f78975eb1bab4602532219520b4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "df61c8c28ce458bc84d92a12aaaf20b15dbc55db"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Jython/lib/jython-standalone-2.7.4.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Jython",
+            "description": "Ghidra Jython module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2627aea65ed983b7429bfe8ec9e17f7b"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "dc8aea8a34d7fa9fe59e75a71c63fec3215adc48"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Jython/lib/Jython.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "GnuDemangler",
+            "description": "Ghidra GnuDemangler module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "65c58e2a973df0d5130c47cc7ca8d41e"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "4aad3fc3f139142b6d80cc3a65615a57766a7990"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GnuDemangler/lib/GnuDemangler.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "WildcardAssembler",
+            "description": "Ghidra WildcardAssembler module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "9d0bee254ae2b2cc622860a3e2517958"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "4d292d202e5dad2137974c293b60b6f9e8f268e1"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/WildcardAssembler/lib/WildcardAssembler.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Decompiler",
+            "description": "Ghidra Decompiler module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "850b71a2a782a17a0714e6478d5aab25"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "895d527b42c6951af974afdbd46342f8fe0876f1"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Decompiler/lib/Decompiler.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "MicrosoftCodeAnalyzer",
+            "description": "Ghidra MicrosoftCodeAnalyzer module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "cacca0523d2381fc9040f29aad411523"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f87bee3d18e96abeeccf63b09251e9c902e1a426"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/MicrosoftCodeAnalyzer/lib/MicrosoftCodeAnalyzer.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.slf4j",
+            "name": "slf4j-nop",
+            "description": "SLF4J NOP Binding",
+            "version": "1.7.25",
+            "purl": "pkg:maven/org.slf4j/slf4j-nop@1.7.25",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "cd6179c6efe79f6033d3ca013481aaf5"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "8c7708c79afec923de8957b7d4f90177628b9fcd"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/slf4j-nop-1.7.25.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.slf4j",
+            "name": "slf4j-api",
+            "description": "The slf4j API",
+            "version": "1.7.25",
+            "purl": "pkg:maven/org.slf4j/slf4j-api@1.7.25",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "caafe376afb7086dcbee79f780394ca3"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "da76ca59f6a57ee3102f8f9bd9cee742973efa8a"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/slf4j-api-1.7.25.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.felix",
+            "name": "org.apache.felix.framework",
+            "description": "OSGi R8 framework implementation.",
+            "version": "7.0.5",
+            "purl": "pkg:maven/org.apache.felix/org.apache.felix.framework@7.0.5",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "82e51fdc1bde2a02d69d6310a02a4620"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "dd4cb10c68d9ceb7897e561be7c4c16d25347193"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/org.apache.felix.framework-7.0.5.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.osgi",
+            "name": "org.osgi.util.promise",
+            "description": "OSGi Companion Code for org.osgi.util.promise Version 1.3.0",
+            "version": "1.3.0",
+            "purl": "pkg:maven/org.osgi/org.osgi.util.promise@1.3.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "9ebf9e52ae63e0fbb893f896c0714a6d"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "8c9fe683028fdcfd8d8b3fb9175ea0d4f582a3c3"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/org.osgi.util.promise-1.3.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "biz.aQute.bnd",
+            "name": "biz.aQute.bnd.util",
+            "description": "Util classes",
+            "version": "7.0.0",
+            "purl": "pkg:maven/biz.aQute.bnd/biz.aQute.bnd.util@7.0.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "092e35d471baa9ee3828e25965ca54eb"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "48e1ed011d6544ad470fb364d76b160297589c90"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/biz.aQute.bnd.util-7.0.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "biz.aQute.bnd",
+            "name": "biz.aQute.bndlib",
+            "description": "bndlib: A Swiss Army Knife for OSGi",
+            "version": "7.0.0",
+            "purl": "pkg:maven/biz.aQute.bnd/biz.aQute.bndlib@7.0.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "417da6a879b8d481687e5f5db1a48bac"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "d8f3bda9c9dcf5dfc0c910a50fe47efbc29872fa"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/biz.aQute.bndlib-7.0.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "phidias",
+            "description": "",
+            "version": "0.3.7",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2398bac2fb5b5fa5281f5526215804b0"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "6796262832c8722b3a60e4000452d9a2fa570a9a"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/phidias-0.3.7.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Base",
+            "description": "Ghidra Base module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "1c52ac5f55a807b9c637c7e92e6f1281"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "bd8e3bd1b3c1489ac0b45ad4b95691f5bc62546f"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/Base/lib/Base.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "MicrosoftDemangler",
+            "description": "Ghidra MicrosoftDemangler module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "5b1150bd75ee83f8012df5b2a041d1a4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "ab2e4aed5984ca6208100c093d1cefdc602a75f3"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/MicrosoftDemangler/lib/MicrosoftDemangler.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "BSimFeatureVisualizer",
+            "description": "Ghidra BSimFeatureVisualizer module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "70d7fc4ad60457bf8e06b071b28bd562"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "7a09eddf2064971653f4659c86dc4cdfd2e9182b"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSimFeatureVisualizer/lib/BSimFeatureVisualizer.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "FunctionID",
+            "description": "Ghidra FunctionID module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "dd457d8476281d530a515bfa0fe9e37f"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f9c920a04d7c70432d91a72d5d89a520c9d0c5d6"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/FunctionID/lib/FunctionID.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "ByteViewer",
+            "description": "Ghidra ByteViewer module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "468087aabd61ff7d354589747e99cc5c"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "6cfc7f96de2dfb96d51dc5f06ab5503463028d15"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/ByteViewer/lib/ByteViewer.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "ProgramDiff",
+            "description": "Ghidra ProgramDiff module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "44133f0758789552e7fbdafc4073914a"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e4417e29c5365ef15ef245ac93bfa65d15645adf"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/ProgramDiff/lib/ProgramDiff.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "SwiftDemangler",
+            "description": "Ghidra SwiftDemangler module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "ba47ffb0aaa8964ee0df5d20bc3816bd"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "c26591d63b68d30a82fa18d350f6b1f2336bceca"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/SwiftDemangler/lib/SwiftDemangler.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "VersionTracking",
+            "description": "Ghidra VersionTracking module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "273839b66fcd4df2175b00be053cce50"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e4b6da86efc7971c1917c4180b4e2acd188311c4"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/VersionTracking/lib/VersionTracking.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.commons",
+            "name": "commons-pool2",
+            "description": "The Apache Commons Object Pooling Library.",
+            "version": "2.11.1",
+            "purl": "pkg:maven/org.apache.commons/commons-pool2@2.11.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2210a041929e7c94485d5402458340b9"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "8970fd110c965f285ed4c6e40be7630c62db6f68"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSim/lib/commons-pool2-2.11.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.commons",
+            "name": "commons-dbcp2",
+            "description": "Apache Commons DBCP software implements Database Connection Pooling",
+            "version": "2.9.0",
+            "purl": "pkg:maven/org.apache.commons/commons-dbcp2@2.9.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "c2a72212a55d105b0eaeaab26557e6e7"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "16d808749cf3dac900c073dd834b5e288562a59c"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSim/lib/commons-dbcp2-2.9.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "h2",
+            "description": "",
+            "version": "2.2.220",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2e94b69256b1656d29ed23f6b4f894b1"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "afd532e4f29d309ae053e57c853916551c777807"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSim/lib/h2-2.2.220.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "BSim",
+            "description": "Ghidra BSim module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "c164c656d4c0eb17a7bb0f1d55864825"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "7b5b662fa8ca7ff6b631176162ea12a721cff0d2"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSim/lib/BSim.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "postgresql",
+            "description": "Java JDBC driver for PostgreSQL database",
+            "version": "42.7.9",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "8fd1ae9cdd1b53c92ea269e9c9fab92f"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "2b748cd83a1ba3d6ef62dc64e075d1760f9a6d31"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSim/lib/postgresql-42.7.9.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "commons-logging",
+            "name": "commons-logging",
+            "description": "Apache Commons Logging is a thin adapter allowing configurable bridging to other, well known logging systems.",
+            "version": "1.2",
+            "purl": "pkg:maven/commons-logging/commons-logging@1.2",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "040b4b4d8eac886f6b4a2a3bd2f31b00"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "4bfc12adfe4842bf07b657f0369c4cb522955686"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/BSim/lib/commons-logging-1.2.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "GraphFunctionCalls",
+            "description": "Ghidra GraphFunctionCalls module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "375b10806b67c8d7a35722092aeb5ead"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e0058fe1a97718b9a677d1e43b36b23df8c9154f"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/GraphFunctionCalls/lib/GraphFunctionCalls.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "DataGraph",
+            "description": "Ghidra DataGraph module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3c3ffe4ffee908c9b78a9d49ed06fca3"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f8b5ab120f68842ecbe7e6ed45e112f75c7156b2"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/DataGraph/lib/DataGraph.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "MicrosoftDmang",
+            "description": "Ghidra MicrosoftDmang module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "972620ebe6330d421474a3c053e5f0fa"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "2e95924c33ad9ca3e8424b9a7bdaf7d015ce73da"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/MicrosoftDmang/lib/MicrosoftDmang.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "FunctionGraphDecompilerExtension",
+            "description": "Ghidra FunctionGraphDecompilerExtension module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3732f61ec89f19a3e0659d551da1e6b6"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "a577a0b698da900ddfb7f966349adabd15dfc808"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/FunctionGraphDecompilerExtension/lib/FunctionGraphDecompilerExtension.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "VersionTrackingBSim",
+            "description": "Ghidra VersionTrackingBSim module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "4c8b5bef1af3774534f1ef9545db064a"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "13f8e8e17cf816e9f28dfaaed63e06008f3b4104"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/VersionTrackingBSim/lib/VersionTrackingBSim.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "FunctionGraph",
+            "description": "Ghidra FunctionGraph module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3e02e63612171530f8bc49eef9cfcc51"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "c5d27e852ff50671e55cedc3662615ef2c13548c"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Features/FunctionGraph/lib/FunctionGraph.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Loongarch",
+            "description": "Ghidra Loongarch module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "1477f002330576e2e7e036b011d2bd38"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "bf93279911b0943cb4c65dee32dd27c71d3e1eee"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/Loongarch/lib/Loongarch.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "RISCV",
+            "description": "Ghidra RISCV module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "7839ecb61343ed61f12118f508bd5254"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "3c5cac213783bf0838a432fd52429c3c9e9e3bd2"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/RISCV/lib/RISCV.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "x86",
+            "description": "Ghidra x86 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "d594069a89878b87b2ccd9cee1cdf12b"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "2c9964734ff9ebfd0c0ef932d5f789d2bca65780"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/x86/lib/x86.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "PA-RISC",
+            "description": "Ghidra PA-RISC module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "509fefc2bbcf2e97c7da118df796887a"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "a2c260783696c59243a2f8a7d070b3268842dd02"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/PA-RISC/lib/PA-RISC.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Xtensa",
+            "description": "Ghidra Xtensa module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "7d4bd874e6fc04eec0e2dbc5f3a60a02"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "d9fe6bccccc64ad58e82d0b0b834dad557e0f9b8"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/Xtensa/lib/Xtensa.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Atmel",
+            "description": "Ghidra Atmel module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "26234deebb020fc5a89f658e5b75da99"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "c373ff43a257c99afb8c1c0bf8df50aa59a60983"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/Atmel/lib/Atmel.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "TI_MSP430",
+            "description": "Ghidra TI_MSP430 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "be6bfa2e83769fe8aa1ecc8eca9fc504"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "fe57a141322059cd4fce6f7f6929b95dd9f58aef"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/TI_MSP430/lib/TI_MSP430.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "8051",
+            "description": "Ghidra 8051 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "b0df45b032666bcf3bf222d158cab69f"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "35f039d23c07ec1dbace0b86b8b04305a89ebef5"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/8051/lib/8051.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "eBPF",
+            "description": "Ghidra eBPF module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "772bfa98ea0dd1e6abe81cf673e6c49e"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "82c0e6f434a1470df87878bb733ca70dbd6ead72"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/eBPF/lib/eBPF.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "PowerPC",
+            "description": "Ghidra PowerPC module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "df47380fa3cc4562aa85ebc5e19614e2"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b8262bb5f68a5f87fd8d0a46dc3c3d42259728da"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/PowerPC/lib/PowerPC.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "SuperH4",
+            "description": "Ghidra SuperH4 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "6327dc83b58b17ae5595fd91715ab39c"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "98939bc78b4458aa8f3ff3e531ea7fc1d87cda69"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/SuperH4/lib/SuperH4.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "PIC",
+            "description": "Ghidra PIC module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "fe6a3265bfced6254f5b2fbf4d514cb4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "695439830ec243857bc4007df91744811794ae2a"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/PIC/lib/PIC.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Sparc",
+            "description": "Ghidra Sparc module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3a62b2a08b6da7c4040fa7a32724f2f4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "675d1df467cef75f43e92934bb9297e001c459b3"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/Sparc/lib/Sparc.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "HCS12",
+            "description": "Ghidra HCS12 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "fb85e156eb6e756195698a5b67c59abd"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f65366a41c1646703728495df858beef893b0c60"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/HCS12/lib/HCS12.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "JVM",
+            "description": "Ghidra JVM module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "a90f2f4deadc7c91e76d49eb0e9e3fe4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b8bfd6ff4076416b7c4fe7580c7114fcb9e23c0e"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/JVM/lib/JVM.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "68000",
+            "description": "Ghidra 68000 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3dcfd6f4c3fad0eac59206808fe103a4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "c14672f3a8eb32b1f2d83fb4e2c72aa10f553417"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/68000/lib/68000.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "V850",
+            "description": "Ghidra V850 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "dfe869fad0d47309b277d38151de9fce"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "d7e29c128c3fab35337ccca2d2363df7e8bd9b96"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/V850/lib/V850.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "DATA",
+            "description": "Ghidra DATA module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "ae7fd8aa9776ab8885df471bdec56063"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "027d3e373ca9abc57f8f84e7bef213d65fff1ea6"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/DATA/lib/DATA.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "tricore",
+            "description": "Ghidra tricore module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "543788acff0fe2c418c510c82ba900e5"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "14c6e60ab00576be1e6b56efd1cf8b64954a4969"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/tricore/lib/tricore.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "NDS32",
+            "description": "Ghidra NDS32 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "4b5fa3f71cdbc557bb3a2448f37e67c6"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "cbcd982243c6b722f4212ccea7eaf20efd02cbfa"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/NDS32/lib/NDS32.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "ARM",
+            "description": "Ghidra ARM module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "a0cd13786b329107ecdcbdee9e4cc6c8"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1cded49b1656e1265894e3cf0f5dc08ba50ab9b5"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/ARM/lib/ARM.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "MIPS",
+            "description": "Ghidra MIPS module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "9361dcb7e2de5275429174d3a02644e4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e4ba73526dc824d2cad41bbcd03e00de125e302a"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/MIPS/lib/MIPS.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "AARCH64",
+            "description": "Ghidra AARCH64 module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "c92d965ddd50eba0403a7928b88eeb06"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "344bb3cf37271e3ae3b70c3313968f5db5f3cd47"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Processors/AARCH64/lib/AARCH64.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "asm-commons",
+            "description": "",
+            "version": "9.7.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "8344aea3c8b7d707e9d35a62710e77c9"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "406c6a2225cfe1819f102a161e54cc16a5c24f75"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Emulation/lib/asm-commons-9.7.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "asm",
+            "description": "",
+            "version": "9.7.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "e2cdd32d198ad31427d298eee9d39d8d"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f0ed132a49244b042cd0e15702ab9f2ce3cc8436"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Emulation/lib/asm-9.7.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "asm-util",
+            "description": "",
+            "version": "9.7.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "36d373a9cd6cad9b35db9f984c6b4bbb"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "9e23359b598ec6b74b23e53110dd5c577adf2243"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Emulation/lib/asm-util-9.7.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Emulation",
+            "description": "Ghidra Emulation module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "a22293a27efdc2bc91ac8e3aa1209cd8"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "5d420d1e03d842ebfd6e803bf62aa1807930402c"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Emulation/lib/Emulation.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "asm-tree",
+            "description": "",
+            "version": "9.7.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "e85029f613b6469989cc7cf53fe06b74"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "3a53139787663b139de76b627fca0084ab60d32c"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Emulation/lib/asm-tree-9.7.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "asm-analysis",
+            "description": "",
+            "version": "9.7.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "4cd9e7178dfb85371bba3077e40cd514"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "f97a3b319f0ed6a8cd944dc79060d3912a28985f"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Emulation/lib/asm-analysis-9.7.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "DB",
+            "description": "Ghidra DB module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3e0dac61e83460349586ec587938078b"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "a4ceb4c9bd9af89d91802bb8eb85108e9d17e806"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/DB/lib/DB.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "FileSystem",
+            "description": "Ghidra FileSystem module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "a0931b99fe28e9ce0e0402f8dd618c7e"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "6944a6f4c16fa1b12bf00cf6f0868a52d3290822"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/FileSystem/lib/FileSystem.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Gui",
+            "description": "Ghidra Gui module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "03643dd9d78c95b6ed8faf9c85897c08"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "caa1f95486cfdefac5f86641ed7e0fceb58a7d1a"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Gui/lib/Gui.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "flatlaf",
+            "description": "",
+            "version": "3.5.4",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "bd89234b7b74e52681a2851f170f7ed6"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "cd61f9fc2550473fdacebc205a68e24a065f6fdf"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Gui/lib/flatlaf-3.5.4.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "xsdlib",
+            "description": "",
+            "version": "20050913",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "ad3f3b347082b10fcb2542da4a610a86"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "836b85d70c54589aeef2ea810232ab192137ea84"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/SoftwareModeling/lib/xsdlib-20050913.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "isorelax",
+            "description": "",
+            "version": "20050913",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "b1520219bf23fce148e7be5c493ff1f8"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b21859c352bd959ea22d06b2fe8c93b2e24531b9"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/SoftwareModeling/lib/isorelax-20050913.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "relaxngDatatype",
+            "description": "",
+            "version": "20050913",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "180e89eb68a520f7a86ee0bac9a2a108"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b117e0f9182c6cc094e833489bcdddadfd414090"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/SoftwareModeling/lib/relaxngDatatype-20050913.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.antlr",
+            "name": "antlr-runtime",
+            "description": "A framework for constructing recognizers, compilers, and translators from grammatical descriptions containing Java, C#, C++, or Python actions.",
+            "version": "3.5.2",
+            "purl": "pkg:maven/org.antlr/antlr-runtime@3.5.2",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "1fbbae2cb72530207c20b797bdabd029"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "cd9cd41361c155f3af0f653009dcecb08d8b4afd"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/SoftwareModeling/lib/antlr-runtime-3.5.2.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "msv",
+            "description": "",
+            "version": "20050913",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "ed884f110f706abc03b5f68612b805ec"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "3fc5ca9708a8e7a219001da0bc3870d0a2d51c2d"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/SoftwareModeling/lib/msv-20050913.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "SoftwareModeling",
+            "description": "Ghidra SoftwareModeling module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "99b85f79bbcfad8b311228f8bad14565"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e943d63dfb51b1e97c895bd6d54e8f30672404af"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/SoftwareModeling/lib/SoftwareModeling.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Utility",
+            "description": "Ghidra Utility module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "8958644d2785e40fa28070b07ef757ae"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "a032b1cff65ae1fb95fcfd0da05f4a892a2c0903"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Utility/lib/Utility.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "net.sf.jung",
+            "name": "jung-algorithms",
+            "description": "Algorithms for the JUNG project",
+            "version": "2.1.1",
+            "purl": "pkg:maven/net.sf.jung/jung-algorithms@2.1.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2c4213d070f434f3e5a9b4dc4faa7e45"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "632bd89a61a6c1ca7ed3505aca0765cff987096e"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/jung-algorithms-2.1.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "net.sf.jung",
+            "name": "jung-visualization",
+            "description": "Core visualization support for the JUNG project",
+            "version": "2.1.1",
+            "purl": "pkg:maven/net.sf.jung/jung-visualization@2.1.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "34d6b44a00f8a19121905a711a7ae6bb"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "40488654daea1f57e0790e40153be19a307943dd"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/jung-visualization-2.1.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Graph",
+            "description": "Ghidra Graph module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "bfffc3053395ae6f9824d8a0149feea6"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "fe0728cb665553628440e1bcf4faf28746d3090c"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/Graph.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.jgrapht",
+            "name": "jgrapht-core",
+            "description": "A Java class library for graph-theory data structures and algorithms.",
+            "version": "1.5.1",
+            "purl": "pkg:maven/org.jgrapht/jgrapht-core@1.5.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "59d556029659a754421f5aed4b7c37cb"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1b9abad9a3d052c6a5d7135cbe63916f5ed11bef"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/jgrapht-core-1.5.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "net.sf.jung",
+            "name": "jung-graph-impl",
+            "description": "Graph implementations for the JUNG project",
+            "version": "2.1.1",
+            "purl": "pkg:maven/net.sf.jung/jung-graph-impl@2.1.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "cd534f430fea388963548b0449fbb944"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "8293acb2ab4c00a3939cb99a8751e5d38a4299dc"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/jung-graph-impl-2.1.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "net.sf.jung",
+            "name": "jung-api",
+            "description": "Graph interfaces used by the JUNG project",
+            "version": "2.1.1",
+            "purl": "pkg:maven/net.sf.jung/jung-api@2.1.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "f598a75f1221c5215cd0b1c8b153e578"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e47ee4efdfacce12f0af620747d9d0e44bf2eaa4"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/jung-api-2.1.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.jgrapht",
+            "name": "jgrapht-io",
+            "description": "A Java class library for graph-theory data structures and algorithms.",
+            "version": "1.5.1",
+            "purl": "pkg:maven/org.jgrapht/jgrapht-io@1.5.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "50f3530df6cc4b6d33f66180ae2dabba"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "ffe3b7b0edc4f22268d15670840a211a7b0d87cd"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Graph/lib/jgrapht-io-1.5.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Help",
+            "description": "Ghidra Help module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "73ec5b2a1757bd0b8dd4d765f80df1de"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "8161eaae4e0fffbcddd54571ba56ad97c67aace4"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Help/lib/Help.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "timingframework",
+            "description": "",
+            "version": "1.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "0af15c376482ccee9965bdd625743934"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "2c12a328bfd82ddb0c4389e915229ea3df1740b8"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Help/lib/timingframework-1.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "javahelp",
+            "description": "",
+            "version": "2.0.05",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "15206c67e9876702b8bdca7e05dd3bd4"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "ca70822c47a67fc3a11670270567c2d01566dae1"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Help/lib/javahelp-2.0.05.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "commons-codec",
+            "name": "commons-codec",
+            "description": "The Apache Commons Codec component contains encoders and decoders for formats such as Base16, Base32, Base64, digest, and Hexadecimal. In addition to these widely used encoders and decoders, the codec package also maintains a collection of phonetic encoding utilities.",
+            "version": "1.18.0",
+            "purl": "pkg:maven/commons-codec/commons-codec@1.18.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2abf189633424b9292fd57a3192c0ed5"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "ee45d1cf6ec2cc2b809ff04b4dc7aec858e0df8f"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/commons-codec-1.18.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.commons",
+            "name": "commons-lang3",
+            "description": "Apache Commons Lang, a package of Java utility classes for the classes that are in java.lang's hierarchy, or are considered to be so standard as to justify existence in java.lang. The code is tested using the latest revision of the JDK for supported LTS releases: 8, 11, 17, 21 and 25 currently. See https://github.com/apache/commons-lang/blob/master/.github/workflows/maven.yml Please ensure your build environment is up-to-date and kindly report any build issues.",
+            "version": "3.20.0",
+            "purl": "pkg:maven/org.apache.commons/commons-lang3@3.20.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "4b29562ded527aa074e1d44f8646dac5"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "65897b3e5731220962e659e001904af3c3cbeba9"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/commons-lang3-3.20.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.commons",
+            "name": "commons-collections4",
+            "description": "The Apache Commons Collections package contains types that extend and augment the Java Collections Framework.",
+            "version": "4.1",
+            "purl": "pkg:maven/org.apache.commons/commons-collections4@4.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "45af6a8e5b51d5945de6c7411e290bd1"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "a4cf4688fe1c7e3a63aa636cc96d013af537768e"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/commons-collections4-4.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Generic",
+            "description": "Ghidra Generic module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "d9b7120cf6b17619e653bbd76322b6ee"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "766cfc8b0ee16c417bb3ee44a5ee5ba5c2b20282"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/Generic.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "bcprov-jdk18on",
+            "description": "",
+            "version": "1.80",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "b688fbc4b7e001d7643106b177b91f80"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "e22100b41042decf09cab914a5af8d2c57b5ac4a"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/bcprov-jdk18on-1.80.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "com.google.guava",
+            "name": "failureaccess",
+            "description": "Contains com.google.common.util.concurrent.internal.InternalFutureFailureAccess and InternalFutures. Most users will never need to use this artifact. Its classes is conceptually a part of Guava, but they're in this separate artifact so that Android libraries can use them without pulling in all of Guava (just as they can use ListenableFuture by depending on the listenablefuture artifact).",
+            "version": "1.0.1",
+            "purl": "pkg:maven/com.google.guava/failureaccess@1.0.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "091883993ef5bfa91da01dcc8fc52236"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1dcf1de382a0bf95a3d8b0849546c88bac1292c9"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/failureaccess-1.0.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "jdom2",
+            "description": "",
+            "version": "2.0.6.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "5be72710c66f3c9ba71f8009e92597d1"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "dc15dff8f701b227ee523eeb7a17f77c10eafe2f"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/jdom2-2.0.6.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "com.google.code.gson",
+            "name": "gson",
+            "description": "Gson JSON library",
+            "version": "2.9.0",
+            "purl": "pkg:maven/com.google.code.gson/gson@2.9.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "53fa3e6753e90d931d62cb89580fde2f"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "8a1167e089096758b49f9b34066ef98b2f4b37aa"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/gson-2.9.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "bcutil-jdk18on",
+            "description": "",
+            "version": "1.80",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "40838f69055183d6c0656598cb929bfa"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "b95726d1d49a0c65010c59a3e6640311d951bfd1"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/bcutil-jdk18on-1.80.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "com.google.guava",
+            "name": "guava",
+            "description": "Guava is a suite of core and expanded libraries that include utility classes, Google's collections, I/O classes, and much more.",
+            "version": "32.1.3-jre",
+            "purl": "pkg:maven/com.google.guava/guava@32.1.3-jre",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "adc3cf557a48d15cb71be90948558923"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "0f306708742ce2bf0fb0901216183bc14073feae"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/guava-32.1.3-jre.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.logging.log4j",
+            "name": "log4j-core",
+            "description": "A versatile, industrial-grade, and reference implementation of the Log4j API. It bundles a rich set of components to assist various use cases: Appenders targeting files, network sockets, databases, SMTP servers; Layouts that can render CSV, HTML, JSON, Syslog, etc. formatted outputs; Filters that can be configured using log event rates, regular expressions, scripts, time, etc. It contains several extension points to introduce custom components, if needed.",
+            "version": "2.25.3",
+            "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.25.3",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "b77ecc775eee03b8152542cd1ea63ec1"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "dd9c8ecba5c8dc5e1574804d0bfdc1ef155ad9ea"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/log4j-core-2.25.3.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "commons-io",
+            "name": "commons-io",
+            "description": "The Apache Commons IO library contains utility classes, stream implementations, file filters, file comparators, endian transformation classes, and much more.",
+            "version": "2.19.0",
+            "purl": "pkg:maven/commons-io/commons-io@2.19.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3d1fd45f9d2a247c1d05ab1e98c07160"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1f8d4a99ba72b77aa69101175efc79b0c7dcdd7e"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/commons-io-2.19.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.commons",
+            "name": "commons-compress",
+            "description": "Apache Commons Compress defines an API for working with compression and archive formats. These include bzip2, gzip, pack200, LZMA, XZ, Snappy, traditional Unix Compress, DEFLATE, DEFLATE64, LZ4, Brotli, Zstandard and ar, cpio, jar, tar, zip, dump, 7z, arj.",
+            "version": "1.27.1",
+            "purl": "pkg:maven/org.apache.commons/commons-compress@1.27.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "1db4bd87b0082044c6e7a6af0b977a3e"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "a19151084758e2fbb6b41eddaa88e7b8ff4e6599"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/commons-compress-1.27.1.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.commons",
+            "name": "commons-text",
+            "description": "Apache Commons Text is a library focused on algorithms working on strings.",
+            "version": "1.10.0",
+            "purl": "pkg:maven/org.apache.commons/commons-text@1.10.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "4afc9bfa2d31dbf7330c98fcc954b892"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "3363381aef8cef2dbc1023b3e3a9433b08b64e01"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/commons-text-1.10.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "org.apache.logging.log4j",
+            "name": "log4j-api",
+            "description": "The logging API of the Log4j project. Library and application code can log through this API. It contains a simple built-in implementation (`SimpleLogger`) for trivial use cases. Production applications are recommended to use Log4j API in combination with a fully-fledged implementation, such as Log4j Core.",
+            "version": "2.25.3",
+            "purl": "pkg:maven/org.apache.logging.log4j/log4j-api@2.25.3",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "7061652b4274beeaa657ec908e83f491"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "fb385330d89c2d61058ef649403f214633569205"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/log4j-api-2.25.3.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "bcpkix-jdk18on",
+            "description": "",
+            "version": "1.80",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "ab14be97baf490336431a6782af9adf2"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "5277dfaaef2e92ce1d802499599a0ca7488f86e6"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Generic/lib/bcpkix-jdk18on-1.80.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Docking",
+            "description": "Ghidra Docking module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "bf5e9cf3e43cbbc814943b270bfc56a1"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "525221b516853522e1a9f4e6208444e02f1c4cab"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Docking/lib/Docking.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Project",
+            "description": "Ghidra Project module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "2c3fb262c83485fe15db34bf4fad3d68"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "82d654d3031cd3099c1c1170e30f0d13cd98f3b1"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Project/lib/Project.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "xz",
+            "description": "",
+            "version": "1.9",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "57c2fbfeb55e307ccae52e5322082e02"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "1ea4bec1a921180164852c65006d928617bd2caf"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Project/lib/xz-1.9.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "jna-platform",
+            "description": "JNA Platform Library",
+            "version": "5.14.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "3bc3f09a698e6ad250dd093f64fbb8a7"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "28934d48aed814f11e4c584da55c49fa7032b31b"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Pty/lib/jna-platform-5.14.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Pty",
+            "description": "Ghidra Pty module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "ddd233f6131b6f224fce85714c1013e9"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "7d89c126e17e143c8b9425b6722d3bc925aad2dc"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Pty/lib/Pty.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "",
+            "name": "jna",
+            "description": "JNA Library",
+            "version": "5.14.0",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "8b3cc652920435ad9f801e6d9b2a3497"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "67bf3eaea4f0718cb376a181a629e5f88fa1c9dd"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Framework/Pty/lib/jna-5.14.0.jar"
+                }
+            ]
+        },
+        {
+            "type": "library",
+            "group": "ghidra",
+            "name": "Public_Release",
+            "description": "Ghidra Public_Release module",
+            "version": "12.1",
+            "hashes": [
+                {
+                    "alg": "MD5",
+                    "content": "d272aba1e03a05b5104970e9e2e3e36b"
+                },
+                {
+                    "alg": "SHA-1",
+                    "content": "bdef78f0ffb322948055b4f611b6b0677e0a0d0e"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "location",
+                    "value": "Ghidra/Configurations/Public_Release/lib/Public_Release.jar"
+                }
+            ]
+        }
+    ]
+}

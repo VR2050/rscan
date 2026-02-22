@@ -25,7 +25,9 @@ pub struct FileHashes {
 #[derive(Debug, Clone, Serialize)]
 pub struct SecuritySignals {
     pub anti_debug_indicators: Vec<String>,
+    pub dynamic_indicators: Vec<String>,
     pub packer_indicators: Vec<String>,
+    pub obfuscation_indicators: Vec<String>,
     pub suspicious_imports: Vec<String>,
     pub suspicious_strings: Vec<String>,
     pub entropy: f64,

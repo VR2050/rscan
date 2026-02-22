@@ -27,9 +27,9 @@ pub struct TcpConfig {
 impl Default for TcpConfig {
     fn default() -> Self {
         Self {
-            timeout_seconds: 100, // 默认3秒超时
-            concurrent: false,    // 默认禁用并发
-            concurrency: 1000,    // 默认100并发连接
+            timeout_seconds: 3, // 默认3秒超时
+            concurrent: false,  // 默认禁用并发
+            concurrency: 1000,  // 默认100并发连接
         }
     }
 }
@@ -46,11 +46,6 @@ impl TcpScanner {
         Self { config }
     }
 
-    /// 使用默认配置创建扫描器
-    pub fn default() -> Self {
-        Self::new(TcpConfig::default())
-    }
-
     /// 内部方法：检查单个TCP端口
     async fn check_single_port(&self, host: IpAddr, port: u16) -> PortResult {
         // 构建套接字地址
@@ -59,7 +54,7 @@ impl TcpScanner {
 
         // 使用tokio::timeout包装连接操作，避免无限等待
         match timeout(
-            Duration::from_millis(self.config.timeout_seconds),
+            Duration::from_secs(self.config.timeout_seconds),
             // TcpStream::connect(&addr)
             async {
                 let stream = TcpStream::connect(&addr).await?;
@@ -172,6 +167,12 @@ impl TcpScanner {
     }
 }
 
+impl Default for TcpScanner {
+    fn default() -> Self {
+        Self::new(TcpConfig::default())
+    }
+}
+
 /// 端口扫描器trait - 定义统一的扫描接口
 // 使用Rust原生异步trait（不依赖async_trait库）
 pub trait PortScanner: Send + Sync {
@@ -253,7 +254,7 @@ mod tests {
 
         // 创建启用并发的扫描器
         let config = TcpConfig {
-            timeout_seconds: 500,
+            timeout_seconds: 1,
             concurrent: true,
             concurrency: 2,
         };
@@ -276,13 +277,14 @@ pub mod test {
 
     use super::*;
     #[test]
-    //测试主机扫描引擎
+    #[ignore]
+    // 测试主机扫描引擎（需要真实网络环境）
     fn test_tcp_scanner() {
         let target = "192.168.1.1";
         let ports = "1-65535";
         let port_list = ports::parse_ports(ports).unwrap();
         let config = TcpConfig {
-            timeout_seconds: 100,
+            timeout_seconds: 1,
             concurrent: true,
             concurrency: 1000,
         };
@@ -297,14 +299,15 @@ pub mod test {
         let duration = start.elapsed();
         println!("扫描耗时：{:?}", duration);
     }
-    //并发扫描测试
     #[test]
+    #[ignore]
+    // 并发扫描测试（需要真实网络环境）
     fn test_tcp_scanner_concurrent() {
         let target = "192.168.1.1";
         let ports = "22,80,443,8080,3306,5432,6379,27017,11211,9200";
         let port_list = ports::parse_ports(ports).unwrap();
         let config = TcpConfig {
-            timeout_seconds: 500,
+            timeout_seconds: 1,
             concurrent: true,
             concurrency: 50,
         };

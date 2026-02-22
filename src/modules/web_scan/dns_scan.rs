@@ -5,6 +5,51 @@ use crate::errors::RustpenError;
 use crate::modules::web_scan::ModuleScanConfig;
 use tokio::sync::mpsc::{self, Receiver};
 
+fn sanitize_fragment(s: &str) -> String {
+    s.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
+fn build_subdomain_request(base_domain: &str, word: &str, cfg: &ModuleScanConfig) -> FetchRequest {
+    // Try host[:port] direct-connect optimization for local test hosts like 127.0.0.1:PORT.
+    if let Ok(parsed) = url::Url::parse(&format!("http://{}", base_domain.trim_end_matches('/')))
+        && let Some(host) = parsed.host_str()
+    {
+        let port_part = parsed.port().map(|p| format!(":{}", p)).unwrap_or_default();
+        let virtual_host = format!("{}.{}", word, base_domain.trim_end_matches('/'));
+        let marker = sanitize_fragment(&virtual_host);
+        let connect_url = format!("http://{}{}#rscan-vhost={}", host, port_part, marker);
+        let mut headers = reqwest::header::HeaderMap::new();
+        if let Ok(v) = reqwest::header::HeaderValue::from_str(&virtual_host) {
+            headers.insert(reqwest::header::HOST, v);
+            return FetchRequest {
+                url: connect_url,
+                method: cfg.request_method.clone(),
+                headers: Some(headers),
+                body: None,
+                timeout_ms: cfg.timeout_ms,
+                max_retries: cfg.max_retries,
+            };
+        }
+    }
+
+    FetchRequest {
+        url: format!("http://{}.{}", word, base_domain.trim_end_matches('/')),
+        method: cfg.request_method.clone(),
+        headers: None,
+        body: None,
+        timeout_ms: cfg.timeout_ms,
+        max_retries: cfg.max_retries,
+    }
+}
+
 pub async fn run_subdomain_burst(
     base_domain: &str,
     words: &[&str],
@@ -16,66 +61,24 @@ pub async fn run_subdomain_burst(
     }
     let fetcher = Fetcher::new(fetch_cfg)?;
     let mut reqs = Vec::new();
-    // Try to parse base_domain as host[:port] so we can avoid DNS lookups for names like `a.127.0.0.1:PORT`.
-    let parsed_domain = url::Url::parse(&format!("http://{}", base_domain.trim_end_matches('/')));
     for w in words {
-        if let Ok(parsed) = &parsed_domain {
-            if let Some(host) = parsed.host_str() {
-                let port_part = parsed.port().map(|p| format!(":{}", p)).unwrap_or_default();
-                // Connect directly to numeric host:port to avoid DNS resolution, and set Host header to the subdomain
-                let connect_url = format!("http://{}{}", host, port_part);
-                let mut headers = reqwest::header::HeaderMap::new();
-                let host_header_value = format!("{}.{}", w, base_domain.trim_end_matches('/'));
-                headers.insert(
-                    reqwest::header::HOST,
-                    reqwest::header::HeaderValue::from_str(&host_header_value).unwrap(),
-                );
-                let r = FetchRequest {
-                    url: connect_url,
-                    method: cfg.request_method.clone(),
-                    headers: Some(headers),
-                    body: None,
-                    timeout_ms: cfg.timeout_ms,
-                    max_retries: cfg.max_retries,
-                };
-                reqs.push(r);
-                continue;
-            }
-        }
-
-        // fallback to default behavior
-        let url = format!("http://{}.{}", w, base_domain.trim_end_matches('/'));
-        let r = FetchRequest {
-            url,
-            method: cfg.request_method.clone(),
-            headers: None,
-            body: None,
-            timeout_ms: cfg.timeout_ms,
-            max_retries: cfg.max_retries,
-        };
-        reqs.push(r);
+        reqs.push(build_subdomain_request(base_domain, w, &cfg));
     }
-    let results = fetcher
-        .fetch_many(reqs.into_iter().map(|r| r), cfg.concurrency)
-        .await;
+    let results = fetcher.fetch_many(reqs, cfg.concurrency).await;
     let mut alive = Vec::new();
     let mut seen = std::collections::HashSet::new();
-    for r in results {
-        if let Ok(resp) = r {
-            let min_ok = cfg.status_min.unwrap_or(200);
-            let max_ok = cfg.status_max.unwrap_or(399);
-            if resp.status >= min_ok && resp.status <= max_ok {
-                if cfg.dedupe_results {
-                    if !seen.insert(resp.url.clone()) {
-                        continue;
-                    }
-                }
-                alive.push(crate::modules::web_scan::ModuleScanResult {
-                    url: resp.url,
-                    status: resp.status,
-                    content_len: Some(resp.body.len() as u64),
-                });
+    for resp in results.into_iter().flatten() {
+        let min_ok = cfg.status_min.unwrap_or(200);
+        let max_ok = cfg.status_max.unwrap_or(399);
+        if resp.status >= min_ok && resp.status <= max_ok {
+            if cfg.dedupe_results && !seen.insert(resp.url.clone()) {
+                continue;
             }
+            alive.push(crate::modules::web_scan::ModuleScanResult {
+                url: resp.url,
+                status: resp.status,
+                content_len: Some(resp.body.len() as u64),
+            });
         }
     }
     Ok(alive)
@@ -102,38 +105,8 @@ pub fn run_subdomain_burst_stream(
         };
 
         let mut reqs = Vec::new();
-        let parsed_domain =
-            url::Url::parse(&format!("http://{}", base_domain.trim_end_matches('/')));
         for w in &words {
-            if let Ok(parsed) = &parsed_domain
-                && let Some(host) = parsed.host_str()
-            {
-                let port_part = parsed.port().map(|p| format!(":{}", p)).unwrap_or_default();
-                let connect_url = format!("http://{}{}", host, port_part);
-                let mut headers = reqwest::header::HeaderMap::new();
-                let host_header_value = format!("{}.{}", w, base_domain.trim_end_matches('/'));
-                if let Ok(v) = reqwest::header::HeaderValue::from_str(&host_header_value) {
-                    headers.insert(reqwest::header::HOST, v);
-                    reqs.push(FetchRequest {
-                        url: connect_url,
-                        method: cfg.request_method.clone(),
-                        headers: Some(headers),
-                        body: None,
-                        timeout_ms: cfg.timeout_ms,
-                        max_retries: cfg.max_retries,
-                    });
-                    continue;
-                }
-            }
-
-            reqs.push(FetchRequest {
-                url: format!("http://{}.{}", w, base_domain.trim_end_matches('/')),
-                method: cfg.request_method.clone(),
-                headers: None,
-                body: None,
-                timeout_ms: cfg.timeout_ms,
-                max_retries: cfg.max_retries,
-            });
+            reqs.push(build_subdomain_request(&base_domain, w, &cfg));
         }
 
         let mut seen = std::collections::HashSet::new();

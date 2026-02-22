@@ -161,50 +161,51 @@ impl Crawler {
                                 };
                                 let robots_url =
                                     format!("{}://{}{}{}", scheme, host, port_str, "/robots.txt");
-                                if let Ok(r) = fetcher.fetch(&robots_url).await {
-                                    if r.status == 200 {
-                                        let txt = String::from_utf8_lossy(&r.body).to_string();
-                                        // parse similarly to fetch_robots_for but inline to avoid borrowing issues
-                                        let mut disallow = Vec::new();
-                                        let mut crawl_delay = None;
-                                        let mut in_group = false;
-                                        for line in txt.lines() {
-                                            let ln = line.trim();
-                                            if ln.is_empty() || ln.starts_with('#') {
-                                                continue;
-                                            }
-                                            let parts: Vec<&str> = ln.splitn(2, ':').collect();
-                                            if parts.len() != 2 {
-                                                continue;
-                                            }
-                                            let key = parts[0].trim().to_lowercase();
-                                            let val = parts[1].trim();
-                                            if key == "user-agent" {
-                                                in_group = val == "*";
-                                            } else if key == "disallow" && in_group {
-                                                disallow.push(val.to_string());
-                                            } else if key == "crawl-delay" && in_group {
-                                                if let Ok(sec) = val.parse::<u64>() {
-                                                    crawl_delay = Some(sec * 1000);
-                                                }
-                                            }
-                                        }
-                                        let policy = RobotsPolicy {
-                                            disallow,
-                                            crawl_delay_ms: crawl_delay,
-                                            fetched_at: Instant::now(),
-                                        };
-                                        // cache it
-                                        let mut c = robots_cache.write().await;
-                                        c.insert(
-                                            parsed_url.host_str().unwrap_or("").to_string(),
-                                            policy.clone(),
-                                        );
-
-                                        if !policy.allows(parsed_url.path()) {
-                                            visited.lock().await.insert(url_s.clone());
+                                if let Ok(r) = fetcher.fetch(&robots_url).await
+                                    && r.status == 200
+                                {
+                                    let txt = String::from_utf8_lossy(&r.body).to_string();
+                                    // parse similarly to fetch_robots_for but inline to avoid borrowing issues
+                                    let mut disallow = Vec::new();
+                                    let mut crawl_delay = None;
+                                    let mut in_group = false;
+                                    for line in txt.lines() {
+                                        let ln = line.trim();
+                                        if ln.is_empty() || ln.starts_with('#') {
                                             continue;
                                         }
+                                        let parts: Vec<&str> = ln.splitn(2, ':').collect();
+                                        if parts.len() != 2 {
+                                            continue;
+                                        }
+                                        let key = parts[0].trim().to_lowercase();
+                                        let val = parts[1].trim();
+                                        if key == "user-agent" {
+                                            in_group = val == "*";
+                                        } else if key == "disallow" && in_group {
+                                            disallow.push(val.to_string());
+                                        } else if key == "crawl-delay"
+                                            && in_group
+                                            && let Ok(sec) = val.parse::<u64>()
+                                        {
+                                            crawl_delay = Some(sec * 1000);
+                                        }
+                                    }
+                                    let policy = RobotsPolicy {
+                                        disallow,
+                                        crawl_delay_ms: crawl_delay,
+                                        fetched_at: Instant::now(),
+                                    };
+                                    // cache it
+                                    let mut c = robots_cache.write().await;
+                                    c.insert(
+                                        parsed_url.host_str().unwrap_or("").to_string(),
+                                        policy.clone(),
+                                    );
+
+                                    if !policy.allows(parsed_url.path()) {
+                                        visited.lock().await.insert(url_s.clone());
+                                        continue;
                                     }
                                 }
                             }
@@ -243,21 +244,20 @@ impl Crawler {
                             visited.lock().await.insert(url_s.clone());
 
                             // expand links
-                            if depth < cfg.max_depth {
-                                if let Ok(parsed) = Parser::parse(
+                            if depth < cfg.max_depth
+                                && let Ok(parsed) = Parser::parse(
                                     &url_s,
                                     std::str::from_utf8(&resp.body).unwrap_or(""),
-                                ) {
-                                    let mut f = frontier.lock().await;
-                                    let v = visited.lock().await;
-                                    for link in parsed.links {
-                                        if let Ok(lu) = Url::parse(&link) {
-                                            if lu.scheme() == "http" || lu.scheme() == "https" {
-                                                if !v.contains(&link) {
-                                                    f.push_back((link, depth + 1));
-                                                }
-                                            }
-                                        }
+                                )
+                            {
+                                let mut f = frontier.lock().await;
+                                let v = visited.lock().await;
+                                for link in parsed.links {
+                                    if let Ok(lu) = Url::parse(&link)
+                                        && (lu.scheme() == "http" || lu.scheme() == "https")
+                                        && !v.contains(&link)
+                                    {
+                                        f.push_back((link, depth + 1));
                                     }
                                 }
                             }
@@ -295,7 +295,7 @@ mod tests {
         let secret = warp::path("secret").map(|| warp::reply::html("secret"));
         let open = warp::path("open").map(|| warp::reply::html("open"));
         let robots_route = warp::path("robots.txt")
-            .map(move || warp::reply::with_status(robots.clone(), warp::http::StatusCode::OK));
+            .map(move || warp::reply::with_status(robots, warp::http::StatusCode::OK));
 
         let (addr, server) = warp::serve(route.or(secret).or(open).or(robots_route))
             .bind_ephemeral(([127, 0, 0, 1], 0));
@@ -341,7 +341,7 @@ mod tests {
         let secret = warp::path("secret").map(|| warp::reply::html("secret"));
         let open = warp::path("open").map(|| warp::reply::html("open"));
         let robots_route = warp::path("robots.txt")
-            .map(move || warp::reply::with_status(robots.clone(), warp::http::StatusCode::OK));
+            .map(move || warp::reply::with_status(robots, warp::http::StatusCode::OK));
 
         let (addr, server) = warp::serve(route.or(secret).or(open).or(robots_route))
             .bind_ephemeral(([127, 0, 0, 1], 0));

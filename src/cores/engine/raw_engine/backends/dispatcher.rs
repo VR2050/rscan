@@ -41,21 +41,28 @@ impl Dispatcher {
         Self::default()
     }
 
+    fn inflight_lock(
+        &self,
+    ) -> std::sync::MutexGuard<'_, HashMap<CorrKey, oneshot::Sender<DispatchReply>>> {
+        // If the mutex is poisoned, recover the inner map to avoid panics in production paths.
+        self.inflight.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
     pub(crate) fn register(&self, key: CorrKey) -> oneshot::Receiver<DispatchReply> {
         let (tx, rx) = oneshot::channel();
-        let mut map = self.inflight.lock().unwrap();
+        let mut map = self.inflight_lock();
         map.insert(key, tx);
         rx
     }
 
     pub(crate) fn remove(&self, key: &CorrKey) {
-        let mut map = self.inflight.lock().unwrap();
+        let mut map = self.inflight_lock();
         map.remove(key);
     }
 
     pub(crate) fn fulfill(&self, key: &CorrKey, reply: DispatchReply) -> bool {
         let tx_opt = {
-            let mut map = self.inflight.lock().unwrap();
+            let mut map = self.inflight_lock();
             map.remove(key)
         };
         if let Some(tx) = tx_opt {
@@ -67,6 +74,6 @@ impl Dispatcher {
     }
 
     pub(crate) fn inflight_len(&self) -> usize {
-        self.inflight.lock().unwrap().len()
+        self.inflight_lock().len()
     }
 }

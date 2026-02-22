@@ -46,10 +46,6 @@ impl ArpScanner {
         Self { config }
     }
 
-    pub fn default() -> Self {
-        Self::new(ArpConfig::default())
-    }
-
     /// 扫描给定的 IPv4 网络（CIDR），返回发现的 IP->MAC 列表
     pub async fn scan_cidr(&self, cidr: &str) -> Result<Vec<ArpHost>, RustpenError> {
         // 解析 CIDR
@@ -89,7 +85,7 @@ impl ArpScanner {
         Ok(hosts)
     }
 
-    fn choose_interface<'a>(maybe_name: &Option<String>) -> Result<NetworkInterface, RustpenError> {
+    fn choose_interface(maybe_name: &Option<String>) -> Result<NetworkInterface, RustpenError> {
         let interfaces = datalink::interfaces();
         if let Some(name) = maybe_name {
             if let Some(iface) = interfaces.into_iter().find(|i| i.name == *name) {
@@ -119,18 +115,22 @@ impl ArpScanner {
             .iter()
             .find_map(|ip| {
                 if ip.is_ipv4() {
-                    Some(match ip.ip() {
-                        std::net::IpAddr::V4(v4) => v4,
-                        _ => unreachable!(),
-                    })
+                    match ip.ip() {
+                        std::net::IpAddr::V4(v4) => Some(v4),
+                        _ => None,
+                    }
                 } else {
                     None
                 }
             })
             .ok_or_else(|| RustpenError::ScanError("接口没有 IPv4 地址".to_string()))?;
 
-        // 打开 datalink 通道
-        let (mut tx, mut rx) = match datalink::channel(&iface, Default::default()) {
+        // 打开 datalink 通道（带读超时，避免 rx.next() 长时间阻塞）
+        let dl_cfg = datalink::Config {
+            read_timeout: Some(Duration::from_millis(50)),
+            ..Default::default()
+        };
+        let (mut tx, mut rx) = match datalink::channel(&iface, dl_cfg) {
             Ok(Ethernet(tx, rx)) => (tx, rx),
             Ok(_) => {
                 return Err(RustpenError::ScanError(
@@ -154,12 +154,16 @@ impl ArpScanner {
         for &t in unique_targets.iter() {
             let mut buffer = [0u8; 42]; // ethernet(14) + arp(28)
             {
-                let mut eth = MutableEthernetPacket::new(&mut buffer[..]).unwrap();
+                let mut eth = MutableEthernetPacket::new(&mut buffer[..]).ok_or_else(|| {
+                    RustpenError::ScanError("构造以太网帧失败".to_string())
+                })?;
                 eth.set_destination(MacAddr::broadcast());
                 eth.set_source(src_mac);
                 eth.set_ethertype(EtherTypes::Arp);
 
-                let mut arp = MutableArpPacket::new(eth.payload_mut()).unwrap();
+                let mut arp = MutableArpPacket::new(eth.payload_mut()).ok_or_else(|| {
+                    RustpenError::ScanError("构造 ARP 包失败".to_string())
+                })?;
                 arp.set_hardware_type(ArpHardwareTypes::Ethernet);
                 arp.set_protocol_type(EtherTypes::Ipv4);
                 arp.set_hw_addr_len(6);
@@ -181,17 +185,15 @@ impl ArpScanner {
         while start.elapsed() < cfg.timeout {
             match rx.next() {
                 Ok(packet) => {
-                    if let Some(eth) = EthernetPacket::new(packet) {
-                        if eth.get_ethertype() == EtherTypes::Arp {
-                            if let Some(arp) = ArpPacket::new(eth.payload()) {
-                                if arp.get_operation() == ArpOperations::Reply {
-                                    let sender_ip = arp.get_sender_proto_addr();
-                                    let sender_mac = arp.get_sender_hw_addr();
-                                    if unique_targets.contains(&sender_ip) {
-                                        found.entry(sender_ip).or_insert(sender_mac);
-                                    }
-                                }
-                            }
+                    if let Some(eth) = EthernetPacket::new(packet)
+                        && eth.get_ethertype() == EtherTypes::Arp
+                        && let Some(arp) = ArpPacket::new(eth.payload())
+                        && arp.get_operation() == ArpOperations::Reply
+                    {
+                        let sender_ip = arp.get_sender_proto_addr();
+                        let sender_mac = arp.get_sender_hw_addr();
+                        if unique_targets.contains(&sender_ip) {
+                            found.entry(sender_ip).or_insert(sender_mac);
                         }
                     }
                 }
@@ -213,6 +215,12 @@ impl ArpScanner {
         // 排序以保证稳定性
         res.sort_by_key(|h| h.ip);
         Ok(res)
+    }
+}
+
+impl Default for ArpScanner {
+    fn default() -> Self {
+        Self::new(ArpConfig::default())
     }
 }
 

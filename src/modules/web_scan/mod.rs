@@ -4,11 +4,11 @@ pub mod dns_scan;
 pub mod fuzz_scan;
 pub mod live_scan;
 mod resume;
-pub mod web_scan;
+pub mod scanner;
 
 // expose WebScanner and config types to modules root
-pub use web_scan::WebScanConfig;
-pub use web_scan::WebScanner;
+pub use scanner::WebScanConfig;
+pub use scanner::WebScanner;
 
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ impl ModuleScanResult {
 pub fn format_scan_result(r: &ModuleScanResult, fmt: &OutputFormat) -> String {
     match fmt {
         OutputFormat::Raw => format!("{} {} {:?}", r.url, r.status, r.content_len),
-        OutputFormat::Json => serde_json::to_string(r).unwrap_or_else(|_| format!("{}", r.url)),
+        OutputFormat::Json => serde_json::to_string(r).unwrap_or_else(|_| r.url.to_string()),
         OutputFormat::Csv => format!(
             "{},{},{}",
             r.url,

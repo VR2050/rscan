@@ -83,15 +83,15 @@ impl AdaptiveControl {
             current_delay_ms: self.policy.base_delay_ms,
         });
 
-        if let Some(max_jobs) = self.policy.max_jobs_per_target {
-            if entry.jobs_started >= max_jobs {
-                return Err("target_job_budget_exceeded");
-            }
+        if let Some(max_jobs) = self.policy.max_jobs_per_target
+            && entry.jobs_started >= max_jobs
+        {
+            return Err("target_job_budget_exceeded");
         }
-        if let Some(max_ms) = self.policy.max_target_runtime_ms {
-            if entry.started_at.elapsed().as_millis() as u64 >= max_ms {
-                return Err("target_runtime_budget_exceeded");
-            }
+        if let Some(max_ms) = self.policy.max_target_runtime_ms
+            && entry.started_at.elapsed().as_millis() as u64 >= max_ms
+        {
+            return Err("target_runtime_budget_exceeded");
         }
 
         entry.jobs_started += 1;
@@ -361,8 +361,8 @@ impl ScanEngine for RawPacketEngine {
             .map_err(|e| RustpenError::Generic(format!("submit failed: {e}")))
     }
 
-    fn take_results(&mut self) -> mpsc::Receiver<ScanResult> {
-        self.rx.take().expect("results receiver already taken")
+    fn take_results(&mut self) -> Result<mpsc::Receiver<ScanResult>, RustpenError> {
+        self.rx.take().ok_or(RustpenError::ResultsReceiverTaken)
     }
 }
 
@@ -404,7 +404,7 @@ mod tests {
 
         let mut engine = RawPacketEngine::new(16, 2, 8);
         let expect_backend = engine.has_syn_backend();
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             crate::cores::host::Protocol::Tcp,
@@ -432,7 +432,7 @@ mod tests {
     async fn raw_engine_icmp_loopback() {
         let mut engine = RawPacketEngine::new(16, 2, 8);
         let expect_backend = engine.has_icmp_backend();
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             crate::cores::host::Protocol::Icmp,
@@ -467,7 +467,7 @@ mod tests {
         });
 
         let mut engine = RawPacketEngine::new(16, 2, 8);
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             crate::cores::host::Protocol::Tcp,
@@ -498,7 +498,7 @@ match http m|^HTTP/1\.[01] \d\d\d|
         let probe = Arc::new(ServiceProbeEngine::from_nmap_text(probe_text).unwrap());
         let mut engine = RawPacketEngine::new_with_probe(16, 2, 8, Some(probe));
         let expect_backend = engine.has_udp_backend();
-        let mut rx = engine.take_results();
+        let mut rx = engine.take_results().unwrap();
         let job = ScanJob::new(
             "127.0.0.1".parse().unwrap(),
             crate::cores::host::Protocol::Udp,

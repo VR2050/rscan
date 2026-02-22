@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use futures::stream::{self, StreamExt};
 use serde::{Deserialize, Serialize};
 
 use crate::errors::RustpenError;
@@ -49,26 +48,24 @@ pub async fn vuln_scan_targets(
         .build()
         .map_err(|e| RustpenError::NetworkError(e.to_string()))?;
 
-    let sem = Arc::new(tokio::sync::Semaphore::new(cfg.concurrency.max(1)));
-    let mut tasks = Vec::new();
+    let mut work_items = Vec::new();
+    let mut errors = Vec::new();
 
     for t in targets {
         for tpl in templates {
             for req in &tpl.requests {
+                if !is_allowed_method(&req.method) {
+                    errors.push(format!(
+                        "{}: method '{}' not allowed in safe scan",
+                        tpl.id, req.method
+                    ));
+                    continue;
+                }
                 let method = reqwest::Method::from_bytes(req.method.as_bytes())
                     .unwrap_or(reqwest::Method::GET);
                 for p in &req.paths {
                     let url = join_target_path(t, p);
-                    let client = client.clone();
-                    let sem = Arc::clone(&sem);
-                    let tpl = tpl.clone();
-                    let req = req.clone();
-                    let method = method.clone();
-                    tasks.push(tokio::spawn(async move {
-                        let _permit = sem.acquire_owned().await.ok();
-                        let resp = client.request(method.clone(), &url).send().await;
-                        (tpl, req, url, resp)
-                    }));
+                    work_items.push((tpl.clone(), req.clone(), method.clone(), url));
                 }
             }
         }
@@ -77,48 +74,55 @@ pub async fn vuln_scan_targets(
     let mut report = VulnScanReport {
         scanned_requests: 0,
         findings: Vec::new(),
-        errors: Vec::new(),
+        errors,
     };
 
-    for task in tasks {
-        if let Ok((tpl, req, url, resp)) = task.await {
-            report.scanned_requests += 1;
-            match resp {
-                Ok(resp) => {
-                    let status = resp.status().as_u16();
-                    let headers = resp.headers().clone();
-                    let body = resp.bytes().await.unwrap_or_default();
-                    let body_s = String::from_utf8_lossy(&body).to_string();
+    let mut in_flight = stream::iter(work_items.into_iter().map(|(tpl, req, method, url)| {
+        let client = client.clone();
+        async move {
+            let resp = client.request(method, &url).send().await;
+            (tpl, req, url, resp)
+        }
+    }))
+    .buffer_unordered(cfg.concurrency.max(1));
 
-                    let mut matched = Vec::new();
-                    for m in &req.matchers {
-                        if eval_matcher(m, status, &headers, &body_s) {
-                            matched.push(format!("{}:{}", m.kind, m.part));
-                        }
-                    }
+    while let Some((tpl, req, url, resp)) = in_flight.next().await {
+        report.scanned_requests += 1;
+        match resp {
+            Ok(resp) => {
+                let status = resp.status().as_u16();
+                let headers = resp.headers().clone();
+                let body = resp.bytes().await.unwrap_or_default();
+                let body_s = String::from_utf8_lossy(&body).to_string();
 
-                    let hit = if req.matchers.is_empty() {
-                        false
-                    } else if req.matchers_condition == "and" {
-                        matched.len() == req.matchers.len()
-                    } else {
-                        !matched.is_empty()
-                    };
-
-                    if hit {
-                        report.findings.push(VulnFinding {
-                            template_id: tpl.id.clone(),
-                            template_name: tpl.info.name.clone(),
-                            severity: tpl.info.severity.clone(),
-                            target: extract_base_target(&url),
-                            url,
-                            method: req.method,
-                            matched,
-                        });
+                let mut matched = Vec::new();
+                for m in &req.matchers {
+                    if eval_matcher(m, status, &headers, &body_s) {
+                        matched.push(format!("{}:{}", m.kind, m.part));
                     }
                 }
-                Err(e) => report.errors.push(format!("{}: {}", url, e)),
+
+                let hit = if req.matchers.is_empty() {
+                    false
+                } else if req.matchers_condition == "and" {
+                    matched.len() == req.matchers.len()
+                } else {
+                    !matched.is_empty()
+                };
+
+                if hit {
+                    report.findings.push(VulnFinding {
+                        template_id: tpl.id.clone(),
+                        template_name: tpl.info.name.clone(),
+                        severity: tpl.info.severity.clone(),
+                        target: extract_base_target(&url),
+                        url,
+                        method: req.method,
+                        matched,
+                    });
+                }
             }
+            Err(e) => report.errors.push(format!("{}: {}", url, e)),
         }
     }
 
@@ -178,10 +182,27 @@ fn eval_matcher(
             if m.words.is_empty() {
                 return false;
             }
-            if m.condition == "and" {
-                m.words.iter().all(|w| h.contains(w))
+            let hay = if m.case_insensitive {
+                h.to_ascii_lowercase()
             } else {
-                m.words.iter().any(|w| h.contains(w))
+                h
+            };
+            if m.condition == "and" {
+                m.words.iter().all(|w| {
+                    if m.case_insensitive {
+                        hay.contains(&w.to_ascii_lowercase())
+                    } else {
+                        hay.contains(w)
+                    }
+                })
+            } else {
+                m.words.iter().any(|w| {
+                    if m.case_insensitive {
+                        hay.contains(&w.to_ascii_lowercase())
+                    } else {
+                        hay.contains(w)
+                    }
+                })
             }
         }
         _ => false,
@@ -208,4 +229,8 @@ fn extract_base_target(url: &str) -> String {
         }
     }
     url.to_string()
+}
+
+fn is_allowed_method(method: &str) -> bool {
+    matches!(method.to_ascii_uppercase().as_str(), "GET" | "HEAD")
 }

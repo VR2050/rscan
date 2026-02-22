@@ -29,10 +29,10 @@ sha2 = "0.10.9"
 hex = "0.4.3"
 zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
 serde_yaml = "0.9.34"
-[[test]]
-name ="cli_test"    
-path = "./src/main.rs"
-
+libc = "0.2.171"
+ratatui = "0.26.3"
+crossterm = "0.27.0"
+tantivy = "0.22.0"
 [[bin]]
 name="bypass"
 path="./src/cores/host/bypass.rs"

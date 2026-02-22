@@ -47,11 +47,6 @@ impl ScanManager {
         }
     }
 
-    /// 使用默认配置
-    pub fn default() -> Self {
-        Self::new(TcpConfig::default())
-    }
-
     /// 使用完整默认配置（TCP + UDP）
     pub fn full_default() -> Self {
         Self::new_with_udp(TcpConfig::default(), Some(UdpConfig::default()))
@@ -108,7 +103,7 @@ impl ScanManager {
     }
 
     /// === TCP 扫描方法 ===
-
+    ///
     /// 执行TCP扫描
     pub async fn tcp_scan(&self, host: &str, ports: &[u16]) -> Result<ScanResult, RustpenError> {
         let ip = self.resolve_host(host).await?;
@@ -130,7 +125,7 @@ impl ScanManager {
     }
 
     /// === UDP 扫描方法 ===
-
+    ///
     /// 执行UDP扫描（如果已启用）
     pub async fn udp_scan(&self, host: &str, ports: &[u16]) -> Result<ScanResult, RustpenError> {
         let udp_scanner = self
@@ -174,7 +169,7 @@ impl ScanManager {
     }
 
     /// === SYN 扫描方法 ===
-
+    ///
     /// 执行SYN扫描（如果已启用）
     pub async fn syn_scan(&self, host: &str, ports: &[u16]) -> Result<ScanResult, RustpenError> {
         let syn_scanner = self
@@ -233,7 +228,7 @@ impl ScanManager {
     }
 
     /// === 组合扫描方法 ===
-
+    ///
     /// 同时扫描TCP和UDP端口
     pub async fn scan_both_protocols(
         &self,
@@ -297,7 +292,7 @@ impl ScanManager {
     }
 
     /// === 配置访问器 ===
-
+    ///
     /// 获取TCP配置
     pub fn tcp_config(&self) -> &TcpConfig {
         &self.tcp_scanner.config
@@ -319,7 +314,7 @@ impl ScanManager {
     }
 
     /// === 兼容性方法 ===
-
+    ///
     /// 兼容旧版本的快速扫描（只扫描TCP）
     pub async fn quick_scan(&self, host: &str) -> Result<ScanResult, RustpenError> {
         self.quick_tcp_scan(host).await
@@ -356,17 +351,19 @@ impl ScanManager {
         for result in results.iter().skip(1) {
             // 简单合并：只合并开放端口
             for detail in result.open_port_details() {
-                if !merged
-                    .open_port_details()
-                    .iter()
-                    .any(|r| r.port == detail.port && r.protocol == detail.protocol)
-                {
-                    merged.add_open_port_detail(detail.clone());
-                }
+                merged.merge_open_port_detail(detail.clone());
             }
+            merged.errors = merged.errors.saturating_add(result.errors);
+            merged.scan_duration += result.scan_duration;
         }
 
         Some(merged)
+    }
+}
+
+impl Default for ScanManager {
+    fn default() -> Self {
+        Self::new(TcpConfig::default())
     }
 }
 

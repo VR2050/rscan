@@ -7,7 +7,7 @@ use crate::cores::engine::scan_job::ScanJob;
 use crate::cores::engine::scan_result::{ScanResult, ScanStatus};
 
 use super::super::util::map_port_status;
-use crate::cores::engine::raw_engine::backends::udp::UdpBackend;
+use crate::cores::engine::raw_engine::backends::udp::{UdpBackend, UdpProbeParams};
 use std::net::IpAddr;
 use std::sync::Arc;
 
@@ -32,33 +32,16 @@ pub(crate) async fn scan_udp(
             }
         });
         let start = Instant::now();
+        let params = UdpProbeParams {
+            payload: &payload,
+            timeout_ms: job.timeout_ms,
+            retries: job.retries,
+            retry_delay_ms: job.retry_delay_ms,
+            source_port: None,
+        };
         let reply = match job.target_ip {
-            IpAddr::V4(remote_ip) => {
-                backend
-                    .probe_v4(
-                        remote_ip,
-                        port,
-                        &payload,
-                        job.timeout_ms,
-                        job.retries,
-                        job.retry_delay_ms,
-                        None,
-                    )
-                    .await
-            }
-            IpAddr::V6(remote_ip) => {
-                backend
-                    .probe_v6(
-                        remote_ip,
-                        port,
-                        &payload,
-                        job.timeout_ms,
-                        job.retries,
-                        job.retry_delay_ms,
-                        None,
-                    )
-                    .await
-            }
+            IpAddr::V4(remote_ip) => backend.probe_v4(remote_ip, port, &params).await,
+            IpAddr::V6(remote_ip) => backend.probe_v6(remote_ip, port, &params).await,
         };
 
         let mut out = ScanResult::new(
@@ -127,10 +110,10 @@ pub(crate) async fn scan_udp(
                     "udp_legacy"
                 },
             );
-            if let Some(d) = detail {
-                if let Some(b) = &d.banner {
-                    out = out.with_response(b.as_bytes().to_vec());
-                }
+            if let Some(d) = detail
+                && let Some(b) = &d.banner
+            {
+                out = out.with_response(b.as_bytes().to_vec());
             }
             out
         }

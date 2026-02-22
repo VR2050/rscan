@@ -16,5 +16,5 @@ pub trait ScanEngine: Send + Sync {
         }
         Ok(())
     }
-    fn take_results(&mut self) -> mpsc::Receiver<ScanResult>;
+    fn take_results(&mut self) -> Result<mpsc::Receiver<ScanResult>, RustpenError>;
 }

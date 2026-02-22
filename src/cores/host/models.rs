@@ -160,6 +160,27 @@ impl ScanResult {
         }
     }
 
+    /// 合并一个开放端口详情到当前结果，保持位图与统计字段一致。
+    pub fn merge_open_port_detail(&mut self, result: PortResult) {
+        if result.status != PortStatus::Open {
+            return;
+        }
+        let idx = result.port as usize;
+        let was_scanned = *self.scanned_ports.get(idx).as_deref().unwrap_or(&false);
+        if !was_scanned {
+            self.scanned_ports.set(idx, true);
+            self.total_scanned += 1;
+        }
+        self.open_ports.set(idx, true);
+        if !self
+            .open_port_details
+            .iter()
+            .any(|r| r.port == result.port && r.protocol == result.protocol)
+        {
+            self.open_port_details.push(result);
+        }
+    }
+
     /// 检查端口是否开放 - O(1)位图查询
     #[inline]
     pub fn is_port_open(&self, port: u16) -> bool {
