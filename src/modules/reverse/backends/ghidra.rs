@@ -93,10 +93,7 @@ impl ReverseBackend for GhidraBackend {
     }
 }
 
-fn resolve_ghidra_project(
-    input: &Path,
-    out_dir: &Path,
-) -> (PathBuf, String, bool, bool) {
+fn resolve_ghidra_project(input: &Path, out_dir: &Path) -> (PathBuf, String, bool, bool) {
     let use_cache = env_flag("RSCAN_GHIDRA_PROJECT_CACHE", true);
     let reuse_project = env_flag("RSCAN_GHIDRA_REUSE_PROJECT", true);
     let no_analysis = env_flag("RSCAN_GHIDRA_NO_ANALYSIS", false);

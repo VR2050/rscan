@@ -1,0 +1,88 @@
+
+/// ASM-only export to reduce heavy decompiler usage. Emits asm_preview.jsonl.
+fn run_rust_asm_job(
+    input: &Path,
+    workspace: &Path,
+    mode: super::model::DecompileMode,
+    _function: Option<&str>,
+) -> Result<DecompileRunReport, RustpenError> {
+    use iced_x86::{Decoder, DecoderOptions, Formatter, Instruction, NasmFormatter};
+    use std::io::Write;
+
+    std::fs::create_dir_all(workspace)?;
+    let id = new_job_id();
+    let jobs_root = workspace.join("jobs");
+    let job_dir = jobs_root.join(&id);
+    std::fs::create_dir_all(&job_dir)?;
+    let out_dir = workspace.join("reverse_out").join(&id);
+    std::fs::create_dir_all(&out_dir)?;
+
+    let asm_path = out_dir.join(match mode {
+        super::model::DecompileMode::Function => "function_asm.jsonl",
+        _ => "asm_full.jsonl",
+    });
+    let stdout_log = job_dir.join("stdout.log");
+    let stderr_log = job_dir.join("stderr.log");
+
+    let bytes = std::fs::read(input)?;
+    const ASM_LIMIT: usize = 10000;
+    let mut decoder = Decoder::with_ip(64, &bytes, 0, DecoderOptions::NONE);
+    let mut formatter = NasmFormatter::new();
+    formatter.options_mut().set_first_operand_char_index(10);
+    let mut instr = Instruction::default();
+    let mut count = 0usize;
+
+    {
+        let mut f = std::fs::File::create(&asm_path).map_err(RustpenError::Io)?;
+        while decoder.can_decode() && count < ASM_LIMIT {
+            decoder.decode_out(&mut instr);
+            let mut line = String::new();
+            let _ = formatter.format(&instr, &mut line);
+            let row = serde_json::json!({
+                "ea": format!("0x{:x}", instr.ip()),
+                "text": line,
+            });
+            let line = serde_json::to_string(&row)
+                .map_err(|e| RustpenError::ParseError(e.to_string()))?;
+            writeln!(f, "{line}").map_err(RustpenError::Io)?;
+            count += 1;
+        }
+    }
+
+    std::fs::write(
+        &stdout_log,
+        format!("rust asm mode={:?} instructions={}\n", mode, count),
+    )?;
+    std::fs::write(&stderr_log, "")?;
+
+    let job = ReverseJobMeta {
+        id,
+        kind: "decompile".to_string(),
+        backend: "rust-asm".to_string(),
+        mode: Some(format!("{:?}", mode).to_ascii_lowercase()),
+        function: None,
+        target: input.to_path_buf(),
+        workspace: workspace.to_path_buf(),
+        status: ReverseJobStatus::Succeeded,
+        created_at: now_epoch_secs(),
+        started_at: Some(now_epoch_secs()),
+        ended_at: Some(now_epoch_secs()),
+        exit_code: Some(0),
+        program: "rust-asm".to_string(),
+        args: Vec::new(),
+        note: "rust asm-only backend (no pseudocode)".to_string(),
+        artifacts: vec![
+            path_to_string(asm_path.clone()),
+            path_to_string(stdout_log.clone()),
+            path_to_string(stderr_log.clone()),
+        ],
+        error: None,
+    };
+    save_job_meta(&job_dir.join("meta.json"), &job)?;
+
+    Ok(DecompileRunReport {
+        job,
+        stdout_log,
+        stderr_log,
+    })
+}

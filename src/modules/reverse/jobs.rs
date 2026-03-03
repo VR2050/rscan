@@ -1,5 +1,6 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -83,6 +84,36 @@ pub fn run_decompile_job(
     function: Option<&str>,
     timeout_secs: Option<u64>,
 ) -> Result<DecompileRunReport, RustpenError> {
+    let fast_reverse = std::env::var("RSCAN_FAST_REVERSE")
+        .ok()
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    // Fast path: lightweight Rust index (no Ghidra) when requested or auto for index.
+    if mode == super::model::DecompileMode::Index
+        && (engine_name.eq_ignore_ascii_case("auto")
+            || engine_name.eq_ignore_ascii_case("rust")
+            || engine_name.eq_ignore_ascii_case("rust-index"))
+    {
+        return run_rust_index_job(input, workspace);
+    }
+    // Optional lightweight ASM-only path (no pseudocode).
+    if (mode == super::model::DecompileMode::Function || mode == super::model::DecompileMode::Full)
+        && (engine_name.eq_ignore_ascii_case("rust-asm")
+            || engine_name.eq_ignore_ascii_case("rust"))
+    {
+        return run_rust_asm_job(input, workspace, mode);
+    }
+    if fast_reverse
+        && engine_name.eq_ignore_ascii_case("auto")
+        && (mode == super::model::DecompileMode::Function
+            || mode == super::model::DecompileMode::Full)
+    {
+        if let Ok(report) = run_rust_asm_job(input, workspace, mode) {
+            return Ok(report);
+        }
+    }
+
     std::fs::create_dir_all(workspace)?;
     let orchestrator = ReverseOrchestrator::detect();
     let id = new_job_id();
@@ -346,7 +377,18 @@ pub fn load_job_pseudocode_rows(
 ) -> Result<Vec<serde_json::Value>, RustpenError> {
     let job = load_job_by_id(workspace, job_id)?;
     let pseudo = resolve_pseudocode_path(workspace, &job);
-    let file = std::fs::File::open(&pseudo)?;
+    let pseudo_exists = pseudo.exists()
+        && std::fs::metadata(&pseudo)
+            .map(|m| m.len() > 0)
+            .unwrap_or(false);
+    if pseudo_exists {
+        return read_jsonl(&pseudo);
+    }
+    load_lightweight_rows(workspace, &job)
+}
+
+fn read_jsonl(path: &Path) -> Result<Vec<serde_json::Value>, RustpenError> {
+    let file = std::fs::File::open(path)?;
     let reader = BufReader::new(file);
     let mut rows = Vec::new();
     for (idx, line) in reader.lines().enumerate() {
@@ -360,6 +402,276 @@ pub fn load_job_pseudocode_rows(
         })?;
         rows.push(v);
     }
+    Ok(rows)
+}
+
+fn parse_addr_str(s: &str) -> Option<u64> {
+    if let Some(hex) = s.strip_prefix("0x") {
+        u64::from_str_radix(hex, 16).ok()
+    } else {
+        u64::from_str_radix(s, 16)
+            .ok()
+            .or_else(|| s.parse::<u64>().ok())
+    }
+}
+
+fn value_to_addr(v: &serde_json::Value) -> Option<u64> {
+    if let Some(s) = v.as_str() {
+        return parse_addr_str(s);
+    }
+    if let Some(n) = v.as_u64() {
+        return Some(n);
+    }
+    None
+}
+
+fn load_asm_only_rows(base: &Path) -> Result<Option<Vec<serde_json::Value>>, RustpenError> {
+    let candidates = [base.join("function_asm.jsonl"), base.join("asm_full.jsonl")];
+    let asm_path = candidates.iter().find(|p| p.exists());
+    let Some(path) = asm_path else {
+        return Ok(None);
+    };
+    let rows = read_jsonl(path)?;
+    if rows.is_empty() {
+        return Ok(None);
+    }
+    let mut asm_lines = Vec::new();
+    for r in rows.iter().take(200) {
+        if let Some(text) = r.get("text").and_then(|v| v.as_str()) {
+            if !text.is_empty() {
+                asm_lines.push(text.to_string());
+            }
+        }
+    }
+    if asm_lines.is_empty() {
+        return Ok(None);
+    }
+    let ea = rows
+        .iter()
+        .find_map(|r| r.get("ea").and_then(value_to_addr))
+        .unwrap_or(0);
+    let row = serde_json::json!({
+        "ea": format!("0x{:x}", ea),
+        "name": "<asm-only>",
+        "pseudocode": "asm-only job: run ghidra/ida for pseudocode and function index.",
+        "calls": [],
+        "call_names": [],
+        "xrefs": [],
+        "ext_refs": [],
+        "asm": asm_lines,
+    });
+    Ok(Some(vec![row]))
+}
+
+fn load_lightweight_rows(
+    workspace: &Path,
+    job: &ReverseJobMeta,
+) -> Result<Vec<serde_json::Value>, RustpenError> {
+    let base = workspace.join("reverse_out").join(&job.id);
+    let index_path = base.join("index.jsonl");
+    if !index_path.exists() {
+        if let Some(rows) = load_asm_only_rows(&base)? {
+            return Ok(rows);
+        }
+        return Err(RustpenError::ScanError(format!(
+            "pseudocode artifact not found and no index available at {}",
+            index_path.display()
+        )));
+    }
+    let mut rows = read_jsonl(&index_path)?;
+
+    // Optional enrichments
+    let calls_func_path = base.join("calls_functions.jsonl");
+    let xrefs_func_path = base.join("xrefs_functions.jsonl");
+    let cfg_path = base.join("cfg_functions.jsonl");
+    let asm_preview_path = base.join("asm_preview.jsonl");
+
+    let mut call_map: HashMap<String, (Vec<String>, Vec<String>)> = HashMap::new();
+    if calls_func_path.exists() {
+        for row in read_jsonl(&calls_func_path)? {
+            let func = row
+                .get("func")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let mut addrs = Vec::new();
+            let mut names = Vec::new();
+            if let Some(edges) = row.get("calls").and_then(|v| v.as_array()) {
+                for e in edges {
+                    let to = e
+                        .get("to")
+                        .and_then(value_to_addr)
+                        .map(|v| format!("0x{:x}", v))
+                        .unwrap_or_else(|| "<unknown>".to_string());
+                    let name = e
+                        .get("symbol")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    addrs.push(to);
+                    names.push(name);
+                }
+            }
+            call_map.insert(func, (addrs, names));
+        }
+    }
+
+    let mut xref_map: HashMap<String, Vec<String>> = HashMap::new();
+    if xrefs_func_path.exists() {
+        for row in read_jsonl(&xrefs_func_path)? {
+            let func = row
+                .get("func")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let mut froms = Vec::new();
+            if let Some(edges) = row.get("xrefs").and_then(|v| v.as_array()) {
+                for e in edges {
+                    let from = e
+                        .get("from")
+                        .and_then(value_to_addr)
+                        .map(|v| format!("0x{:x}", v))
+                        .unwrap_or_else(|| "<unknown>".to_string());
+                    froms.push(from);
+                }
+            }
+            xref_map.insert(func, froms);
+        }
+    }
+
+    let mut cfg_map: HashMap<String, Vec<String>> = HashMap::new();
+    if cfg_path.exists() {
+        for row in read_jsonl(&cfg_path)? {
+            let func = row
+                .get("func")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let mut blocks_out = Vec::new();
+            if let Some(blocks) = row.get("blocks").and_then(|v| v.as_array()) {
+                for b in blocks {
+                    let addr = b.get("addr").and_then(|v| v.as_str()).unwrap_or("<addr>");
+                    let len = b
+                        .get("len")
+                        .and_then(|v| v.as_u64())
+                        .map(|v| format!("len=0x{:x}", v))
+                        .unwrap_or_default();
+                    let flow = b.get("flow").and_then(|v| v.as_str()).unwrap_or("Next");
+                    blocks_out.push(format!("{addr} {len} {flow}"));
+                }
+            }
+            cfg_map.insert(func, blocks_out);
+        }
+    }
+
+    let asm_preview = if asm_preview_path.exists() {
+        read_jsonl(&asm_preview_path).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    let mut asm_group: HashMap<String, Vec<String>> = HashMap::new();
+    if !asm_preview.is_empty() {
+        let mut func_addrs: Vec<u64> = rows
+            .iter()
+            .filter_map(|r| {
+                r.get("ea")
+                    .and_then(|v| v.as_str())
+                    .and_then(parse_addr_str)
+            })
+            .collect();
+        func_addrs.sort_unstable();
+        func_addrs.dedup();
+        let lookup_func = |addr: u64, funcs: &Vec<u64>| -> Option<u64> {
+            funcs.iter().rev().find(|a| addr >= **a).copied()
+        };
+        for inst in asm_preview {
+            let Some(addr) = inst.get("ea").and_then(value_to_addr) else {
+                continue;
+            };
+            let func = lookup_func(addr, &func_addrs).unwrap_or(addr);
+            let key = format!("0x{:x}", func).to_ascii_lowercase();
+            let text = inst
+                .get("text")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            if text.is_empty() {
+                continue;
+            }
+            let entry = asm_group.entry(key).or_default();
+            if entry.len() < 120 {
+                entry.push(text);
+            }
+        }
+    }
+
+    for r in &mut rows {
+        let Some(obj) = r.as_object_mut() else {
+            continue;
+        };
+        let ea = obj
+            .get("ea")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let (calls, call_names) = call_map
+            .get(&ea)
+            .cloned()
+            .unwrap_or_else(|| (Vec::new(), Vec::new()));
+        let xrefs = xref_map.get(&ea).cloned().unwrap_or_default();
+        let asm = asm_group.get(&ea).cloned().unwrap_or_default();
+        let cfg_lines = cfg_map.get(&ea).cloned().unwrap_or_default();
+        obj.insert(
+            "pseudocode".to_string(),
+            serde_json::Value::String(
+                "rust fast path: no pseudocode. press 'd' to run ghidra/ida for pseudocode."
+                    .to_string(),
+            ),
+        );
+        obj.insert(
+            "calls".to_string(),
+            serde_json::Value::Array(calls.into_iter().map(serde_json::Value::String).collect()),
+        );
+        obj.insert(
+            "call_names".to_string(),
+            serde_json::Value::Array(
+                call_names
+                    .into_iter()
+                    .map(serde_json::Value::String)
+                    .collect(),
+            ),
+        );
+        obj.insert(
+            "xrefs".to_string(),
+            serde_json::Value::Array(xrefs.into_iter().map(serde_json::Value::String).collect()),
+        );
+        obj.entry("ext_refs".to_string())
+            .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+        obj.insert(
+            "asm".to_string(),
+            serde_json::Value::Array(if asm.is_empty() {
+                vec![serde_json::Value::String(
+                    "<no asm preview; run rust-asm or ghidra full>".to_string(),
+                )]
+            } else {
+                asm.into_iter()
+                    .map(serde_json::Value::String)
+                    .collect::<Vec<_>>()
+            }),
+        );
+        if !cfg_lines.is_empty() {
+            obj.insert(
+                "cfg".to_string(),
+                serde_json::Value::Array(
+                    cfg_lines
+                        .into_iter()
+                        .map(serde_json::Value::String)
+                        .collect(),
+                ),
+            );
+        }
+    }
+
     Ok(rows)
 }
 
@@ -631,6 +943,841 @@ fn is_ghidra_program(program: &str) -> bool {
     p.contains("analyzeheadless") || p.contains("ghidra")
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DisasmArch {
+    X86_64,
+    X86_32,
+    Arm64,
+    Arm,
+    Unsupported,
+}
+
+fn detect_arch(bytes: &[u8]) -> DisasmArch {
+    match goblin::Object::parse(bytes) {
+        Ok(goblin::Object::Elf(elf)) => match elf.header.e_machine {
+            goblin::elf::header::EM_X86_64 => DisasmArch::X86_64,
+            goblin::elf::header::EM_386 => DisasmArch::X86_32,
+            goblin::elf::header::EM_AARCH64 => DisasmArch::Arm64,
+            goblin::elf::header::EM_ARM => DisasmArch::Arm,
+            _ => DisasmArch::Unsupported,
+        },
+        Ok(goblin::Object::PE(pe)) => {
+            if pe.is_64 {
+                DisasmArch::X86_64
+            } else {
+                DisasmArch::X86_32
+            }
+        }
+        _ => DisasmArch::Unsupported,
+    }
+}
+
+/// Lightweight index + asm/calls/sections/strings (Rust-only, no Ghidra).
+fn run_rust_index_job(input: &Path, workspace: &Path) -> Result<DecompileRunReport, RustpenError> {
+    use addr2line::Context;
+    use capstone::{Capstone, arch::BuildsCapstone};
+    use goblin::Object;
+    use goblin::elf::sym::STT_FUNC;
+    use iced_x86::{Decoder, DecoderOptions, FlowControl, Formatter, Instruction, NasmFormatter};
+    use serde_json::json;
+    use std::io::Write;
+
+    std::fs::create_dir_all(workspace)?;
+    let id = new_job_id();
+    let jobs_root = workspace.join("jobs");
+    let job_dir = jobs_root.join(&id);
+    std::fs::create_dir_all(&job_dir)?;
+    let out_dir = workspace.join("reverse_out").join(&id);
+    std::fs::create_dir_all(&out_dir)?;
+
+    let index_path = out_dir.join("index.jsonl");
+    let asm_path = out_dir.join("asm_preview.jsonl");
+    let calls_path = out_dir.join("calls_preview.jsonl");
+    let xrefs_path = out_dir.join("xrefs_preview.jsonl");
+    let sections_path = out_dir.join("sections.jsonl");
+    let strings_path = out_dir.join("strings_ascii.jsonl");
+    let strings_utf16_path = out_dir.join("strings_utf16.jsonl");
+    let stdout_log = job_dir.join("stdout.log");
+    let stderr_log = job_dir.join("stderr.log");
+
+    let bytes = std::fs::read(input)?;
+    let arch = detect_arch(&bytes);
+
+    let mut rows = Vec::new();
+    let mut asm_out = Vec::new();
+    let mut calls_out = Vec::new();
+    let mut xrefs_map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut symbol_map: HashMap<u64, String> = HashMap::new();
+    let mut import_map: HashMap<u64, String> = HashMap::new();
+    let mut sections_out = Vec::new();
+    let mut strings_out = Vec::new();
+    let mut strings_out_utf16 = Vec::new();
+    let mut extra_artifacts: Vec<PathBuf> = Vec::new();
+    let obj = addr2line::object::File::parse(&*bytes).ok();
+    let mut dwarf_ctx: Option<
+        Context<addr2line::gimli::EndianReader<addr2line::gimli::RunTimeEndian, std::rc::Rc<[u8]>>>,
+    > = None;
+    if let Some(ref ofile) = obj {
+        if let Ok(ctx) = Context::new(ofile) {
+            dwarf_ctx = Some(ctx);
+        }
+    }
+
+    let demangle = |name: &str| -> Option<String> {
+        let d = symbolic_demangle::demangle(name);
+        match d {
+            std::borrow::Cow::Owned(s) => Some(s),
+            std::borrow::Cow::Borrowed(s) if s != name => Some(s.to_string()),
+            _ => None,
+        }
+    };
+
+    let entry_addr = match Object::parse(&bytes) {
+        Ok(Object::Elf(elf)) => {
+            let entry = elf.entry;
+            rows.push(json!({ "ea": format!("0x{:x}", entry), "name": "entry", "signature": "", "size": 0 }));
+            let strtab = elf.strtab;
+            for sym in elf.syms.iter() {
+                if sym.st_type() != STT_FUNC || sym.st_value == 0 {
+                    continue;
+                }
+                if let Some(name) = strtab.get_at(sym.st_name) {
+                    let mut row = json!({ "ea": format!("0x{:x}", sym.st_value), "name": name, "signature": "", "size": sym.st_size });
+                    if let Some(d) = demangle(name) {
+                        row["demangled"] = serde_json::Value::String(d.clone());
+                        symbol_map.insert(sym.st_value, d);
+                    } else {
+                        symbol_map.insert(sym.st_value, name.to_string());
+                    }
+                    if let Some(ctx) = dwarf_ctx.as_ref() {
+                        if let Ok(Some(loc)) = ctx.find_location(sym.st_value) {
+                            if let (Some(file), Some(line)) = (loc.file, loc.line) {
+                                row["signature"] = json!(format!("{}:{}", file, line));
+                            }
+                        }
+                    }
+                    rows.push(row);
+                }
+            }
+            for sh in &elf.section_headers {
+                if let Some(name) = elf.shdr_strtab.get_at(sh.sh_name) {
+                    sections_out.push(json!({
+                        "name": name,
+                        "addr": format!("0x{:x}", sh.sh_addr),
+                        "size": sh.sh_size,
+                        "flags": sh.sh_flags,
+                    }));
+                }
+            }
+            for sym in elf.dynsyms.iter() {
+                if sym.st_value == 0 {
+                    continue;
+                }
+                if let Some(name) = elf.dynstrtab.get_at(sym.st_name) {
+                    import_map.insert(sym.st_value, name.to_string());
+                }
+            }
+            Some(entry)
+        }
+        Ok(Object::PE(pe)) => {
+            let entry = (pe.entry as u64).saturating_add(pe.image_base as u64);
+            rows.push(json!({ "ea": format!("0x{:x}", entry), "name": "entry", "signature": "", "size": 0 }));
+            for exp in pe.exports.iter() {
+                let va = exp.rva as u64 + pe.image_base as u64;
+                if let Some(name) = exp.name {
+                    let demangled = demangle(name).unwrap_or_else(|| name.to_string());
+                    symbol_map.insert(va, demangled.clone());
+                    rows.push(json!({ "ea": format!("0x{:x}", va), "name": name, "demangled": demangled, "signature": "", "size": 0 }));
+                } else {
+                    rows.push(json!({ "ea": format!("0x{:x}", va), "name": "export", "signature": "", "size": 0 }));
+                }
+            }
+            for imp in &pe.imports {
+                let dll = imp.dll;
+                let name = if !imp.name.is_empty() {
+                    imp.name.to_string()
+                } else if imp.ordinal != 0 {
+                    format!("#{}", imp.ordinal)
+                } else {
+                    "<ordinal>".to_string()
+                };
+                import_map.insert(
+                    imp.rva as u64 + pe.image_base as u64,
+                    format!("{}!{}", dll, name),
+                );
+            }
+            for s in &pe.sections {
+                sections_out.push(json!({
+                    "name": s.name().unwrap_or("<none>"),
+                    "addr": format!("0x{:x}", s.virtual_address as u64 + pe.image_base as u64),
+                    "size": s.virtual_size.max(s.size_of_raw_data) as u64,
+                    "characteristics": s.characteristics,
+                }));
+            }
+            Some(entry)
+        }
+        _ => {
+            return Err(RustpenError::ParseError(
+                "unsupported binary for rust index backend (expect ELF/PE)".to_string(),
+            ));
+        }
+    };
+
+    // ASCII strings
+    const STR_MIN: usize = 4;
+    const STR_MAX: usize = 5000;
+    let mut cur = Vec::new();
+    for (i, b) in bytes.iter().enumerate() {
+        if (0x20..=0x7e).contains(b) {
+            cur.push(*b);
+        } else {
+            if cur.len() >= STR_MIN {
+                strings_out.push(json!({
+                    "off": format!("0x{:x}", i + 1 - cur.len()),
+                    "s": String::from_utf8_lossy(&cur),
+                }));
+                if strings_out.len() >= STR_MAX {
+                    break;
+                }
+            }
+            cur.clear();
+        }
+    }
+    // UTF-16LE strings
+    let mut cur16 = Vec::<u16>::new();
+    for (idx, chunk) in bytes.chunks_exact(2).enumerate() {
+        let v = u16::from_le_bytes([chunk[0], chunk[1]]);
+        if (0x20u16..=0x7eu16).contains(&v) {
+            cur16.push(v);
+        } else {
+            if cur16.len() >= STR_MIN {
+                let off = idx * 2 + 2 - cur16.len() * 2;
+                strings_out_utf16.push(json!({
+                    "off": format!("0x{:x}", off),
+                    "s": String::from_utf16_lossy(&cur16),
+                }));
+                if strings_out_utf16.len() >= STR_MAX {
+                    break;
+                }
+            }
+            cur16.clear();
+        }
+    }
+
+    // Disassembly & calls (stream all; soft cap to avoid OOM)
+    const ASM_LIMIT_INDEX: usize = 400_000;
+    const ASM_LIMIT_ASM: usize = 200_000;
+    let asm_limit = ASM_LIMIT_INDEX;
+    match arch {
+        DisasmArch::X86_64 | DisasmArch::X86_32 => {
+            let bitness = if matches!(arch, DisasmArch::X86_64) {
+                64
+            } else {
+                32
+            };
+            let decoder = Decoder::with_ip(bitness, &bytes, 0, DecoderOptions::NONE);
+            let mut decoder = decoder;
+            let mut formatter = NasmFormatter::new();
+            formatter.options_mut().set_first_operand_char_index(10);
+            let mut instr = Instruction::default();
+            let mut count = 0usize;
+            let mut func_calls: HashMap<u64, Vec<serde_json::Value>> = HashMap::new();
+            let mut func_xrefs: HashMap<u64, Vec<serde_json::Value>> = HashMap::new();
+            let mut func_blocks: HashMap<u64, Vec<(u64, u64, FlowControl)>> = HashMap::new();
+            let reloc_syms = build_reloc_symbol_map(&bytes).unwrap_or_default();
+
+            // simple func list for grouping (use symbol_map keys)
+            let mut func_addrs: Vec<u64> = symbol_map.keys().copied().collect();
+            if let Some(entry) = entry_addr {
+                func_addrs.push(entry);
+            }
+            func_addrs.sort_unstable();
+            let lookup_func = |addr: u64, funcs: &Vec<u64>| -> Option<u64> {
+                funcs.iter().rev().find(|a| addr >= **a).copied()
+            };
+
+            while decoder.can_decode() && count < asm_limit {
+                decoder.decode_out(&mut instr);
+                let mut line = String::new();
+                let _ = formatter.format(&instr, &mut line);
+                asm_out.push(json!({"ea": format!("0x{:x}", instr.ip()), "text": line}));
+
+                // cfg blocks
+                if let Some(func) = lookup_func(instr.ip(), &func_addrs) {
+                    let bb = func_blocks.entry(func).or_default();
+                    if bb
+                        .last()
+                        .map(|(_, _, fc)| fc != &instr.flow_control())
+                        .unwrap_or(true)
+                    {
+                        bb.push((instr.ip(), instr.len() as u64, instr.flow_control()));
+                    } else if let Some(last) = bb.last_mut() {
+                        last.1 += instr.len() as u64;
+                    }
+                }
+
+                if instr.is_call_near() || instr.is_call_far() {
+                    if instr.op_count() > 0 {
+                        let op0 = instr.op0_kind();
+                        if op0 == iced_x86::OpKind::NearBranch64
+                            || op0 == iced_x86::OpKind::NearBranch32
+                        {
+                            let from = format!("0x{:x}", instr.ip());
+                            let to = instr.near_branch_target();
+                            let to_str = format!("0x{:x}", to);
+                            let name = symbol_map
+                                .get(&to)
+                                .or_else(|| import_map.get(&to))
+                                .or_else(|| reloc_syms.get(&to))
+                                .cloned();
+                            calls_out.push(
+                                json!({"from": from.clone(), "to": to_str.clone(), "symbol": name}),
+                            );
+                            xrefs_map.entry(to_str).or_default().push(from.clone());
+                            if let Some(func) = lookup_func(instr.ip(), &func_addrs) {
+                                func_calls
+                                    .entry(func)
+                                    .or_default()
+                                    .push(json!({"from": instr.ip(), "to": to, "symbol": name}));
+                            }
+                            if let Some(func) = lookup_func(to, &func_addrs) {
+                                func_xrefs
+                                    .entry(func)
+                                    .or_default()
+                                    .push(json!({"from": instr.ip(), "to": to, "symbol": name}));
+                            }
+                        }
+                    }
+                }
+
+                // tail call (jmp near)
+                if instr.mnemonic() == iced_x86::Mnemonic::Jmp
+                    && instr.op_count() > 0
+                    && (instr.op0_kind() == iced_x86::OpKind::NearBranch64
+                        || instr.op0_kind() == iced_x86::OpKind::NearBranch32)
+                {
+                    let to = instr.near_branch_target();
+                    let to_str = format!("0x{:x}", to);
+                    let name = symbol_map
+                        .get(&to)
+                        .or_else(|| import_map.get(&to))
+                        .or_else(|| reloc_syms.get(&to))
+                        .cloned();
+                    xrefs_map
+                        .entry(to_str.clone())
+                        .or_default()
+                        .push(format!("0x{:x}", instr.ip()));
+                    // mark as call edge for tail call
+                    calls_out.push(json!({"from": format!("0x{:x}", instr.ip()), "to": to_str, "symbol": name, "tail": true}));
+                }
+                count += 1;
+            }
+
+            // per-function calls/xrefs/cfg
+            let calls_func_path = out_dir.join("calls_functions.jsonl");
+            let xrefs_func_path = out_dir.join("xrefs_functions.jsonl");
+            let cfg_path = out_dir.join("cfg_functions.jsonl");
+            extra_artifacts.push(calls_func_path.clone());
+            extra_artifacts.push(xrefs_func_path.clone());
+            extra_artifacts.push(cfg_path.clone());
+            let mut f_calls = std::fs::File::create(&calls_func_path).map_err(RustpenError::Io)?;
+            for (func, edges) in &func_calls {
+                let name = symbol_map.get(func).cloned().unwrap_or_default();
+                let row = json!({"func": format!("0x{:x}", func), "name": name, "calls": edges});
+                writeln!(
+                    f_calls,
+                    "{}",
+                    serde_json::to_string(&row)
+                        .map_err(|e| RustpenError::ParseError(e.to_string()))?
+                )
+                .map_err(RustpenError::Io)?;
+            }
+            let mut f_xrefs = std::fs::File::create(&xrefs_func_path).map_err(RustpenError::Io)?;
+            for (func, edges) in &func_xrefs {
+                let name = symbol_map.get(func).cloned().unwrap_or_default();
+                let row = json!({"func": format!("0x{:x}", func), "name": name, "xrefs": edges});
+                writeln!(
+                    f_xrefs,
+                    "{}",
+                    serde_json::to_string(&row)
+                        .map_err(|e| RustpenError::ParseError(e.to_string()))?
+                )
+                .map_err(RustpenError::Io)?;
+            }
+            let mut f_cfg = std::fs::File::create(&cfg_path).map_err(RustpenError::Io)?;
+            for (func, blocks) in &func_blocks {
+                let name = symbol_map.get(func).cloned().unwrap_or_default();
+                let bbs: Vec<_> = blocks
+                    .iter()
+                    .map(|(a, len, fc)| json!({ "addr": format!("0x{:x}", a), "len": len, "flow": format!("{:?}", fc) }))
+                    .collect();
+                let row = json!({"func": format!("0x{:x}", func), "name": name, "blocks": bbs});
+                writeln!(
+                    f_cfg,
+                    "{}",
+                    serde_json::to_string(&row)
+                        .map_err(|e| RustpenError::ParseError(e.to_string()))?
+                )
+                .map_err(RustpenError::Io)?;
+            }
+        }
+        DisasmArch::Arm | DisasmArch::Arm64 => {
+            let cs = if matches!(arch, DisasmArch::Arm64) {
+                Capstone::new()
+                    .arm64()
+                    .mode(capstone::arch::arm64::ArchMode::Arm)
+                    .detail(false)
+                    .build()
+            } else {
+                Capstone::new()
+                    .arm()
+                    .mode(capstone::arch::arm::ArchMode::Arm)
+                    .detail(false)
+                    .build()
+            }
+            .map_err(|e| RustpenError::ParseError(format!("capstone init: {}", e)))?;
+
+            let insns = cs
+                .disasm_all(&bytes, 0)
+                .map_err(|e| RustpenError::ParseError(format!("capstone disasm: {}", e)))?;
+            let mut func_calls: HashMap<u64, Vec<serde_json::Value>> = HashMap::new();
+            let mut func_xrefs: HashMap<u64, Vec<serde_json::Value>> = HashMap::new();
+            let mut func_blocks: HashMap<u64, Vec<(u64, u64, String, Vec<String>)>> =
+                HashMap::new();
+            let mut func_addrs: Vec<u64> = symbol_map.keys().copied().collect();
+            if let Some(entry) = entry_addr {
+                func_addrs.push(entry);
+            }
+            func_addrs.sort_unstable();
+            func_addrs.dedup();
+            let lookup_func = |addr: u64, funcs: &Vec<u64>| -> Option<u64> {
+                funcs.iter().rev().find(|a| addr >= **a).copied()
+            };
+
+            for ins in insns.iter().take(asm_limit) {
+                asm_out
+                    .push(json!({"ea": format!("0x{:x}", ins.address()), "text": ins.to_string()}));
+                let mnemonic = ins.mnemonic().unwrap_or("").to_ascii_lowercase();
+                if let Some(func) = lookup_func(ins.address(), &func_addrs) {
+                    let flow = if mnemonic.starts_with("ret") || mnemonic == "bx" {
+                        "Return"
+                    } else if mnemonic.starts_with('b') {
+                        "Branch"
+                    } else {
+                        "Next"
+                    };
+                    let blocks = func_blocks.entry(func).or_default();
+                    let mut targets = Vec::new();
+                    if flow == "Branch" {
+                        if let Some(op) = ins.op_str() {
+                            if let Some(hex) = op.trim().strip_prefix("0x") {
+                                if let Ok(t) = u64::from_str_radix(hex, 16) {
+                                    targets.push(format!("0x{:x}", t));
+                                }
+                            }
+                        }
+                    }
+                    if blocks
+                        .last()
+                        .map(|(_, _, last_flow, _)| last_flow != flow)
+                        .unwrap_or(true)
+                    {
+                        blocks.push((
+                            ins.address(),
+                            ins.bytes().len() as u64,
+                            flow.to_string(),
+                            targets,
+                        ));
+                    } else if let Some(last) = blocks.last_mut() {
+                        last.1 += ins.bytes().len() as u64;
+                        last.3.extend(targets);
+                    }
+                }
+                if mnemonic.starts_with("bl") {
+                    if let Some(op) = ins.op_str() {
+                        if let Some(stripped) = op.trim().strip_prefix("0x") {
+                            if let Ok(to) = u64::from_str_radix(stripped, 16) {
+                                let from = format!("0x{:x}", ins.address());
+                                let to_str = format!("0x{:x}", to);
+                                let name =
+                                    symbol_map.get(&to).or_else(|| import_map.get(&to)).cloned();
+                                calls_out.push(json!({"from": from.clone(), "to": to_str.clone(), "symbol": name}));
+                                xrefs_map.entry(to_str).or_default().push(from);
+                                if let Some(func) = lookup_func(ins.address(), &func_addrs) {
+                                    func_calls
+                                        .entry(func)
+                                        .or_default()
+                                        .push(json!({"from": ins.address(), "to": to, "symbol": name.clone()}));
+                                }
+                                if let Some(func) = lookup_func(to, &func_addrs) {
+                                    func_xrefs.entry(func).or_default().push(
+                                        json!({"from": ins.address(), "to": to, "symbol": name}),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // per-function outputs for ARM/ARM64
+            let calls_func_path = out_dir.join("calls_functions.jsonl");
+            let xrefs_func_path = out_dir.join("xrefs_functions.jsonl");
+            let cfg_path = out_dir.join("cfg_functions.jsonl");
+            extra_artifacts.push(calls_func_path.clone());
+            extra_artifacts.push(xrefs_func_path.clone());
+            extra_artifacts.push(cfg_path.clone());
+            let mut f_calls = std::fs::File::create(&calls_func_path).map_err(RustpenError::Io)?;
+            for (func, edges) in &func_calls {
+                let name = symbol_map.get(func).cloned().unwrap_or_default();
+                let row = json!({"func": format!("0x{:x}", func), "name": name, "calls": edges});
+                writeln!(
+                    f_calls,
+                    "{}",
+                    serde_json::to_string(&row)
+                        .map_err(|e| RustpenError::ParseError(e.to_string()))?
+                )
+                .map_err(RustpenError::Io)?;
+            }
+            let mut f_xrefs = std::fs::File::create(&xrefs_func_path).map_err(RustpenError::Io)?;
+            for (func, edges) in &func_xrefs {
+                let name = symbol_map.get(func).cloned().unwrap_or_default();
+                let row = json!({"func": format!("0x{:x}", func), "name": name, "xrefs": edges});
+                writeln!(
+                    f_xrefs,
+                    "{}",
+                    serde_json::to_string(&row)
+                        .map_err(|e| RustpenError::ParseError(e.to_string()))?
+                )
+                .map_err(RustpenError::Io)?;
+            }
+            let mut f_cfg = std::fs::File::create(&cfg_path).map_err(RustpenError::Io)?;
+            for (func, blocks) in &func_blocks {
+                let name = symbol_map.get(func).cloned().unwrap_or_default();
+                let bbs: Vec<_> = blocks
+                    .iter()
+                    .map(|(a, len, flow, tgt)| {
+                        json!({ "addr": format!("0x{:x}", a), "len": len, "flow": flow, "targets": tgt })
+                    })
+                    .collect();
+                let row = json!({"func": format!("0x{:x}", func), "name": name, "blocks": bbs});
+                writeln!(
+                    f_cfg,
+                    "{}",
+                    serde_json::to_string(&row)
+                        .map_err(|e| RustpenError::ParseError(e.to_string()))?
+                )
+                .map_err(RustpenError::Io)?;
+            }
+        }
+        DisasmArch::Unsupported => { /* leave empty; will still output index/sections/strings */ }
+    }
+
+    // Write outputs
+    let mut f = std::fs::File::create(&index_path).map_err(RustpenError::Io)?;
+    for row in &rows {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    let mut f = std::fs::File::create(&asm_path).map_err(RustpenError::Io)?;
+    for row in &asm_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    let mut f = std::fs::File::create(&calls_path).map_err(RustpenError::Io)?;
+    for row in &calls_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    let mut f = std::fs::File::create(&xrefs_path).map_err(RustpenError::Io)?;
+    for (to, froms) in &xrefs_map {
+        let row = json!({ "to": to, "froms": froms });
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(&row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    let mut f = std::fs::File::create(&sections_path).map_err(RustpenError::Io)?;
+    for row in &sections_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    let mut f = std::fs::File::create(&strings_path).map_err(RustpenError::Io)?;
+    for row in &strings_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    let mut f = std::fs::File::create(&strings_utf16_path).map_err(RustpenError::Io)?;
+    for row in &strings_out_utf16 {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    std::fs::write(
+        &stdout_log,
+        format!(
+            "rust index arch={:?} rows={} asm={} calls={} xrefs={} strings16={}\n",
+            arch,
+            rows.len(),
+            asm_out.len(),
+            calls_out.len(),
+            xrefs_map.len(),
+            strings_out_utf16.len()
+        ),
+    )?;
+    std::fs::write(&stderr_log, "")?;
+
+    let job = ReverseJobMeta {
+        id,
+        kind: "decompile".to_string(),
+        backend: "rust-index".to_string(),
+        mode: Some("index".to_string()),
+        function: None,
+        target: input.to_path_buf(),
+        workspace: workspace.to_path_buf(),
+        status: ReverseJobStatus::Succeeded,
+        created_at: now_epoch_secs(),
+        started_at: Some(now_epoch_secs()),
+        ended_at: Some(now_epoch_secs()),
+        exit_code: Some(0),
+        program: "rust-index".to_string(),
+        args: Vec::new(),
+        note: "rust index backend (no Ghidra)".to_string(),
+        artifacts: {
+            let mut arts = vec![
+                path_to_string(index_path),
+                path_to_string(asm_path),
+                path_to_string(calls_path),
+                path_to_string(xrefs_path),
+                path_to_string(sections_path),
+                path_to_string(strings_path),
+                path_to_string(strings_utf16_path),
+            ];
+            arts.extend(extra_artifacts.into_iter().map(path_to_string));
+            arts
+        },
+        error: None,
+    };
+    save_job_meta(&job_dir.join("meta.json"), &job)?;
+
+    Ok(DecompileRunReport {
+        job,
+        stdout_log,
+        stderr_log,
+    })
+}
+
+/// Lightweight ASM-only export (no pseudocode), supports x86/x86_64 and ARM/ARM64.
+fn run_rust_asm_job(
+    input: &Path,
+    workspace: &Path,
+    mode: super::model::DecompileMode,
+) -> Result<DecompileRunReport, RustpenError> {
+    use capstone::{Capstone, arch::BuildsCapstone};
+    use iced_x86::{Decoder, DecoderOptions, Formatter, Instruction, NasmFormatter};
+    use serde_json::json;
+    use std::io::Write;
+
+    std::fs::create_dir_all(workspace)?;
+    let id = new_job_id();
+    let jobs_root = workspace.join("jobs");
+    let job_dir = jobs_root.join(&id);
+    std::fs::create_dir_all(&job_dir)?;
+    let out_dir = workspace.join("reverse_out").join(&id);
+    std::fs::create_dir_all(&out_dir)?;
+
+    let asm_path = out_dir.join(match mode {
+        super::model::DecompileMode::Function => "function_asm.jsonl",
+        _ => "asm_full.jsonl",
+    });
+    let calls_path = out_dir.join(match mode {
+        super::model::DecompileMode::Function => "function_calls.jsonl",
+        _ => "calls.jsonl",
+    });
+    let xrefs_path = out_dir.join(match mode {
+        super::model::DecompileMode::Function => "function_xrefs.jsonl",
+        _ => "xrefs.jsonl",
+    });
+    let stdout_log = job_dir.join("stdout.log");
+    let stderr_log = job_dir.join("stderr.log");
+
+    let bytes = std::fs::read(input)?;
+    let arch = detect_arch(&bytes);
+
+    let mut asm_out = Vec::new();
+    let mut calls_out = Vec::new();
+    let mut xrefs_map: HashMap<String, Vec<String>> = HashMap::new();
+
+    match arch {
+        DisasmArch::X86_64 | DisasmArch::X86_32 => {
+            let bitness = if matches!(arch, DisasmArch::X86_64) {
+                64
+            } else {
+                32
+            };
+            let mut decoder = Decoder::with_ip(bitness, &bytes, 0, DecoderOptions::NONE);
+            let mut formatter = NasmFormatter::new();
+            formatter.options_mut().set_first_operand_char_index(10);
+            let mut instr = Instruction::default();
+            let mut count = 0usize;
+            while decoder.can_decode() && count < 20_000 {
+                decoder.decode_out(&mut instr);
+                let mut line = String::new();
+                let _ = formatter.format(&instr, &mut line);
+                asm_out.push(json!({"ea": format!("0x{:x}", instr.ip()), "text": line}));
+                if instr.is_call_near() || instr.is_call_far() {
+                    if instr.op_count() > 0 {
+                        let op0 = instr.op0_kind();
+                        if op0 == iced_x86::OpKind::NearBranch64
+                            || op0 == iced_x86::OpKind::NearBranch32
+                        {
+                            let from = format!("0x{:x}", instr.ip());
+                            let to = format!("0x{:x}", instr.near_branch_target());
+                            calls_out.push(json!({ "from": from.clone(), "to": to.clone() }));
+                            xrefs_map.entry(to).or_default().push(from);
+                        }
+                    }
+                }
+                count += 1;
+            }
+        }
+        DisasmArch::Arm | DisasmArch::Arm64 => {
+            let cs = if matches!(arch, DisasmArch::Arm64) {
+                Capstone::new()
+                    .arm64()
+                    .mode(capstone::arch::arm64::ArchMode::Arm)
+                    .detail(false)
+                    .build()
+            } else {
+                Capstone::new()
+                    .arm()
+                    .mode(capstone::arch::arm::ArchMode::Arm)
+                    .detail(false)
+                    .build()
+            }
+            .map_err(|e| RustpenError::ParseError(format!("capstone init: {}", e)))?;
+
+            let insns = cs
+                .disasm_all(&bytes, 0)
+                .map_err(|e| RustpenError::ParseError(format!("capstone disasm: {}", e)))?;
+            for ins in insns.iter().take(20_000) {
+                asm_out
+                    .push(json!({"ea": format!("0x{:x}", ins.address()), "text": ins.to_string()}));
+                let mnem = ins.mnemonic().unwrap_or("").to_ascii_lowercase();
+                if mnem.starts_with("bl") {
+                    if let Some(op) = ins.op_str() {
+                        if let Some(hex) = op.trim().strip_prefix("0x") {
+                            if let Ok(to_u64) = u64::from_str_radix(hex, 16) {
+                                let from = format!("0x{:x}", ins.address());
+                                let to = format!("0x{:x}", to_u64);
+                                calls_out.push(json!({ "from": from.clone(), "to": to.clone() }));
+                                xrefs_map.entry(to).or_default().push(from);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        DisasmArch::Unsupported => { /* leave empty */ }
+    }
+
+    // write outputs
+    {
+        let mut f = std::fs::File::create(&asm_path).map_err(RustpenError::Io)?;
+        for row in &asm_out {
+            let line =
+                serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?;
+            writeln!(f, "{line}").map_err(RustpenError::Io)?;
+        }
+    }
+    {
+        let mut f = std::fs::File::create(&calls_path).map_err(RustpenError::Io)?;
+        for row in &calls_out {
+            let line =
+                serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?;
+            writeln!(f, "{line}").map_err(RustpenError::Io)?;
+        }
+    }
+    {
+        let mut f = std::fs::File::create(&xrefs_path).map_err(RustpenError::Io)?;
+        for (to, froms) in &xrefs_map {
+            let row = json!({ "to": to, "froms": froms });
+            let line =
+                serde_json::to_string(&row).map_err(|e| RustpenError::ParseError(e.to_string()))?;
+            writeln!(f, "{line}").map_err(RustpenError::Io)?;
+        }
+    }
+
+    std::fs::write(
+        &stdout_log,
+        format!(
+            "rust asm backend arch={:?} asm={} calls={} xrefs={}\n",
+            arch,
+            asm_out.len(),
+            calls_out.len(),
+            xrefs_map.len()
+        ),
+    )?;
+    std::fs::write(&stderr_log, "")?;
+
+    let job = ReverseJobMeta {
+        id,
+        kind: "decompile".to_string(),
+        backend: "rust-asm".to_string(),
+        mode: Some(format!("{:?}", mode).to_ascii_lowercase()),
+        function: None,
+        target: input.to_path_buf(),
+        workspace: workspace.to_path_buf(),
+        status: ReverseJobStatus::Succeeded,
+        created_at: now_epoch_secs(),
+        started_at: Some(now_epoch_secs()),
+        ended_at: Some(now_epoch_secs()),
+        exit_code: Some(0),
+        program: "rust-asm".to_string(),
+        args: Vec::new(),
+        note: "rust asm-only backend (no pseudocode)".to_string(),
+        artifacts: vec![
+            path_to_string(asm_path),
+            path_to_string(calls_path),
+            path_to_string(xrefs_path),
+            path_to_string(stdout_log.clone()),
+            path_to_string(stderr_log.clone()),
+        ],
+        error: None,
+    };
+    save_job_meta(&job_dir.join("meta.json"), &job)?;
+
+    Ok(DecompileRunReport {
+        job,
+        stdout_log,
+        stderr_log,
+    })
+}
 fn run_with_logs_and_timeout(
     program: &str,
     args: &[String],
@@ -718,4 +1865,44 @@ mod tests {
             Some(25 * 1024 * 1024)
         ));
     }
+}
+fn build_reloc_symbol_map(bytes: &[u8]) -> Result<HashMap<u64, String>, RustpenError> {
+    let mut map = HashMap::new();
+    match goblin::Object::parse(bytes) {
+        Ok(goblin::Object::Elf(elf)) => {
+            // dynsyms names
+            let mut sym_names = HashMap::new();
+            for (idx, sym) in elf.dynsyms.iter().enumerate() {
+                if let Some(name) = elf.dynstrtab.get_at(sym.st_name) {
+                    sym_names.insert(idx as u32, name.to_string());
+                }
+            }
+            for r in elf.dynrelas.iter().chain(elf.dynrels.iter()) {
+                if let Some(name) = sym_names.get(&(r.r_sym as u32)) {
+                    map.insert(r.r_offset, name.clone());
+                }
+            }
+            for r in elf.pltrelocs.iter() {
+                if let Some(name) = sym_names.get(&(r.r_sym as u32)) {
+                    map.insert(r.r_offset, name.clone());
+                }
+            }
+        }
+        Ok(goblin::Object::PE(pe)) => {
+            // use imports
+            for imp in pe.imports.iter() {
+                let addr = imp.rva as u64 + pe.image_base as u64;
+                let name = if !imp.name.is_empty() {
+                    imp.name.to_string()
+                } else if imp.ordinal != 0 {
+                    format!("#{}", imp.ordinal)
+                } else {
+                    "<ordinal>".to_string()
+                };
+                map.insert(addr, format!("{}!{}", imp.dll, name));
+            }
+        }
+        _ => {}
+    }
+    Ok(map)
 }

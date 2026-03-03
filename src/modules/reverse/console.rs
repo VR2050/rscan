@@ -22,16 +22,18 @@ use super::{
     clear_jobs, inspect_job_health, list_jobs, load_job_by_id, load_job_pseudocode_rows,
     prune_jobs, run_decompile_job,
 };
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::execute;
+use crossterm::terminal::{
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+};
+use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Tabs};
-use ratatui::Terminal;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use crossterm::execute;
-use tantivy::schema::{Schema, TEXT, STORED, Value as TantivyValue};
+use tantivy::schema::{STORED, Schema, TEXT, Value as TantivyValue};
 use tantivy::{Index, TantivyDocument};
 
 #[derive(Debug, Clone)]
@@ -396,11 +398,7 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                         .and_then(|v| v.as_str())
                         .unwrap_or("<no-ea>")
                         .to_string();
-                    let name = r
-                        .get("name")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("<no-name>")
-                        .to_string();
+                    let name = row_display_name(r, NameViewMode::Both);
                     cprintln!("{} {}", ea, name);
                 }
                 if rows.len() > limit {
@@ -427,7 +425,7 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                 let mut found = false;
                 for r in rows {
                     let ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or_default();
-                    let name = r.get("name").and_then(|v| v.as_str()).unwrap_or_default();
+                    let name = row_name(r);
                     if name == key || ea.eq_ignore_ascii_case(key) {
                         let code = r
                             .get("pseudocode")
@@ -616,7 +614,7 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                 let mut out = Vec::<Value>::new();
                 for r in rows {
                     let caller_ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or_default();
-                    let caller_name = r.get("name").and_then(|v| v.as_str()).unwrap_or_default();
+                    let caller_name = row_display_name(r, NameViewMode::Both);
                     let calls = as_str_vec(r.get("calls"));
                     let call_names = as_str_vec(r.get("call_names"));
                     let ext_refs = as_str_vec(r.get("ext_refs"));
@@ -653,6 +651,55 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                     );
                 } else if hits == 0 {
                     cprintln!("no xrefs");
+                }
+            }
+            "cfg" => {
+                let key = parts.next().ok_or_else(|| RustpenError::MissingArgument {
+                    arg: "cfg <function_name_or_ea> [job_id]".to_string(),
+                })?;
+                let job_id = resolve_job_id(parts.next(), &last_job, &pinned_job, &workspace)?;
+                let Some(job_id) = job_id else {
+                    cprintln!("usage: cfg <function_name_or_ea> [job_id]");
+                    continue;
+                };
+                last_job = Some(job_id.clone());
+                let rows = load_job_rows_cached(&mut row_cache, &workspace, &job_id)?;
+                let mut found = false;
+                for r in rows {
+                    if !row_match_key(r, key) {
+                        continue;
+                    }
+                    let label = format!(
+                        "{} {}",
+                        r.get("ea").and_then(|v| v.as_str()).unwrap_or(""),
+                        r.get("name").and_then(|v| v.as_str()).unwrap_or("")
+                    );
+                    let cfg = as_str_vec(r.get("cfg"));
+                    if cfg.is_empty() {
+                        cprintln!("{}: <no cfg>", label.trim());
+                    } else {
+                        cprintln!("{}", label.trim());
+                        for line in cfg {
+                            cprintln!("  {}", line);
+                        }
+                    }
+                    found = true;
+                    break;
+                }
+                if !found {
+                    cprintln!("function not found: {}", key);
+                }
+            }
+            "cfg-dot" | "cfg-mermaid" => {
+                let job_id = resolve_job_id(parts.next(), &last_job, &pinned_job, &workspace)?;
+                let Some(job_id) = job_id else {
+                    cprintln!("usage: cfg-dot [job_id] | cfg-mermaid [job_id]");
+                    continue;
+                };
+                last_job = Some(job_id.clone());
+                match export_cfg_graph(&workspace, &job_id, cmd == "cfg-mermaid") {
+                    Ok(text) => cprintln!("{}", text),
+                    Err(e) => cprintln!("[rscan] cfg export failed: {}", e),
                 }
             }
             "sections" => {
@@ -1070,6 +1117,7 @@ struct TuiState {
     funcs_view_height: usize,
     right_view_height: usize,
     strings_view_height: usize,
+    name_mode: NameViewMode,
     decompile_rx: Option<Receiver<Result<super::DecompileRunReport, RustpenError>>>,
     decompile_running: bool,
     decompile_last_tick: Instant,
@@ -1102,6 +1150,13 @@ enum TuiTab {
     Externals,
     Strings,
     Asm,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NameViewMode {
+    Original,
+    Demangled,
+    Both,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1175,6 +1230,7 @@ impl TuiState {
             funcs_view_height: 10,
             right_view_height: 12,
             strings_view_height: 6,
+            name_mode: NameViewMode::Both,
             decompile_rx: None,
             decompile_running: false,
             decompile_last_tick: Instant::now(),
@@ -1301,8 +1357,7 @@ impl TuiState {
                 }
             }
         }
-        if self.decompile_running && self.decompile_last_tick.elapsed() >= Duration::from_secs(3)
-        {
+        if self.decompile_running && self.decompile_last_tick.elapsed() >= Duration::from_secs(3) {
             self.log("[rscan] decompile running...");
             self.decompile_last_tick = Instant::now();
         }
@@ -1358,13 +1413,22 @@ impl TuiState {
         if code == "<no pseudocode>" && mode_lower == "index" {
             code = "index mode: pseudocode/asm not exported.\npress d to run full decompile or set RSCAN_TUI_MODE=full.".to_string();
         }
+        let pseudo_missing = code.to_ascii_lowercase().contains("no pseudocode");
         let calls = as_str_vec(r.get("calls"));
         let call_names = as_str_vec(r.get("call_names"));
         let ext = as_str_vec(r.get("ext_refs"));
+        let cfg = as_str_vec(r.get("cfg"));
         let xrefs = as_str_vec(r.get("xrefs"));
         let mut asm = as_str_vec(r.get("asm"));
         if asm.is_empty() && mode_lower == "index" {
             asm.push("<index mode: asm not exported. run full decompile>".to_string());
+        }
+
+        if pseudo_missing
+            && matches!(self.tab, TuiTab::Pseudocode)
+            && (!calls.is_empty() || !cfg.is_empty())
+        {
+            self.tab = TuiTab::Calls;
         }
 
         self.current_code = code.clone();
@@ -1380,6 +1444,14 @@ impl TuiState {
         }
 
         self.ext_items = ext;
+        if !cfg.is_empty() {
+            if !self.ext_items.is_empty() {
+                self.ext_items.push("--- cfg ---".to_string());
+            } else {
+                self.ext_items.push("[cfg]".to_string());
+            }
+            self.ext_items.extend(cfg);
+        }
 
         self.xrefs_items = xrefs;
 
@@ -1420,7 +1492,7 @@ impl TuiState {
             return "<none>".to_string();
         };
         let ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or("");
-        let name = r.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let name = row_display_name(r, self.name_mode);
         if ea.is_empty() && name.is_empty() {
             "<none>".to_string()
         } else if name.is_empty() {
@@ -1438,7 +1510,7 @@ impl TuiState {
         if !ea.is_empty() {
             return Some(ea.to_string());
         }
-        let name = r.get("name").and_then(|v| v.as_str()).unwrap_or_default();
+        let name = row_name(r);
         if !name.is_empty() {
             return Some(name.to_string());
         }
@@ -1485,7 +1557,10 @@ impl TuiState {
                                 },
                             );
                         } else if let serde_json::Value::Object(obj) = v {
-                            let note = obj.get("note").and_then(|v| v.as_str()).map(|s| s.to_string());
+                            let note = obj
+                                .get("note")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string());
                             let mut pseudo = HashMap::new();
                             if let Some(line_map) = obj.get("lines").and_then(|v| v.as_object()) {
                                 for (ln, val) in line_map {
@@ -1721,7 +1796,9 @@ impl TuiState {
                     self.input_buf.clear();
                 }
                 KeyCode::Char('c') => {
-                    if self.focus == TuiFocus::Right && matches!(self.tab, TuiTab::Pseudocode | TuiTab::Asm) {
+                    if self.focus == TuiFocus::Right
+                        && matches!(self.tab, TuiTab::Pseudocode | TuiTab::Asm)
+                    {
                         self.input_mode = TuiInputMode::Prompt;
                         self.pending_action = Some(TuiPendingAction::CommentLine);
                         self.input_buf.clear();
@@ -1732,7 +1809,9 @@ impl TuiState {
                     }
                 }
                 KeyCode::Char('C') => {
-                    if self.focus == TuiFocus::Right && matches!(self.tab, TuiTab::Pseudocode | TuiTab::Asm) {
+                    if self.focus == TuiFocus::Right
+                        && matches!(self.tab, TuiTab::Pseudocode | TuiTab::Asm)
+                    {
                         if let Some(line) = self.current_line_no() {
                             self.clear_line_note_for_current(line);
                         }
@@ -1741,7 +1820,9 @@ impl TuiState {
                     }
                 }
                 KeyCode::Char(';') => {
-                    if self.focus == TuiFocus::Right && matches!(self.tab, TuiTab::Pseudocode | TuiTab::Asm) {
+                    if self.focus == TuiFocus::Right
+                        && matches!(self.tab, TuiTab::Pseudocode | TuiTab::Asm)
+                    {
                         self.input_mode = TuiInputMode::Prompt;
                         self.pending_action = Some(TuiPendingAction::CommentLine);
                         self.input_buf.clear();
@@ -1776,11 +1857,21 @@ impl TuiState {
                 KeyCode::Char('5') => self.set_tab(TuiTab::Strings),
                 KeyCode::Char('6') => self.set_tab(TuiTab::Asm),
                 KeyCode::Char('a') => self.set_tab(TuiTab::Asm),
+                KeyCode::Char('m') => {
+                    self.name_mode = match self.name_mode {
+                        NameViewMode::Original => NameViewMode::Demangled,
+                        NameViewMode::Demangled => NameViewMode::Both,
+                        NameViewMode::Both => NameViewMode::Original,
+                    };
+                    self.log(format!("[rscan] name view: {:?}", self.name_mode));
+                }
                 KeyCode::Char('d') => {
                     self.input_mode = TuiInputMode::Prompt;
                     self.pending_action = Some(TuiPendingAction::Decompile);
                     self.input_buf.clear();
-                    self.log("[rscan] decompile: <full|index|function> [name] [noasm] [only-named]");
+                    self.log(
+                        "[rscan] decompile: <full|index|function> [name] [noasm] [only-named]",
+                    );
                 }
                 KeyCode::Tab => {
                     self.focus = match self.focus {
@@ -1802,72 +1893,75 @@ impl TuiState {
                     return Ok(false);
                 }
                 match code {
-                KeyCode::Esc => {
-                    self.input_mode = TuiInputMode::Normal;
-                    self.input_buf.clear();
-                    self.pending_action = None;
-                }
-                KeyCode::Enter => {
-                    let val = self.input_buf.trim().to_string();
-                    self.input_buf.clear();
-                    self.input_mode = TuiInputMode::Normal;
-                    match self.pending_action.take() {
-                        Some(TuiPendingAction::Filter) => {
-                            self.filter = val;
-                            self.apply_filters();
-                        }
-                        Some(TuiPendingAction::Search) => {
-                            self.search = val;
-                            self.apply_filters();
-                        }
-                        Some(TuiPendingAction::JumpTo) => {
-                            if !val.is_empty() {
-                                self.jump_to(&val);
-                            }
-                        }
-                        Some(TuiPendingAction::Comment) => {
-                            self.set_note_for_current(val);
-                        }
-                        Some(TuiPendingAction::CommentLine) => {
-                            if let Some(line) = self.current_line_no() {
-                                self.set_line_note_for_current(line, val);
-                            } else {
-                                self.log("[rscan] line note: no line selected");
-                            }
-                        }
-                        Some(TuiPendingAction::StringSearch) => {
-                            self.set_string_search(val);
-                        }
-                        Some(TuiPendingAction::DeleteJob) => {
-                            if val.is_empty() {
-                                self.log("[rscan] delete canceled");
-                            } else if val.eq_ignore_ascii_case("yes") || val.eq_ignore_ascii_case("y") {
-                                if let Some(id) = self.current_job_id() {
-                                    self.delete_job(&id);
-                                } else {
-                                    self.log("[rscan] delete: no job selected");
-                                }
-                            } else {
-                                self.delete_job(&val);
-                            }
-                        }
-                        Some(TuiPendingAction::Decompile) => {
-                            self.start_decompile_from_input(&val);
-                        }
-                        Some(TuiPendingAction::Command) => {
-                            if !val.is_empty() {
-                                self.run_command(&val);
-                            }
-                        }
-                        None => {}
+                    KeyCode::Esc => {
+                        self.input_mode = TuiInputMode::Normal;
+                        self.input_buf.clear();
+                        self.pending_action = None;
                     }
+                    KeyCode::Enter => {
+                        let val = self.input_buf.trim().to_string();
+                        self.input_buf.clear();
+                        self.input_mode = TuiInputMode::Normal;
+                        match self.pending_action.take() {
+                            Some(TuiPendingAction::Filter) => {
+                                self.filter = val;
+                                self.apply_filters();
+                            }
+                            Some(TuiPendingAction::Search) => {
+                                self.search = val;
+                                self.apply_filters();
+                            }
+                            Some(TuiPendingAction::JumpTo) => {
+                                if !val.is_empty() {
+                                    self.jump_to(&val);
+                                }
+                            }
+                            Some(TuiPendingAction::Comment) => {
+                                self.set_note_for_current(val);
+                            }
+                            Some(TuiPendingAction::CommentLine) => {
+                                if let Some(line) = self.current_line_no() {
+                                    self.set_line_note_for_current(line, val);
+                                } else {
+                                    self.log("[rscan] line note: no line selected");
+                                }
+                            }
+                            Some(TuiPendingAction::StringSearch) => {
+                                self.set_string_search(val);
+                            }
+                            Some(TuiPendingAction::DeleteJob) => {
+                                if val.is_empty() {
+                                    self.log("[rscan] delete canceled");
+                                } else if val.eq_ignore_ascii_case("yes")
+                                    || val.eq_ignore_ascii_case("y")
+                                {
+                                    if let Some(id) = self.current_job_id() {
+                                        self.delete_job(&id);
+                                    } else {
+                                        self.log("[rscan] delete: no job selected");
+                                    }
+                                } else {
+                                    self.delete_job(&val);
+                                }
+                            }
+                            Some(TuiPendingAction::Decompile) => {
+                                self.start_decompile_from_input(&val);
+                            }
+                            Some(TuiPendingAction::Command) => {
+                                if !val.is_empty() {
+                                    self.run_command(&val);
+                                }
+                            }
+                            None => {}
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        self.input_buf.pop();
+                    }
+                    KeyCode::Char(c) => self.input_buf.push(c),
+                    _ => {}
                 }
-                KeyCode::Backspace => {
-                    self.input_buf.pop();
-                }
-                KeyCode::Char(c) => self.input_buf.push(c),
-                _ => {}
-            }},
+            }
         }
         Ok(false)
     }
@@ -2220,7 +2314,8 @@ impl TuiState {
                     function = self.current_row_key();
                 }
                 _ => {
-                    if let Some(rest) = tok.strip_prefix("fn=")
+                    if let Some(rest) = tok
+                        .strip_prefix("fn=")
                         .or_else(|| tok.strip_prefix("func="))
                         .or_else(|| tok.strip_prefix("function="))
                     {
@@ -2308,7 +2403,10 @@ impl TuiState {
                 || engine_for_thread.eq_ignore_ascii_case("auto")
             {
                 _env.set("RSCAN_GHIDRA_SKIP_ASM", if skip_asm { "1" } else { "0" });
-                _env.set("RSCAN_GHIDRA_ONLY_NAMED", if only_named { "1" } else { "0" });
+                _env.set(
+                    "RSCAN_GHIDRA_ONLY_NAMED",
+                    if only_named { "1" } else { "0" },
+                );
             }
             let out = run_decompile_job(
                 &input,
@@ -2645,8 +2743,16 @@ impl TuiState {
             return;
         }
         let first = hits[0].clone();
-        let job_id = first.get("job_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let key = first.get("ea").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let job_id = first
+            .get("job_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let key = first
+            .get("ea")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         if !job_id.is_empty() {
             if let Some(pos) = self.jobs.iter().position(|j| j.id == job_id) {
                 self.job_index = pos;
@@ -2658,20 +2764,26 @@ impl TuiState {
         }
         self.log(format!("[rscan] hits: {}", hits.len()));
     }
-
 }
 
 fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
     let size = f.size();
     let vchunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(4), Constraint::Min(5), Constraint::Length(5)].as_ref())
+        .constraints(
+            [
+                Constraint::Length(4),
+                Constraint::Min(5),
+                Constraint::Length(5),
+            ]
+            .as_ref(),
+        )
         .split(size);
 
-    let header = Block::default().title("rscan reverse TUI").borders(Borders::ALL);
-    let job_id = state
-        .current_job_id()
-        .unwrap_or_else(|| "none".to_string());
+    let header = Block::default()
+        .title("rscan reverse TUI")
+        .borders(Borders::ALL);
+    let job_id = state.current_job_id().unwrap_or_else(|| "none".to_string());
     let job_meta = state.jobs.get(state.job_index);
     let job_mode = job_meta
         .and_then(|j| j.mode.clone())
@@ -2687,7 +2799,11 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
     };
     let funcs_total = state.rows.len();
     let funcs_view = state.filtered.len();
-    let decomp_state = if state.decompile_running { "running" } else { "idle" };
+    let decomp_state = if state.decompile_running {
+        "running"
+    } else {
+        "idle"
+    };
     let header_text = Text::from(vec![
         Line::from(vec![
             Span::styled("target: ", Style::default().fg(Color::Yellow)),
@@ -2794,13 +2910,13 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
             .map(|idx| {
                 let r = &state.rows[*idx];
                 let ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or("<no-ea>");
-                let name = r.get("name").and_then(|v| v.as_str()).unwrap_or("<no-name>");
-                let key = if !ea.is_empty() { ea } else { name };
+                let disp = row_display_name(r, state.name_mode);
+                let key = if !ea.is_empty() { ea } else { &disp };
                 let note_mark = match state.notes.get(key) {
                     Some(entry) if entry.has_any() => " *",
                     _ => "",
                 };
-                ListItem::new(format!("{} {}{}", ea, name, note_mark))
+                ListItem::new(format!("{} {}{}", ea, disp, note_mark))
             })
             .collect()
     };
@@ -2838,10 +2954,17 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
     state.right_view_height = right[1].height.saturating_sub(2) as usize;
     state.strings_view_height = right[2].height.saturating_sub(2) as usize;
 
-    let tab_titles = ["Pseudocode", "Calls", "Xrefs", "Externals", "Strings", "Asm"]
-        .iter()
-        .map(|t| Line::from(Span::raw(*t)))
-        .collect::<Vec<_>>();
+    let tab_titles = [
+        "Pseudocode",
+        "Calls",
+        "Xrefs",
+        "Externals",
+        "Strings",
+        "Asm",
+    ]
+    .iter()
+    .map(|t| Line::from(Span::raw(*t)))
+    .collect::<Vec<_>>();
     let tab_idx = match state.tab {
         TuiTab::Pseudocode => 0,
         TuiTab::Calls => 1,
@@ -2972,7 +3095,9 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
             .join("\n")
     };
     let input_hint = match state.input_mode {
-        TuiInputMode::Normal => "(/ filter, s search, S strings, c note, ; line-note, C clear-note, x clear, g goto, : cmd, 1..6 tabs, h/l focus, b back, tab cycle, pgup/pgdn/home/end, enter jump, d decompile, r refresh, R reindex, ? help, q quit)",
+        TuiInputMode::Normal => {
+            "(/ filter, s search, S strings, c note, ; line-note, C clear-note, x clear, g goto, : cmd, 1..6 tabs, h/l focus, b back, tab cycle, pgup/pgdn/home/end, enter jump, d decompile, r refresh, R reindex, ? help, q quit)"
+        }
         TuiInputMode::Prompt => match state.pending_action {
             Some(TuiPendingAction::Filter) => "filter> ",
             Some(TuiPendingAction::JumpTo) => "goto> ",
@@ -2997,8 +3122,8 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
     } else {
         format!("{}\n{}", log, input_line)
     };
-    let bottom = Paragraph::new(bottom_text)
-        .block(Block::default().title("Log").borders(Borders::ALL));
+    let bottom =
+        Paragraph::new(bottom_text).block(Block::default().title("Log").borders(Borders::ALL));
     f.render_widget(bottom, vchunks[2]);
 }
 
@@ -3040,7 +3165,8 @@ fn build_project_index(workspace: &Path) -> Result<usize, RustpenError> {
                 "signature": sig,
                 "size": size
             });
-            let line = serde_json::to_string(&row).map_err(|e| RustpenError::ParseError(e.to_string()))?;
+            let line =
+                serde_json::to_string(&row).map_err(|e| RustpenError::ParseError(e.to_string()))?;
             writeln!(f, "{line}")?;
             count += 1;
         }
@@ -3084,7 +3210,8 @@ fn load_manifest(path: &Path) -> std::collections::HashSet<String> {
 fn save_manifest(path: &Path, set: &std::collections::HashSet<String>) -> Result<(), RustpenError> {
     let mut v: Vec<String> = set.iter().cloned().collect();
     v.sort();
-    let text = serde_json::to_string_pretty(&v).map_err(|e| RustpenError::ParseError(e.to_string()))?;
+    let text =
+        serde_json::to_string_pretty(&v).map_err(|e| RustpenError::ParseError(e.to_string()))?;
     std::fs::write(path, text)?;
     Ok(())
 }
@@ -3114,8 +3241,12 @@ fn build_tantivy_index(workspace: &Path) -> Result<(), RustpenError> {
     let sig_f = schema.get_field("signature").unwrap();
     let all_f = schema.get_field("all").unwrap();
 
-    let mut writer = index.writer(50_000_000).map_err(|e| RustpenError::ScanError(e.to_string()))?;
-    writer.delete_all_documents().map_err(|e| RustpenError::ScanError(e.to_string()))?;
+    let mut writer = index
+        .writer(50_000_000)
+        .map_err(|e| RustpenError::ScanError(e.to_string()))?;
+    writer
+        .delete_all_documents()
+        .map_err(|e| RustpenError::ScanError(e.to_string()))?;
     let rows = load_project_index(workspace)?;
     for r in rows {
         let job_id = r.get("job_id").and_then(|v| v.as_str()).unwrap_or("");
@@ -3131,36 +3262,49 @@ fn build_tantivy_index(workspace: &Path) -> Result<(), RustpenError> {
             all_f => all
         ));
     }
-    writer.commit().map_err(|e| RustpenError::ScanError(e.to_string()))?;
+    writer
+        .commit()
+        .map_err(|e| RustpenError::ScanError(e.to_string()))?;
     Ok(())
 }
 
-fn search_tantivy(
-    workspace: &Path,
-    query: &str,
-) -> Result<Option<(String, String)>, RustpenError> {
+fn search_tantivy(workspace: &Path, query: &str) -> Result<Option<(String, String)>, RustpenError> {
     let index_dir = workspace.join("reverse_out").join("tantivy");
     if !index_dir.exists() {
         return Ok(None);
     }
-    let index = Index::open_in_dir(&index_dir).map_err(|e| RustpenError::ScanError(e.to_string()))?;
+    let index =
+        Index::open_in_dir(&index_dir).map_err(|e| RustpenError::ScanError(e.to_string()))?;
     let schema = index.schema();
     let all_f = schema.get_field("all").unwrap();
     let job_id_f = schema.get_field("job_id").unwrap();
     let ea_f = schema.get_field("ea").unwrap();
-    let reader = index.reader().map_err(|e| RustpenError::ScanError(e.to_string()))?;
+    let reader = index
+        .reader()
+        .map_err(|e| RustpenError::ScanError(e.to_string()))?;
     reader.reload().ok();
     let searcher = reader.searcher();
     let qp = tantivy::query::QueryParser::for_index(&index, vec![all_f]);
-    let q = qp.parse_query(query).map_err(|e| RustpenError::ParseError(e.to_string()))?;
-    let top = searcher.search(&q, &tantivy::collector::TopDocs::with_limit(1))
+    let q = qp
+        .parse_query(query)
+        .map_err(|e| RustpenError::ParseError(e.to_string()))?;
+    let top = searcher
+        .search(&q, &tantivy::collector::TopDocs::with_limit(1))
         .map_err(|e| RustpenError::ScanError(e.to_string()))?;
     if let Some((_score, addr)) = top.into_iter().next() {
         let doc: TantivyDocument = searcher
             .doc(addr)
             .map_err(|e| RustpenError::ScanError(e.to_string()))?;
-        let job_id = doc.get_first(job_id_f).and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let ea = doc.get_first(ea_f).and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let job_id = doc
+            .get_first(job_id_f)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let ea = doc
+            .get_first(ea_f)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         return Ok(Some((job_id, ea)));
     }
     Ok(None)
@@ -3170,14 +3314,22 @@ fn export_graph(workspace: &Path, job_id: &str, ty: &str, out: &str) -> Result<(
     let rows = load_job_pseudocode_rows(workspace, job_id)?;
     let mut edges: Vec<(String, String)> = Vec::new();
     for r in rows {
-        let ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let ea = r
+            .get("ea")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         if ea.is_empty() {
             continue;
         }
         let list = match ty {
             "calls" => as_str_vec(r.get("calls")),
             "xrefs" => as_str_vec(r.get("xrefs")),
-            _ => return Err(RustpenError::ParseError("graph type must be calls|xrefs".to_string())),
+            _ => {
+                return Err(RustpenError::ParseError(
+                    "graph type must be calls|xrefs".to_string(),
+                ));
+            }
         };
         for t in list {
             edges.push((ea.clone(), t));
@@ -3321,6 +3473,9 @@ fn print_help() {
     cprintln!("  search <keyword> [job_id]");
     cprintln!("  calls <function_name_or_ea> [job_id] [json]");
     cprintln!("  xrefs <function_name_or_ea> [job_id] [json]");
+    cprintln!("  cfg <function_name_or_ea> [job_id]");
+    cprintln!("  cfg-dot [job_id]        # export Graphviz DOT");
+    cprintln!("  cfg-mermaid [job_id]    # export mermaid flowchart");
     cprintln!("  sections [json]");
     cprintln!("  imports [json]");
     cprintln!("  symbols [pattern] [limit] [json]");
@@ -3526,14 +3681,17 @@ fn latest_succeeded_job_id(workspace: &Path) -> Result<Option<String>, RustpenEr
 
 fn row_match_key(r: &Value, key: &str) -> bool {
     let ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or_default();
-    let name = r.get("name").and_then(|v| v.as_str()).unwrap_or_default();
+    let name = row_name(r);
     name.eq_ignore_ascii_case(key) || ea.eq_ignore_ascii_case(key)
 }
 
 fn row_match_filter(r: &Value, key: &str) -> bool {
     let ea = r.get("ea").and_then(|v| v.as_str()).unwrap_or_default();
-    let name = r.get("name").and_then(|v| v.as_str()).unwrap_or_default();
-    let sig = r.get("signature").and_then(|v| v.as_str()).unwrap_or_default();
+    let name = row_name(r);
+    let sig = r
+        .get("signature")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default();
     ea.to_ascii_lowercase().contains(key)
         || name.to_ascii_lowercase().contains(key)
         || sig.to_ascii_lowercase().contains(key)
@@ -3553,14 +3711,66 @@ fn row_match_search(r: &Value, key: &str) -> bool {
         return true;
     }
     let calls = as_str_vec(r.get("call_names"));
-    if calls
-        .iter()
-        .any(|c| c.to_ascii_lowercase().contains(key))
-    {
+    if calls.iter().any(|c| c.to_ascii_lowercase().contains(key)) {
+        return true;
+    }
+    let name = row_name(r);
+    if name.to_ascii_lowercase().contains(key) {
         return true;
     }
     let ext = as_str_vec(r.get("ext_refs"));
-    ext.iter().any(|c| c.to_ascii_lowercase().contains(key))
+    if ext.iter().any(|c| c.to_ascii_lowercase().contains(key)) {
+        return true;
+    }
+    let cfg = as_str_vec(r.get("cfg"));
+    cfg.iter().any(|c| c.to_ascii_lowercase().contains(key))
+}
+
+fn row_name(r: &Value) -> String {
+    if let Some(s) = r.get("demangled").and_then(|v| v.as_str()) {
+        if !s.is_empty() {
+            return s.to_string();
+        }
+    }
+    r.get("name")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn row_original_name(r: &Value) -> String {
+    r.get("name")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn row_display_name(r: &Value, mode: NameViewMode) -> String {
+    let orig = row_original_name(r);
+    let dem = r
+        .get("demangled")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default()
+        .to_string();
+    match mode {
+        NameViewMode::Original => orig.clone(),
+        NameViewMode::Demangled => {
+            if !dem.is_empty() {
+                dem
+            } else {
+                orig
+            }
+        }
+        NameViewMode::Both => {
+            if !dem.is_empty() && dem != orig && !orig.is_empty() {
+                format!("{} -> {}", orig, dem)
+            } else if !dem.is_empty() {
+                dem
+            } else {
+                orig
+            }
+        }
+    }
 }
 
 fn as_str_vec(v: Option<&Value>) -> Vec<String> {
@@ -3596,6 +3806,88 @@ where
         out.push("<empty>".to_string());
     }
     out
+}
+
+fn export_cfg_graph(workspace: &Path, job_id: &str, mermaid: bool) -> Result<String, RustpenError> {
+    let path = workspace
+        .join("reverse_out")
+        .join(job_id)
+        .join("cfg_functions.jsonl");
+    if !path.exists() {
+        return Err(RustpenError::ScanError(format!(
+            "cfg file not found: {}",
+            path.display()
+        )));
+    }
+    let file = std::fs::File::open(&path).map_err(RustpenError::Io)?;
+    let reader = BufReader::new(file);
+    let mut edges = Vec::<(String, String)>::new();
+    let mut nodes = Vec::<(String, String)>::new(); // id -> label
+    for (idx, line) in reader.lines().enumerate() {
+        let line = line.map_err(RustpenError::Io)?;
+        if line.trim().is_empty() {
+            continue;
+        }
+        let v: Value = serde_json::from_str(&line)
+            .map_err(|e| RustpenError::ParseError(format!("cfg json line {}: {}", idx + 1, e)))?;
+        let func = v
+            .get("func")
+            .and_then(|v| v.as_str())
+            .unwrap_or("<func>")
+            .to_string();
+        let fname = row_display_name(&v, NameViewMode::Both);
+        if let Some(blocks) = v.get("blocks").and_then(|b| b.as_array()) {
+            for (i, b) in blocks.iter().enumerate() {
+                let addr = b
+                    .get("addr")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("<addr>")
+                    .to_string();
+                let node_id = format!("{}:{}", func, addr);
+                let label = format!("{}\\n{}", fname, addr);
+                nodes.push((node_id.clone(), label));
+                let targets = b
+                    .get("targets")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|t| t.as_str().map(|s| s.to_string()))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+                if !targets.is_empty() {
+                    for t in targets {
+                        edges.push((node_id.clone(), format!("{}:{}", func, t)));
+                    }
+                } else if let Some(next) = blocks.get(i + 1) {
+                    if let Some(naddr) = next.get("addr").and_then(|v| v.as_str()) {
+                        edges.push((node_id.clone(), format!("{}:{}", func, naddr)));
+                    }
+                }
+            }
+        }
+    }
+
+    if mermaid {
+        let mut out = String::from("flowchart TD\n");
+        for (id, label) in nodes {
+            out.push_str(&format!("  \"{}\"[\"{}\"]\n", id, label));
+        }
+        for (a, b) in edges {
+            out.push_str(&format!("  \"{}\" --> \"{}\"\n", a, b));
+        }
+        return Ok(out);
+    }
+
+    let mut out = String::from("digraph cfg {\n  rankdir=LR;\n  node [shape=box];\n");
+    for (id, label) in nodes {
+        out.push_str(&format!("  \"{}\" [label=\"{}\"];\n", id, label));
+    }
+    for (a, b) in edges {
+        out.push_str(&format!("  \"{}\" -> \"{}\";\n", a, b));
+    }
+    out.push('}');
+    Ok(out)
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

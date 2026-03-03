@@ -154,16 +154,14 @@ impl ArpScanner {
         for &t in unique_targets.iter() {
             let mut buffer = [0u8; 42]; // ethernet(14) + arp(28)
             {
-                let mut eth = MutableEthernetPacket::new(&mut buffer[..]).ok_or_else(|| {
-                    RustpenError::ScanError("构造以太网帧失败".to_string())
-                })?;
+                let mut eth = MutableEthernetPacket::new(&mut buffer[..])
+                    .ok_or_else(|| RustpenError::ScanError("构造以太网帧失败".to_string()))?;
                 eth.set_destination(MacAddr::broadcast());
                 eth.set_source(src_mac);
                 eth.set_ethertype(EtherTypes::Arp);
 
-                let mut arp = MutableArpPacket::new(eth.payload_mut()).ok_or_else(|| {
-                    RustpenError::ScanError("构造 ARP 包失败".to_string())
-                })?;
+                let mut arp = MutableArpPacket::new(eth.payload_mut())
+                    .ok_or_else(|| RustpenError::ScanError("构造 ARP 包失败".to_string()))?;
                 arp.set_hardware_type(ArpHardwareTypes::Ethernet);
                 arp.set_protocol_type(EtherTypes::Ipv4);
                 arp.set_hw_addr_len(6);

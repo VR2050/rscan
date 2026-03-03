@@ -552,10 +552,7 @@ fn dynamic_indicators_linux(path: &Path) -> Vec<String> {
         .ok()
         .filter(|v| !v.trim().is_empty())
         .unwrap_or_else(|| "ptrace,prctl,seccomp".to_string());
-    let tmp = std::env::temp_dir().join(format!(
-        "rscan_dyn_{}.log",
-        std::process::id()
-    ));
+    let tmp = std::env::temp_dir().join(format!("rscan_dyn_{}.log", std::process::id()));
     let mut cmd = Command::new("strace");
     cmd.arg("-f")
         .arg("-qq")

@@ -1574,9 +1574,11 @@ where
                 output,
                 out,
             } => {
-                let input = input.or(input_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--input <path> or <INPUT>".to_string(),
-                })?;
+                let input = input
+                    .or(input_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--input <path> or <INPUT>".to_string(),
+                    })?;
                 if dynamic
                     || dynamic_timeout_ms.is_some()
                     || dynamic_syscalls.is_some()
@@ -1645,9 +1647,11 @@ where
                 output,
                 out,
             } => {
-                let input = input.or(input_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--input <path> or <INPUT>".to_string(),
-                })?;
+                let input = input
+                    .or(input_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--input <path> or <INPUT>".to_string(),
+                    })?;
                 let engine = DecompilerEngine::parse(&engine).ok_or_else(|| {
                     RustpenError::ParseError(
                         "invalid --engine. use: objdump|radare2|ghidra|ida|jadx".to_string(),
@@ -1675,9 +1679,11 @@ where
                 output,
                 out,
             } => {
-                let input = input.or(input_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--input <path> or <INPUT>".to_string(),
-                })?;
+                let input = input
+                    .or(input_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--input <path> or <INPUT>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let mode = parse_decompile_mode(&mode)?;
                 let func = function.as_deref();
@@ -1762,9 +1768,11 @@ where
                 output,
                 out,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let info = load_job_by_id(&workspace, &job)?;
                 let s = to_json_or_raw(&info, &output)?;
@@ -1781,9 +1789,11 @@ where
                 workspace,
                 stream,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let (stdout, stderr) = load_job_logs(&workspace, &job)?;
                 match stream.to_ascii_lowercase().as_str() {
@@ -1809,9 +1819,11 @@ where
                 output,
                 out,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let info = load_job_by_id(&workspace, &job)?;
                 let s = to_json_or_raw(&info.artifacts, &output)?;
@@ -1829,9 +1841,11 @@ where
                 output,
                 out,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let rows = load_job_pseudocode_rows(&workspace, &job)?;
                 let funcs: Vec<_> = rows
@@ -1868,12 +1882,16 @@ where
                 output,
                 out,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
-                let name = name.or(name_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--name <fn> or <NAME>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
+                let name = name
+                    .or(name_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--name <fn> or <NAME>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let rows = load_job_pseudocode_rows(&workspace, &job)?;
                 let one = rows.into_iter().find(|r| {
@@ -1901,12 +1919,17 @@ where
                 output,
                 out,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
-                let keyword = keyword.or(keyword_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--keyword <kw> or <KEYWORD>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
+                let keyword =
+                    keyword
+                        .or(keyword_pos)
+                        .ok_or_else(|| RustpenError::MissingArgument {
+                            arg: "--keyword <kw> or <KEYWORD>".to_string(),
+                        })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let kw = keyword.to_ascii_lowercase();
                 let rows = load_job_pseudocode_rows(&workspace, &job)?;
@@ -2014,9 +2037,11 @@ where
                 output,
                 out,
             } => {
-                let job = job.or(job_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--job <id> or <JOB>".to_string(),
-                })?;
+                let job = job
+                    .or(job_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--job <id> or <JOB>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(ReverseOrchestrator::default_workspace);
                 let health = inspect_job_health(&workspace, &job)?;
                 let s = to_json_or_raw(&health, &output)?;
@@ -2034,9 +2059,11 @@ where
                 pwndbg_init,
                 script_out,
             } => {
-                let input = input.or(input_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--input <path> or <INPUT>".to_string(),
-                })?;
+                let input = input
+                    .or(input_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--input <path> or <INPUT>".to_string(),
+                    })?;
                 let profile = DebugProfile::parse(&profile).ok_or_else(|| {
                     RustpenError::ParseError(
                         "invalid --profile, supported: pwngdb|pwndbg".to_string(),
@@ -2081,9 +2108,11 @@ where
                 output,
                 out,
             } => {
-                let input = input.or(input_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--input <path> or <INPUT>".to_string(),
-                })?;
+                let input = input
+                    .or(input_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--input <path> or <INPUT>".to_string(),
+                    })?;
                 let report = MalwareAnalyzer::triage_file(&input)?;
                 let s = to_json_or_raw(&report, &output)?;
                 if let Some(path) = out {
@@ -2139,9 +2168,11 @@ where
                 tui,
                 ghidra_home,
             } => {
-                let input = input.or(input_pos).ok_or_else(|| RustpenError::MissingArgument {
-                    arg: "--input <path> or <INPUT>".to_string(),
-                })?;
+                let input = input
+                    .or(input_pos)
+                    .ok_or_else(|| RustpenError::MissingArgument {
+                        arg: "--input <path> or <INPUT>".to_string(),
+                    })?;
                 let workspace = workspace.unwrap_or_else(|| {
                     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
                 });
@@ -2157,7 +2188,9 @@ where
                 };
                 if tui {
                     if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
-                        eprintln!("[rscan] TUI requires a TTY; falling back to interactive console");
+                        eprintln!(
+                            "[rscan] TUI requires a TTY; falling back to interactive console"
+                        );
                         run_reverse_interactive(cfg)?;
                     } else {
                         run_reverse_tui(cfg)?;

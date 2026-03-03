@@ -206,7 +206,10 @@ fn probe_ghidra_headless() -> BackendBinary {
             path: Some(p),
         };
     }
-    probe_binary("analyzeHeadless", &["analyzeHeadless", "ghidraRun", "ghidraRun.bat"])
+    probe_binary(
+        "analyzeHeadless",
+        &["analyzeHeadless", "ghidraRun", "ghidraRun.bat"],
+    )
 }
 
 fn probe_bundled_ghidra_headless() -> Option<PathBuf> {
@@ -225,8 +228,16 @@ fn probe_bundled_ghidra_headless() -> Option<PathBuf> {
     let mut bases: Vec<PathBuf> = Vec::new();
     for root in roots {
         for p in walk_up(root, 6) {
-            push_root(&mut bases, &mut seen, p.join("third_party/ghidra_core_headless_x86_min"));
-            push_root(&mut bases, &mut seen, p.join("ghidra_core_headless_x86_min"));
+            push_root(
+                &mut bases,
+                &mut seen,
+                p.join("third_party/ghidra_core_headless_x86_min"),
+            );
+            push_root(
+                &mut bases,
+                &mut seen,
+                p.join("ghidra_core_headless_x86_min"),
+            );
         }
     }
 
