@@ -1,0 +1,16 @@
+{
+  "id": "task-manual-vuln",
+  "kind": "vuln",
+  "tags": [
+    "http://127.0.0.1:8080"
+  ],
+  "status": "failed",
+  "created_at": 1772550149,
+  "started_at": 1772550149,
+  "ended_at": 1772550149,
+  "progress": null,
+  "note": "Parse error: no usable templates loaded: []",
+  "artifacts": [],
+  "logs": [],
+  "extra": null
+}

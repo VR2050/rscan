@@ -1,0 +1,4 @@
+{"ts":1772549585,"level":"info","kind":"log","message":"task started","data":null}
+{"ts":1772549585,"level":"info","kind":"progress","message":"start","data":0.0}
+{"ts":1772549585,"level":"info","kind":"log","message":"quick scan host=127.0.0.1","data":null}
+{"ts":1772549585,"level":"info","kind":"log","message":"task finished: Succeeded","data":null}

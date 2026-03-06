@@ -1,0 +1,16 @@
+{
+  "id": "task-18995fcc425dcc0f",
+  "kind": "host",
+  "tags": [
+    "127.0.0.1"
+  ],
+  "status": "succeeded",
+  "created_at": 1772553259,
+  "started_at": 1772553259,
+  "ended_at": 1772553259,
+  "progress": null,
+  "note": null,
+  "artifacts": [],
+  "logs": [],
+  "extra": null
+}

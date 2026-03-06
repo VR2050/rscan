@@ -1,0 +1,16 @@
+{
+  "id": "task-manual-vuln2",
+  "kind": "vuln",
+  "tags": [
+    "https://example.com"
+  ],
+  "status": "succeeded",
+  "created_at": 1772550344,
+  "started_at": 1772550344,
+  "ended_at": 1772550344,
+  "progress": null,
+  "note": null,
+  "artifacts": [],
+  "logs": [],
+  "extra": null
+}

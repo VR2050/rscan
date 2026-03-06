@@ -1,0 +1,2 @@
+{"kind":"meta","payload":{"arch":"X86_64","backend":"rust-index","entry":"0x62e0","file_size":155472,"format":null,"sample":"/bin/ls"}}
+{"kind":"function","payload":{"asm_preview":null,"demangled":null,"ea":"0x62e0","name":"entry","pseudocode":null,"signature":"","size":0,"tags":[]}}

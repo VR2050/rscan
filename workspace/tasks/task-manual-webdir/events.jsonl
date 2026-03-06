@@ -1,0 +1,4 @@
+{"ts":1772550149,"level":"info","kind":"log","message":"task started","data":null}
+{"ts":1772550149,"level":"info","kind":"progress","message":"start","data":0.0}
+{"ts":1772550149,"level":"info","kind":"log","message":"web dir base=http://127.0.0.1:8080 paths=3","data":null}
+{"ts":1772550149,"level":"info","kind":"log","message":"task finished: Failed","data":null}
