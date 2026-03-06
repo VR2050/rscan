@@ -5,10 +5,44 @@ use crate::cores::host::{PortScanner, Protocol};
 
 use crate::cores::engine::scan_job::ScanJob;
 use crate::cores::engine::scan_result::{ScanResult, ScanStatus};
+use tokio::net::TcpStream;
+use tokio::time::{Duration, timeout};
 
 use super::super::backends::syn::SynBackend;
 use super::super::util::map_port_status;
 use std::sync::Arc;
+
+fn should_verify_filtered(job: &ScanJob) -> bool {
+    for tag in &job.tags {
+        if tag == "syn_mode:strict" {
+            return false;
+        }
+        if tag == "syn_mode:verify-filtered" {
+            return true;
+        }
+    }
+    true
+}
+
+async fn verify_filtered_via_connect(job: &ScanJob, port: u16) -> ScanStatus {
+    let addr = std::net::SocketAddr::new(job.target_ip, port);
+    match timeout(
+        Duration::from_millis(job.timeout_ms.max(1)),
+        TcpStream::connect(addr),
+    )
+    .await
+    {
+        Ok(Ok(_)) => ScanStatus::Open,
+        Ok(Err(e)) => {
+            if e.kind() == std::io::ErrorKind::ConnectionRefused {
+                ScanStatus::Closed
+            } else {
+                ScanStatus::Filtered
+            }
+        }
+        Err(_) => ScanStatus::Filtered,
+    }
+}
 
 pub(crate) async fn scan_syn(job: ScanJob, backend: Option<Arc<SynBackend>>) -> ScanResult {
     let Some(port) = job.port else {
@@ -22,7 +56,7 @@ pub(crate) async fn scan_syn(job: ScanJob, backend: Option<Arc<SynBackend>>) -> 
         match job.target_ip {
             std::net::IpAddr::V4(v4) => {
                 let start = Instant::now();
-                let status = backend
+                let mut status = backend
                     .scan_v4(
                         v4,
                         port,
@@ -32,6 +66,9 @@ pub(crate) async fn scan_syn(job: ScanJob, backend: Option<Arc<SynBackend>>) -> 
                         None,
                     )
                     .await;
+                if matches!(status, ScanStatus::Filtered) && should_verify_filtered(&job) {
+                    status = verify_filtered_via_connect(&job, port).await;
+                }
                 return ScanResult::new(job.target_ip, Protocol::Tcp, status)
                     .with_port(port)
                     .with_latency_ms(start.elapsed().as_millis() as u64)
@@ -40,7 +77,7 @@ pub(crate) async fn scan_syn(job: ScanJob, backend: Option<Arc<SynBackend>>) -> 
             }
             std::net::IpAddr::V6(v6) => {
                 let start = Instant::now();
-                let status = backend
+                let mut status = backend
                     .scan_v6(
                         v6,
                         port,
@@ -50,6 +87,9 @@ pub(crate) async fn scan_syn(job: ScanJob, backend: Option<Arc<SynBackend>>) -> 
                         None,
                     )
                     .await;
+                if matches!(status, ScanStatus::Filtered) && should_verify_filtered(&job) {
+                    status = verify_filtered_via_connect(&job, port).await;
+                }
                 return ScanResult::new(job.target_ip, Protocol::Tcp, status)
                     .with_port(port)
                     .with_latency_ms(start.elapsed().as_millis() as u64)
@@ -64,6 +104,7 @@ pub(crate) async fn scan_syn(job: ScanJob, backend: Option<Arc<SynBackend>>) -> 
         concurrent: false,
         concurrency: 1,
         source_port: 0,
+        verify_filtered_with_connect: should_verify_filtered(&job),
     });
 
     let start = Instant::now();

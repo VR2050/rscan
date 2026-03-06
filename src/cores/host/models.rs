@@ -105,8 +105,9 @@ pub struct ScanResult {
     pub protocol: Protocol, // 本次扫描使用的协议类型
 
     // 使用位图存储端口状态，65536位 = 8KB，固定大小，高效查询
-    open_ports: BitVec,    // 位图：1=开放, 0=未开放
-    scanned_ports: BitVec, // 位图：1=已扫描, 0=未扫描
+    open_ports: BitVec,     // 位图：1=开放, 0=未开放
+    filtered_ports: BitVec, // 位图：1=filtered, 0=其他状态
+    scanned_ports: BitVec,  // 位图：1=已扫描, 0=未扫描
 
     // 只存储开放端口的详细信息，避免为关闭端口浪费内存
     open_port_details: Vec<PortResult>,
@@ -118,6 +119,21 @@ pub struct ScanResult {
 }
 
 impl ScanResult {
+    #[inline]
+    fn apply_port_status_bits(&mut self, port: u16, status: PortStatus) {
+        let idx = port as usize;
+        if status == PortStatus::Open {
+            self.open_ports.set(idx, true);
+            self.filtered_ports.set(idx, false);
+        } else if status == PortStatus::Filtered {
+            self.open_ports.set(idx, false);
+            self.filtered_ports.set(idx, true);
+        } else {
+            self.open_ports.set(idx, false);
+            self.filtered_ports.set(idx, false);
+        }
+    }
+
     /// 创建新的扫描结果实例
     pub fn new(host: String, ip: IpAddr, protocol: Protocol) -> Self {
         Self {
@@ -126,6 +142,7 @@ impl ScanResult {
             protocol,
             // 初始化两个65536位的位图（对应所有可能的端口）
             open_ports: bitvec![0; 65536],
+            filtered_ports: bitvec![0; 65536],
             scanned_ports: bitvec![0; 65536],
             // 预分配容量，假设通常开放端口不超过100个
             open_port_details: Vec::with_capacity(100),
@@ -143,12 +160,19 @@ impl ScanResult {
         self.total_scanned += 1;
 
         // 根据状态更新相应位图
-        if status == PortStatus::Open {
-            self.open_ports.set(port as usize, true);
-        } else if status == PortStatus::Error {
+        self.apply_port_status_bits(port, status);
+        if status == PortStatus::Error {
             self.errors += 1;
         }
         // 注意：这里不存储关闭/过滤端口的详细信息
+    }
+
+    /// 覆写已扫描端口状态（不改变 total_scanned）
+    pub fn overwrite_port_status(&mut self, port: u16, status: PortStatus) {
+        self.apply_port_status_bits(port, status);
+        if status != PortStatus::Open {
+            self.open_port_details.retain(|r| r.port != port);
+        }
     }
 
     /// 添加开放端口的详细信息（包含Banner、延迟等）
@@ -172,6 +196,7 @@ impl ScanResult {
             self.total_scanned += 1;
         }
         self.open_ports.set(idx, true);
+        self.filtered_ports.set(idx, false);
         if !self
             .open_port_details
             .iter()
@@ -192,6 +217,16 @@ impl ScanResult {
             .unwrap_or(&false)
     }
 
+    /// 检查端口是否为 filtered
+    #[inline]
+    pub fn is_port_filtered(&self, port: u16) -> bool {
+        *self
+            .filtered_ports
+            .get(port as usize)
+            .as_deref()
+            .unwrap_or(&false)
+    }
+
     /// 获取所有开放端口列表 - 延迟计算（按需生成）
     pub fn open_ports(&self) -> Vec<u16> {
         // 遍历位图中所有为1的位（开放端口）
@@ -204,6 +239,16 @@ impl ScanResult {
     /// 获取开放端口数量 - O(1)位图计数
     pub fn open_ports_count(&self) -> usize {
         self.open_ports.count_ones()
+    }
+
+    /// 获取所有 filtered 端口列表（通常用于二阶段复核）
+    pub fn filtered_ports(&self) -> Vec<u16> {
+        self.filtered_ports.iter_ones().map(|i| i as u16).collect()
+    }
+
+    /// 获取 filtered 端口数量
+    pub fn filtered_ports_count(&self) -> usize {
+        self.filtered_ports.count_ones()
     }
 
     /// 获取开放端口的详细信息（只读引用）
@@ -235,6 +280,8 @@ impl ScanResult {
             protocol: format!("{:?}", self.protocol),  // 枚举转字符串
             open_ports: self.open_ports(),             // 计算开放端口列表
             open_ports_count: self.open_ports_count(), // 开放端口数量
+            filtered_ports: self.filtered_ports(),
+            filtered_ports_count: self.filtered_ports_count(),
             details: self
                 .open_port_details
                 .iter() // 转换详细信息
@@ -260,6 +307,8 @@ pub struct ScanResultJson {
     pub protocol: String,             // 协议字符串
     pub open_ports: Vec<u16>,         // 开放端口列表
     pub open_ports_count: usize,      // 开放端口数量
+    pub filtered_ports: Vec<u16>,     // filtered端口列表
+    pub filtered_ports_count: usize,  // filtered端口数量
     pub details: Vec<PortResultJson>, // 端口详细信息
     pub scan_duration_ms: u64,        // 扫描耗时（毫秒）
     pub total_scanned: u32,           // 总扫描数

@@ -29,11 +29,14 @@ impl ReverseOrchestrator {
         if let Some(p) = preferred {
             let kind = match p.to_ascii_lowercase().as_str() {
                 "ghidra" => Some(BackendKind::Ghidra),
-                "ida" | "idat64" => Some(BackendKind::Ida),
+                "jadx" => Some(BackendKind::Jadx),
+                "r2" | "radare2" => Some(BackendKind::Radare2),
                 _ => None,
             }
             .ok_or_else(|| {
-                RustpenError::ParseError("invalid pseudocode backend. use ghidra|ida".to_string())
+                RustpenError::ParseError(
+                    "invalid reverse backend. use ghidra|jadx|radare2".to_string(),
+                )
             })?;
 
             if let Some(b) = self.registry.by_kind(kind)
@@ -52,7 +55,7 @@ impl ReverseOrchestrator {
         }
 
         Err(RustpenError::ScanError(
-            "no pseudocode backend found (need ghidra or ida)".to_string(),
+            "no reverse decompile backend found (need ghidra or jadx)".to_string(),
         ))
     }
 
@@ -89,13 +92,6 @@ impl ReverseOrchestrator {
                 input,
                 output_dir.unwrap_or(Path::new("./ghidra_out")),
                 Some("ghidra"),
-                DecompileMode::Full,
-                None,
-            ),
-            DecompilerEngine::Ida => self.build_pseudocode_plan(
-                input,
-                output_dir.unwrap_or(Path::new("./ida_pseudo")),
-                Some("ida"),
                 DecompileMode::Full,
                 None,
             ),
@@ -143,10 +139,6 @@ impl ReverseOrchestrator {
 
     pub fn write_gdb_plugin(output: &Path) -> Result<(), RustpenError> {
         ReverseTooling::write_gdb_python_plugin(output)
-    }
-
-    pub fn write_ida_script(output: &Path) -> Result<(), RustpenError> {
-        ReverseTooling::write_ida_export_script(output)
     }
 
     pub fn write_ghidra_script(output: &Path) -> Result<(), RustpenError> {

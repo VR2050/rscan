@@ -141,6 +141,15 @@ impl ReverseAnalyzer {
             rules.thresholds.high_entropy,
             rules.thresholds.tiny_import_table_max,
         );
+        let shell_loader_indicators = shell_loader_hints(&strings);
+        let packer_family_hints =
+            infer_packer_families_from_texts(&sections, &strings, &packer_indicators);
+        let packer_confidence = compute_packer_confidence(
+            entropy,
+            packer_indicators.len(),
+            packer_family_hints.len(),
+            rules.thresholds.high_entropy,
+        );
         let obfuscation_hints = obfuscation_hints(
             &strings,
             &imports,
@@ -149,6 +158,10 @@ impl ReverseAnalyzer {
             &obfuscation,
             rules.thresholds.high_entropy,
         );
+        let mut obfuscation_hints = obfuscation_hints;
+        obfuscation_hints.extend(shell_loader_indicators.clone());
+        obfuscation_hints.sort();
+        obfuscation_hints.dedup();
         let dynamic_indicators = dynamic_indicators(path, &format);
 
         let malware_score = compute_malware_score(
@@ -176,7 +189,10 @@ impl ReverseAnalyzer {
                 anti_debug_indicators: anti_debug,
                 dynamic_indicators,
                 packer_indicators,
+                packer_family_hints,
+                packer_confidence,
                 obfuscation_indicators: obfuscation_hints,
+                shell_loader_indicators,
                 suspicious_imports,
                 suspicious_strings,
                 entropy,
@@ -240,6 +256,7 @@ impl ReverseAnalyzer {
             .into_iter()
             .map(|s| format!("packer string: {}", s))
             .collect::<Vec<_>>();
+        packer_indicators.extend(apk_shell_packer_entry_hints(&entries));
 
         if entropy > rules.thresholds.apk_high_entropy {
             packer_indicators.push(format!("apk entropy is high {:.3}", entropy));
@@ -250,6 +267,15 @@ impl ReverseAnalyzer {
 
         packer_indicators.sort();
         packer_indicators.dedup();
+        let shell_loader_indicators = shell_loader_hints(&strings);
+        let packer_family_hints =
+            infer_packer_families_from_texts(&entries, &strings, &packer_indicators);
+        let packer_confidence = compute_packer_confidence(
+            entropy,
+            packer_indicators.len(),
+            packer_family_hints.len(),
+            rules.thresholds.apk_high_entropy,
+        );
         let obfuscation_hints = obfuscation_hints(
             &strings,
             &Vec::new(),
@@ -258,6 +284,10 @@ impl ReverseAnalyzer {
             &obfuscation,
             rules.thresholds.apk_high_entropy,
         );
+        let mut obfuscation_hints = obfuscation_hints;
+        obfuscation_hints.extend(shell_loader_indicators.clone());
+        obfuscation_hints.sort();
+        obfuscation_hints.dedup();
         let dynamic_indicators = dynamic_indicators(path, &BinaryFormat::Apk);
 
         let malware_score = compute_malware_score(
@@ -284,7 +314,10 @@ impl ReverseAnalyzer {
                 anti_debug_indicators: anti_debug,
                 dynamic_indicators,
                 packer_indicators,
+                packer_family_hints,
+                packer_confidence,
                 obfuscation_indicators: obfuscation_hints,
+                shell_loader_indicators,
                 suspicious_imports: Vec::new(),
                 suspicious_strings,
                 entropy,
@@ -511,6 +544,111 @@ fn obfuscation_hints(
     hints
 }
 
+fn shell_loader_hints(strings: &[String]) -> Vec<String> {
+    let patterns = [
+        ("base64 shell chain", "base64 -d"),
+        ("runtime exec shell", "runtime.getruntime().exec"),
+        ("sh exec", "sh -c"),
+        ("su exec", "su -c"),
+        ("eval decode", "eval("),
+        ("dex loader", "dexclassloader"),
+        ("path loader", "pathclassloader"),
+        ("reflection invoke", "method.invoke"),
+        ("native loader", "loadlibrary"),
+        ("frida hook", "frida"),
+    ];
+    let mut out = Vec::new();
+    for s in strings {
+        let l = s.to_ascii_lowercase();
+        for (kind, pat) in patterns {
+            if l.contains(pat) {
+                out.push(format!("shell/obfuscation: {}", kind));
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+fn apk_shell_packer_entry_hints(entries: &[String]) -> Vec<String> {
+    let mut out = Vec::new();
+    for e in entries {
+        let l = e.to_ascii_lowercase();
+        if l.contains("libjiagu") || l.contains("jiagu") {
+            out.push(format!("apk shell marker: {}", e));
+        }
+        if l.contains("secneo") || l.contains("libsecexe") {
+            out.push(format!("apk shell marker: {}", e));
+        }
+        if l.contains("ijiami") || l.contains("ijiami.dat") {
+            out.push(format!("apk shell marker: {}", e));
+        }
+        if l.contains("dexprotector") || l.contains("bangcle") {
+            out.push(format!("apk shell marker: {}", e));
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+fn infer_packer_families_from_texts(
+    primary: &[String],
+    secondary: &[String],
+    indicators: &[String],
+) -> Vec<String> {
+    let mut corpus = String::new();
+    for s in primary {
+        corpus.push_str(&s.to_ascii_lowercase());
+        corpus.push('\n');
+    }
+    for s in secondary {
+        corpus.push_str(&s.to_ascii_lowercase());
+        corpus.push('\n');
+    }
+    for s in indicators {
+        corpus.push_str(&s.to_ascii_lowercase());
+        corpus.push('\n');
+    }
+    let families: &[(&str, &[&str])] = &[
+        ("upx", &["upx0", "upx1", "upx2", "upx"]),
+        ("vmprotect", &["vmprotect", ".vmp", ".vmp0", ".vmp1"]),
+        ("themida", &["themida", ".themida"]),
+        ("secneo", &["secneo", "libsecexe"]),
+        ("jiagu", &["jiagu", "libjiagu"]),
+        ("bangcle", &["bangcle"]),
+        ("ijiami", &["ijiami"]),
+        ("dexprotector", &["dexprotector"]),
+        ("enigma", &["enigma"]),
+        ("aspack", &["aspack", ".aspack"]),
+    ];
+    let mut out = Vec::new();
+    for (family, keys) in families {
+        if keys.iter().any(|k| corpus.contains(k)) {
+            out.push(family.to_string());
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+fn compute_packer_confidence(
+    entropy: f64,
+    packer_hit_count: usize,
+    family_hit_count: usize,
+    high_entropy_threshold: f64,
+) -> u8 {
+    let mut score = 0.0f64;
+    if entropy > high_entropy_threshold {
+        score += 25.0;
+    }
+    score += (packer_hit_count as f64 * 8.0).min(40.0);
+    score += (family_hit_count as f64 * 20.0).min(40.0);
+    score.clamp(0.0, 100.0) as u8
+}
+
 fn dynamic_indicators(path: &Path, format: &BinaryFormat) -> Vec<String> {
     if std::env::var("RSCAN_REVERSE_DYNAMIC").ok().as_deref() != Some("1") {
         return Vec::new();
@@ -623,7 +761,7 @@ fn which(bin: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::ReverseAnalyzer;
+    use super::{ReverseAnalyzer, shell_loader_hints};
     use crate::modules::reverse::{BinaryFormat, RuleLibrary};
     use std::fs::File;
     use std::io::Write;
@@ -682,5 +820,17 @@ mod tests {
             ReverseAnalyzer::analyze_binary_with_rules(std::path::Path::new(candidate), &rules)
                 .unwrap();
         assert!(report.file_size > 0);
+    }
+
+    #[test]
+    fn shell_loader_hints_detects_obfuscated_exec_patterns() {
+        let strings = vec![
+            "Runtime.getRuntime().exec(\"sh -c id\")".to_string(),
+            "echo abc|base64 -d|sh".to_string(),
+            "new DexClassLoader(path, odex, null, cl)".to_string(),
+        ];
+        let hints = shell_loader_hints(&strings);
+        assert!(!hints.is_empty());
+        assert!(hints.iter().any(|h| h.contains("runtime exec shell")));
     }
 }

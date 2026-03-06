@@ -6,6 +6,7 @@ use crate::modules::web_scan::common::{
     is_near_duplicate, is_wildcard_match,
 };
 use crate::modules::web_scan::resume::{load_or_new, maybe_resume_path, save};
+use crate::modules::web_scan::render_request_body;
 /// 在 modules 层提供更易用的目录扫描函数，内部使用 cores::web::Fetcher
 /// paths: 相对于 base 的路径列表（例如 ["/admin", "/login"]）
 use crate::modules::web_scan::{ModuleScanConfig, ModuleScanResult, format_scan_result};
@@ -86,10 +87,11 @@ pub async fn run_dir_scan(
         let r = FetchRequest {
             url,
             method: cfg.request_method.clone(),
-            headers: None,
-            body: None,
+            headers: cfg.request_headers.clone(),
+            body: render_request_body(&cfg.request_body_template, None),
             timeout_ms: cfg.timeout_ms,
             max_retries: cfg.max_retries,
+            follow_redirects: Some(cfg.follow_redirects),
         };
         reqs.push(r);
     }
@@ -108,13 +110,22 @@ pub async fn run_dir_scan(
     let mut adaptive_delay_ms = cfg.adaptive_initial_delay_ms;
     let mut error_count = 0usize;
     let mut first_error: Option<String> = None;
-    for chunk in reqs.chunks(cfg.concurrency.max(1)) {
+    let chunks: Vec<&[FetchRequest]> = if cfg.adaptive_rate {
+        reqs.chunks(cfg.concurrency.max(1)).collect()
+    } else {
+        vec![reqs.as_slice()]
+    };
+    for chunk in chunks {
         if cfg.adaptive_rate && adaptive_delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
         }
-        let results = fetcher
-            .fetch_many(chunk.iter().cloned(), cfg.concurrency)
-            .await;
+        let results = if cfg.adaptive_rate {
+            fetcher
+                .fetch_many(chunk.iter().cloned(), cfg.concurrency)
+                .await
+        } else {
+            fetcher.fetch_many(chunk.to_vec(), cfg.concurrency).await
+        };
         let mut throttle_hits = 0usize;
         let mut observed = 0usize;
         for r in results {
@@ -141,8 +152,10 @@ pub async fn run_dir_scan(
                     if is_wildcard_match(
                         resp.status,
                         content_len,
+                        &resp.body,
                         &wildcard_signatures,
                         cfg.wildcard_len_tolerance,
+                        cfg.fingerprint_distance_threshold.max(4),
                     ) {
                         continue;
                     }
@@ -243,10 +256,11 @@ pub fn run_dir_scan_stream(
             reqs.push(FetchRequest {
                 url,
                 method: cfg.request_method.clone(),
-                headers: None,
-                body: None,
+                headers: cfg.request_headers.clone(),
+                body: render_request_body(&cfg.request_body_template, None),
                 timeout_ms: cfg.timeout_ms,
                 max_retries: cfg.max_retries,
+                follow_redirects: Some(cfg.follow_redirects),
             });
         }
         let mut resume_state = if let Some(path) = maybe_resume_path(&cfg.resume_file) {
@@ -268,13 +282,22 @@ pub fn run_dir_scan_stream(
         let mut adaptive_delay_ms = cfg.adaptive_initial_delay_ms;
         let mut error_count = 0usize;
         let mut first_error: Option<String> = None;
-        for chunk in reqs.chunks(cfg.concurrency.max(1)) {
+        let chunks: Vec<&[FetchRequest]> = if cfg.adaptive_rate {
+            reqs.chunks(cfg.concurrency.max(1)).collect()
+        } else {
+            vec![reqs.as_slice()]
+        };
+        for chunk in chunks {
             if cfg.adaptive_rate && adaptive_delay_ms > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
             }
-            let results = fetcher
-                .fetch_many(chunk.iter().cloned(), cfg.concurrency)
-                .await;
+            let results = if cfg.adaptive_rate {
+                fetcher
+                    .fetch_many(chunk.iter().cloned(), cfg.concurrency)
+                    .await
+            } else {
+                fetcher.fetch_many(chunk.to_vec(), cfg.concurrency).await
+            };
             let mut throttle_hits = 0usize;
             let mut observed = 0usize;
             for r in results {
@@ -301,8 +324,10 @@ pub fn run_dir_scan_stream(
                         if is_wildcard_match(
                             resp.status,
                             content_len,
+                            &resp.body,
                             &wildcard_signatures,
                             cfg.wildcard_len_tolerance,
+                            cfg.fingerprint_distance_threshold.max(4),
                         ) {
                             continue;
                         }
@@ -428,6 +453,8 @@ mod tests {
             output_format: None,
             status_min: None,
             status_max: None,
+            content_len_min: None,
+            content_len_max: None,
             wildcard_filter: false,
             wildcard_sample_count: 2,
             wildcard_len_tolerance: 16,
@@ -437,7 +464,11 @@ mod tests {
             adaptive_rate: false,
             adaptive_initial_delay_ms: 0,
             adaptive_max_delay_ms: 2000,
+            follow_redirects: true,
             request_method: reqwest::Method::GET,
+            request_headers: None,
+            request_body_template: None,
+            dns_http_verify: true,
             recursive: false,
             recursive_max_depth: 2,
         };
@@ -496,6 +527,8 @@ mod tests {
             output_format: None,
             status_min: None,
             status_max: None,
+            content_len_min: None,
+            content_len_max: None,
             wildcard_filter: false,
             wildcard_sample_count: 2,
             wildcard_len_tolerance: 16,
@@ -505,7 +538,11 @@ mod tests {
             adaptive_rate: false,
             adaptive_initial_delay_ms: 0,
             adaptive_max_delay_ms: 2000,
+            follow_redirects: true,
             request_method: reqwest::Method::GET,
+            request_headers: None,
+            request_body_template: None,
+            dns_http_verify: true,
             recursive: false,
             recursive_max_depth: 2,
         };

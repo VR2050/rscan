@@ -55,20 +55,8 @@ pub fn load_safe_templates_from_path(
 
     let files = if path.is_dir() {
         let mut out = Vec::new();
-        for entry in std::fs::read_dir(path).map_err(RustpenError::Io)? {
-            let entry = entry.map_err(RustpenError::Io)?;
-            let p = entry.path();
-            if p.is_file() {
-                let ext = p.extension().and_then(|x| x.to_str()).unwrap_or_default();
-                if ext.eq_ignore_ascii_case("yaml")
-                    || ext.eq_ignore_ascii_case("yml")
-                    || ext.eq_ignore_ascii_case("json")
-                    || ext.eq_ignore_ascii_case("txt")
-                {
-                    out.push(p);
-                }
-            }
-        }
+        collect_template_files(path, &mut out)?;
+        out.sort();
         out
     } else {
         vec![path.to_path_buf()]
@@ -95,6 +83,31 @@ pub fn load_safe_templates_from_path(
             errors,
         },
     ))
+}
+
+fn is_supported_template_file(path: &Path) -> bool {
+    let ext = path
+        .extension()
+        .and_then(|x| x.to_str())
+        .unwrap_or_default();
+    ext.eq_ignore_ascii_case("yaml")
+        || ext.eq_ignore_ascii_case("yml")
+        || ext.eq_ignore_ascii_case("json")
+        || ext.eq_ignore_ascii_case("txt")
+}
+
+fn collect_template_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), RustpenError> {
+    for entry in std::fs::read_dir(dir).map_err(RustpenError::Io)? {
+        let entry = entry.map_err(RustpenError::Io)?;
+        let path = entry.path();
+        let ty = entry.file_type().map_err(RustpenError::Io)?;
+        if ty.is_dir() {
+            collect_template_files(&path, out)?;
+        } else if ty.is_file() && is_supported_template_file(&path) {
+            out.push(path);
+        }
+    }
+    Ok(())
 }
 
 fn parse_one_template(path: &Path) -> Result<SafeTemplate, RustpenError> {
@@ -601,5 +614,56 @@ mod tests {
         assert_eq!(tpl.id, "test-json");
         assert_eq!(tpl.requests.len(), 1);
         std::fs::remove_file(p).ok();
+    }
+
+    #[test]
+    fn load_templates_recursively() {
+        let base = std::env::temp_dir().join(format!(
+            "rscan_tpl_tree_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let nested = base.join("nested/deeper");
+        std::fs::create_dir_all(&nested).unwrap();
+
+        let root_tpl = base.join("root.yaml");
+        let nested_tpl = nested.join("nested.json");
+        std::fs::write(
+            &root_tpl,
+            r#"
+id: root-yaml
+info:
+  name: root
+requests:
+  - method: GET
+    path:
+      - /
+    matchers:
+      - type: status
+        status: [200]
+"#,
+        )
+        .unwrap();
+        std::fs::write(
+            &nested_tpl,
+            r#"{
+  "id": "nested-json",
+  "info": { "name": "n" },
+  "requests": [
+    { "method": "GET", "path": ["/"], "matchers": [ { "type": "status", "status": [200] } ] }
+  ]
+}"#,
+        )
+        .unwrap();
+
+        let (templates, report) = load_safe_templates_from_path(&base).unwrap();
+        assert_eq!(report.rejected, 0);
+        assert_eq!(templates.len(), 2);
+        assert!(templates.iter().any(|t| t.id == "root-yaml"));
+        assert!(templates.iter().any(|t| t.id == "nested-json"));
+
+        std::fs::remove_dir_all(base).ok();
     }
 }

@@ -38,10 +38,12 @@ public class ghidra_export_pseudocode extends GhidraScript {
             return;
         }
 
-        int timeoutSec = envInt("RSCAN_GHIDRA_DECOMP_TIMEOUT_SEC", 30);
+        int timeoutSec = envInt("RSCAN_GHIDRA_DECOMP_TIMEOUT_SEC", 20);
         boolean incremental = "1".equals(System.getenv("RSCAN_GHIDRA_INCREMENTAL"));
         boolean onlyNamed = "1".equals(System.getenv("RSCAN_GHIDRA_ONLY_NAMED"));
         long maxFuncSize = envLong("RSCAN_GHIDRA_MAX_FUNC_SIZE", -1);
+        int asmLimit = envInt("RSCAN_GHIDRA_ASM_LIMIT", 4000);
+        boolean skipAsm = "1".equals(System.getenv("RSCAN_GHIDRA_SKIP_ASM"));
         Set<String> existing = incremental ? loadExistingEas(outFile) : new LinkedHashSet<>();
 
         DecompInterface ifc = new DecompInterface();
@@ -53,6 +55,21 @@ public class ghidra_export_pseudocode extends GhidraScript {
             while (funcs.hasNext()) {
                 Function f = funcs.next();
                 String ea = f.getEntryPoint().toString();
+                if (f.isExternal()) {
+                    String name = f.getName();
+                    String signature = f.getSignature().getPrototypeString();
+                    long size = f.getBody().getNumAddresses();
+                    String json = "{\"ea\":\"" + esc(ea) + "\",\"name\":\"" + esc(name) + "\",\"pseudocode\":null" +
+                        ",\"signature\":\"" + esc(signature) + "\"" +
+                        ",\"size\":" + size +
+                        ",\"calls\":[]" +
+                        ",\"call_names\":[]" +
+                        ",\"ext_refs\":[]" +
+                        ",\"asm\":[]" +
+                        ",\"error\":\"external_function\"}";
+                    pw.println(json);
+                    continue;
+                }
                 if (incremental && existing.contains(ea)) {
                     continue;
                 }
@@ -70,6 +87,7 @@ public class ghidra_export_pseudocode extends GhidraScript {
                 List<String> calls = collectCalls(f);
                 List<String> callNames = collectCallNames(f);
                 List<String> extRefs = collectExternalRefs(f);
+                List<String> asm = skipAsm ? new ArrayList<>() : collectAsm(f, asmLimit);
                 if (err == null) {
                     try {
                         DecompileResults res = ifc.decompileFunction(f, timeoutSec, monitor);
@@ -89,6 +107,7 @@ public class ghidra_export_pseudocode extends GhidraScript {
                     ",\"calls\":" + toJsonArray(calls) +
                     ",\"call_names\":" + toJsonArray(callNames) +
                     ",\"ext_refs\":" + toJsonArray(extRefs) +
+                    ",\"asm\":" + toJsonArray(asm) +
                     ",\"error\":" +
                     (err == null ? "null" : "\"" + esc(err) + "\"") + "}";
                 pw.println(json);
@@ -222,6 +241,28 @@ public class ghidra_export_pseudocode extends GhidraScript {
         }
         return new ArrayList<>(out);
     }
+
+    private List<String> collectAsm(Function f, int limit) {
+        List<String> out = new ArrayList<>();
+        int count = 0;
+        boolean truncated = false;
+        InstructionIterator it = currentProgram.getListing().getInstructions(f.getBody(), true);
+        while (it.hasNext()) {
+            if (limit > 0 && count >= limit) {
+                truncated = true;
+                break;
+            }
+            Instruction ins = it.next();
+            String line = ins.getAddress().toString() + " " + ins.toString();
+            out.add(line);
+            count++;
+        }
+        if (truncated) {
+            out.add("<asm truncated: limit " + limit + ">");
+        }
+        return out;
+    }
+
 
     private String toJsonArray(List<String> items) {
         StringBuilder sb = new StringBuilder();

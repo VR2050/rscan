@@ -211,13 +211,46 @@ fn eval_matcher(
 
 fn join_target_path(target: &str, path: &str) -> String {
     let t = target.trim_end_matches('/');
-    if path.starts_with("http://") || path.starts_with("https://") {
-        path.to_string()
-    } else if path.starts_with('/') {
-        format!("{}{}", t, path)
+    let rendered = render_path_template(t, path);
+    if rendered.starts_with("http://") || rendered.starts_with("https://") {
+        rendered
+    } else if rendered.starts_with('/') {
+        format!("{}{}", t, rendered)
     } else {
-        format!("{}/{}", t, path)
+        format!("{}/{}", t, rendered)
     }
+}
+
+fn render_path_template(target: &str, path: &str) -> String {
+    let parsed = url::Url::parse(target).ok();
+    let hostname = parsed
+        .as_ref()
+        .and_then(|u| u.host_str())
+        .unwrap_or_default()
+        .to_string();
+    let host = parsed
+        .as_ref()
+        .and_then(|u| {
+            u.host_str().map(|h| {
+                if let Some(p) = u.port() {
+                    format!("{h}:{p}")
+                } else {
+                    h.to_string()
+                }
+            })
+        })
+        .unwrap_or_else(|| hostname.clone());
+    let port = parsed
+        .as_ref()
+        .and_then(|u| u.port_or_known_default())
+        .map(|p| p.to_string())
+        .unwrap_or_default();
+
+    path.replace("{{BaseURL}}", target)
+        .replace("{{RootURL}}", target)
+        .replace("{{Hostname}}", &hostname)
+        .replace("{{Host}}", &host)
+        .replace("{{Port}}", &port)
 }
 
 fn extract_base_target(url: &str) -> String {
@@ -233,4 +266,27 @@ fn extract_base_target(url: &str) -> String {
 
 fn is_allowed_method(method: &str) -> bool {
     matches!(method.to_ascii_uppercase().as_str(), "GET" | "HEAD")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{join_target_path, render_path_template};
+
+    #[test]
+    fn render_template_supports_common_nuclei_placeholders() {
+        let rendered = render_path_template(
+            "https://demo.test:8443",
+            "{{BaseURL}}/login?host={{Host}}&name={{Hostname}}&port={{Port}}",
+        );
+        assert_eq!(
+            rendered,
+            "https://demo.test:8443/login?host=demo.test:8443&name=demo.test&port=8443"
+        );
+    }
+
+    #[test]
+    fn join_target_path_renders_relative_template() {
+        let url = join_target_path("https://demo.test:8443", "/api/{{Hostname}}");
+        assert_eq!(url, "https://demo.test:8443/api/demo.test");
+    }
 }

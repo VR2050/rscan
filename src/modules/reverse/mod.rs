@@ -1,6 +1,8 @@
 pub mod analyzer;
+pub mod adapters;
 pub mod backends;
 pub mod console;
+pub mod ir;
 pub mod jobs;
 pub mod malware;
 pub mod model;
@@ -9,9 +11,14 @@ pub mod rules;
 pub mod tooling;
 
 pub use analyzer::ReverseAnalyzer;
+pub use adapters::{GhidraIrAdapter, IrAdapter, JadxIrAdapter, adapter_for_engine};
 pub use backends::{BackendCatalog, BackendRegistry, ReverseBackend};
 pub use console::{
     ReverseConsoleConfig, run_interactive as run_reverse_interactive, run_tui as run_reverse_tui,
+};
+pub use ir::{
+    IrBinaryMeta, IrCallEdge, IrFunction, IrImport, IrRow, IrSection, IrStringItem, IrSymbolRef,
+    IrXrefEdge, ReverseIrDoc,
 };
 pub use jobs::{
     DecompileBatchReport, DecompileRunReport, JobPrunePolicy, ReverseJobHealth, ReverseJobMeta,

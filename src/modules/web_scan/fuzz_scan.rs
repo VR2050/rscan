@@ -34,6 +34,8 @@ mod tests {
             max_retries: Some(0),
             status_min: None,
             status_max: None,
+            content_len_min: None,
+            content_len_max: None,
             per_host_concurrency_override: None,
             dedupe_results: true,
             output_format: None,
@@ -46,7 +48,11 @@ mod tests {
             adaptive_rate: false,
             adaptive_initial_delay_ms: 0,
             adaptive_max_delay_ms: 2000,
+            follow_redirects: true,
             request_method: reqwest::Method::GET,
+            request_headers: None,
+            request_body_template: None,
+            dns_http_verify: true,
             recursive: false,
             recursive_max_depth: 2,
         };
@@ -110,6 +116,8 @@ mod tests {
             max_retries: Some(0),
             status_min: None,
             status_max: None,
+            content_len_min: None,
+            content_len_max: None,
             per_host_concurrency_override: None,
             dedupe_results: true,
             output_format: None,
@@ -122,7 +130,11 @@ mod tests {
             adaptive_rate: false,
             adaptive_initial_delay_ms: 0,
             adaptive_max_delay_ms: 2000,
+            follow_redirects: true,
             request_method: reqwest::Method::GET,
+            request_headers: None,
+            request_body_template: None,
+            dns_http_verify: true,
             recursive: false,
             recursive_max_depth: 2,
         };
@@ -133,6 +145,68 @@ mod tests {
         let mv = max_seen.load(Ordering::SeqCst);
         assert!(mv > 1, "expected concurrent handlers > 1, got {}", mv);
     }
+
+    #[tokio::test]
+    async fn fuzz_scan_content_len_filter() {
+        let route = warp::path!(String).map(|s: String| {
+            let body = if s.contains("long") {
+                "L".repeat(120)
+            } else {
+                "S".repeat(8)
+            };
+            warp::reply::with_status(body, warp::http::StatusCode::OK)
+        });
+        let (addr, server) = warp::serve(route).bind_ephemeral(([127, 0, 0, 1], 0));
+        tokio::spawn(server);
+        let base = format!("http://{}", addr);
+
+        let cfg = crate::modules::web_scan::ModuleScanConfig {
+            fetcher: crate::cores::web::FetcherConfig {
+                timeout: Duration::from_secs(5),
+                user_agent: None,
+                max_retries: 0,
+                accept_invalid_certs: false,
+                per_host_concurrency: 2,
+                default_headers: None,
+                honor_retry_after: true,
+                backoff_base_ms: 100,
+                backoff_max_ms: 10_000,
+            },
+            concurrency: 2,
+            timeout_ms: Some(3000),
+            max_retries: Some(0),
+            status_min: Some(200),
+            status_max: Some(299),
+            content_len_min: Some(100),
+            content_len_max: Some(200),
+            per_host_concurrency_override: None,
+            dedupe_results: true,
+            output_format: None,
+            wildcard_filter: false,
+            wildcard_sample_count: 2,
+            wildcard_len_tolerance: 16,
+            fingerprint_filter: false,
+            fingerprint_distance_threshold: 6,
+            resume_file: None,
+            adaptive_rate: false,
+            adaptive_initial_delay_ms: 0,
+            adaptive_max_delay_ms: 2000,
+            follow_redirects: true,
+            request_method: reqwest::Method::GET,
+            request_headers: None,
+            request_body_template: None,
+            dns_http_verify: true,
+            recursive: false,
+            recursive_max_depth: 2,
+        };
+
+        let res = run_fuzz_scan(&format!("{}/FUZZ", base), &["short", "long"], cfg)
+            .await
+            .unwrap();
+        assert_eq!(res.len(), 1);
+        assert!(res[0].url.contains("long"));
+        assert_eq!(res[0].content_len, Some(120));
+    }
 }
 /// 尝试将 keywords 插入到包含 FUZZ 的 URL 中并发出请求
 use crate::modules::web_scan::ModuleScanConfig;
@@ -140,6 +214,7 @@ use crate::modules::web_scan::common::{
     ResponseFingerprint, build_fingerprint, detect_fuzz_wildcard_signatures, is_near_duplicate,
     is_wildcard_match,
 };
+use crate::modules::web_scan::render_request_body;
 use crate::modules::web_scan::resume::{load_or_new, maybe_resume_path, save};
 
 fn summarize_errors(total: usize, errors: usize, first: Option<&str>) -> RustpenError {
@@ -170,10 +245,11 @@ pub async fn run_fuzz_scan(
         let r = FetchRequest {
             url,
             method: cfg.request_method.clone(),
-            headers: None,
-            body: None,
+            headers: cfg.request_headers.clone(),
+            body: render_request_body(&cfg.request_body_template, Some(kw)),
             timeout_ms: cfg.timeout_ms,
             max_retries: cfg.max_retries,
+            follow_redirects: Some(cfg.follow_redirects),
         };
         reqs.push(r);
     }
@@ -191,13 +267,22 @@ pub async fn run_fuzz_scan(
     let mut adaptive_delay_ms = cfg.adaptive_initial_delay_ms;
     let mut error_count = 0usize;
     let mut first_error: Option<String> = None;
-    for chunk in reqs.chunks(cfg.concurrency.max(1)) {
+    let chunks: Vec<&[FetchRequest]> = if cfg.adaptive_rate {
+        reqs.chunks(cfg.concurrency.max(1)).collect()
+    } else {
+        vec![reqs.as_slice()]
+    };
+    for chunk in chunks {
         if cfg.adaptive_rate && adaptive_delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
         }
-        let results = fetcher
-            .fetch_many(chunk.iter().cloned(), cfg.concurrency)
-            .await;
+        let results = if cfg.adaptive_rate {
+            fetcher
+                .fetch_many(chunk.iter().cloned(), cfg.concurrency)
+                .await
+        } else {
+            fetcher.fetch_many(chunk.to_vec(), cfg.concurrency).await
+        };
         let mut throttle_hits = 0usize;
         let mut observed = 0usize;
         for r in results {
@@ -221,11 +306,23 @@ pub async fn run_fuzz_scan(
                         continue;
                     }
                     let content_len = resp.body.len() as u64;
+                    if let Some(min) = cfg.content_len_min
+                        && content_len < min
+                    {
+                        continue;
+                    }
+                    if let Some(max) = cfg.content_len_max
+                        && content_len > max
+                    {
+                        continue;
+                    }
                     if is_wildcard_match(
                         resp.status,
                         content_len,
+                        &resp.body,
                         &wildcard_signatures,
                         cfg.wildcard_len_tolerance,
+                        cfg.fingerprint_distance_threshold.max(4),
                     ) {
                         continue;
                     }
@@ -318,10 +415,11 @@ pub fn run_fuzz_scan_stream(
             reqs.push(FetchRequest {
                 url,
                 method: cfg.request_method.clone(),
-                headers: None,
-                body: None,
+                headers: cfg.request_headers.clone(),
+                body: render_request_body(&cfg.request_body_template, Some(kw)),
                 timeout_ms: cfg.timeout_ms,
                 max_retries: cfg.max_retries,
+                follow_redirects: Some(cfg.follow_redirects),
             });
         }
         let mut resume_state = if let Some(path) = maybe_resume_path(&cfg.resume_file) {
@@ -341,13 +439,22 @@ pub fn run_fuzz_scan_stream(
         let mut seen = std::collections::HashSet::new();
         let mut seen_fingerprints: Vec<ResponseFingerprint> = Vec::new();
         let mut adaptive_delay_ms = cfg.adaptive_initial_delay_ms;
-        for chunk in reqs.chunks(cfg.concurrency.max(1)) {
+        let chunks: Vec<&[FetchRequest]> = if cfg.adaptive_rate {
+            reqs.chunks(cfg.concurrency.max(1)).collect()
+        } else {
+            vec![reqs.as_slice()]
+        };
+        for chunk in chunks {
             if cfg.adaptive_rate && adaptive_delay_ms > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
             }
-            let results = fetcher
-                .fetch_many(chunk.iter().cloned(), cfg.concurrency)
-                .await;
+            let results = if cfg.adaptive_rate {
+                fetcher
+                    .fetch_many(chunk.iter().cloned(), cfg.concurrency)
+                    .await
+            } else {
+                fetcher.fetch_many(chunk.to_vec(), cfg.concurrency).await
+            };
             let mut throttle_hits = 0usize;
             let mut observed = 0usize;
             for r in results {
@@ -371,11 +478,23 @@ pub fn run_fuzz_scan_stream(
                             continue;
                         }
                         let content_len = resp.body.len() as u64;
+                        if let Some(min) = cfg.content_len_min
+                            && content_len < min
+                        {
+                            continue;
+                        }
+                        if let Some(max) = cfg.content_len_max
+                            && content_len > max
+                        {
+                            continue;
+                        }
                         if is_wildcard_match(
                             resp.status,
                             content_len,
+                            &resp.body,
                             &wildcard_signatures,
                             cfg.wildcard_len_tolerance,
+                            cfg.fingerprint_distance_threshold.max(4),
                         ) {
                             continue;
                         }

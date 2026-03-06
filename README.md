@@ -55,7 +55,7 @@ rscan web dns --domain example.com --words www,api,dev --output json
 来自 `docs/REVERSE_USAGE.md` 的常用流程：
 - 静态分析：`rscan reverse analyze ./easy`
 - 反编译（全量/索引/单函数）：`rscan reverse decompile-run --input ./easy --engine ghidra --mode full`
-- 控制台：`rscan reverse console ./easy`；TUI：追加 `--tui`
+- 控制台（默认）：`rscan reverse -i ./easy`；TUI：追加 `--tui`（也兼容 `rscan reverse console ...`）
 - 任务管理：`reverse job-status/job-logs/job-artifacts/job-functions/job-show/job-search`
 - 动态采样：`rscan reverse analyze --input ./easy --dynamic`（或 `RSCAN_REVERSE_DYNAMIC=1`）
 - Ghidra 配置：`RSCAN_GHIDRA_HOME=/path/to/ghidra`；若未设置则回退到内置精简版。
@@ -76,7 +76,7 @@ rscan web dns --domain example.com --words www,api,dev --output json
   - `shell_generation`：生成恶意或测试用 payload/shell 片段。
 - **服务层** (`src/services/`)：`service_probe` 负责解析 nmap 式 probe 文件，输出 `ProbeResult` 并富化扫描结果元数据。
 - **规则与数据**：`rules/` 用于自定义 PoC/探针；`third_party/` 持有 Ghidra 精简运行时等外部依赖。
-- **文档与基准**：`docs/` 提供结构与逆向使用说明；`benches/` 存放性能基准脚本。
+- **文档与基准**：`docs/` 提供结构与逆向使用说明；`benches/` 存放性能基准脚本；`scripts/web_bench_compare.sh` 与 `scripts/ci_web_bench_gate.sh` 提供 Web 扫描对比与门禁回归。
 完整目录说明见 `docs/PROJECT_STRUCTURE.md`。
 
 ## 模块功能详情
@@ -117,8 +117,8 @@ rscan web dns --domain example.com --words www,api,dev --output json
   - 适用场景：批量 PoC 验证、Fuzz 穷举、与端口扫描联动的自动化漏洞初筛。
 
 - **Reverse 模块 (`src/modules/reverse/`)**
-  - 入口命令：`reverse analyze`（静态信息）、`reverse decompile-run`（执行反编译任务，支持 full/index/function）、`reverse decompile-plan`（生成外部脚本）、`reverse decompile-batch`（批处理）、`reverse console`/`--tui`（交互）。
-  - 引擎选择：优先环境变量指定 Ghidra；否则使用仓库内置精简版。可生成 ida/radare/jadx 命令计划以便外部跑。
+  - 入口命令：`reverse`（默认进入 console，需 `-i` 指定输入）、`reverse analyze`（静态信息）、`reverse decompile-run`（执行反编译任务，支持 full/index/function）、`reverse decompile-plan`（生成外部脚本）、`reverse decompile-batch`（批处理）、`reverse console`/`--tui`（兼容旧用法）。
+  - 引擎选择：优先环境变量指定 Ghidra；否则使用仓库内置精简版。可生成 radare/jadx 命令计划以便外部跑。
   - 任务模型：每次反编译形成 job，产物/日志/索引存储于 workspace；`job-status`/`job-logs`/`job-artifacts`/`job-functions`/`job-search` 统一管理。
   - 索引与搜索：Tantivy 建索引 (`project_index.jsonl`)，支持跨 job 搜索字符串/函数签名/伪代码。
   - 交互特性：TUI 多窗格、快捷键丰富（见 `docs/REVERSE_USAGE.md`），支持行内注释、调用/引用图导出、函数级别重编译。
@@ -141,7 +141,7 @@ rscan web dns --domain example.com --words www,api,dev --output json
 
 ## 逆向模块详解
 - **子命令设计**：`reverse analyze/decompile-run/decompile-plan/decompile-batch/console/TUI/job-*` 覆盖从单次分析到批处理的全链路。
-- **引擎桥接**：默认优先 `RSCAN_GHIDRA_HOME` 或 `RSCAN_GHIDRA_HEADLESS`，回退到仓库内置精简版 `third_party/ghidra_core_headless_x86_min`；也可生成 ida/radare/jadx 等脚本。
+- **引擎桥接**：默认优先 `RSCAN_GHIDRA_HOME` 或 `RSCAN_GHIDRA_HEADLESS`，回退到仓库内置精简版 `third_party/ghidra_core_headless_x86_min`；也可生成 radare/jadx 等脚本。
 - **任务化调度**：
   - `decompile-run` 支持 `full`/`index`/`function` 模式；索引模式保存函数与外部引用，单函数模式提升速度。
   - `decompile-batch` 并发处理多文件，带任务上限与状态查询。
@@ -190,6 +190,8 @@ rscan web dns --domain example.com --words www,api,dev --output json
 ## 开发者指南
 - 代码质量：`cargo fmt`、`cargo clippy --all-targets --all-features`。
 - 测试：`cargo test`；性能基准位于 `benches/`（使用 `cargo bench`）。
+- Web 回归：`./scripts/web_bench_compare.sh <target> <wordlist> <threads>`。
+- Web 门禁：`./scripts/ci_web_bench_gate.sh <target> <wordlist> <threads> <baseline_file> <max_regression_pct>`。
 - 运行期产物：`jobs/、reverse_out/、workspace/` 等为输出目录，已在 `.gitignore` 中忽略。
 - 贡献：欢迎 Issue/PR，提交前请附带最小复现和期望行为。
 

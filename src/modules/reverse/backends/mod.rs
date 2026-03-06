@@ -7,13 +7,11 @@ use crate::modules::reverse::model::{DebugProfile, DecompileMode, ToolInvocation
 
 pub mod gdb;
 pub mod ghidra;
-pub mod ida;
 pub mod jadx;
 pub mod radare2;
 
 pub use gdb::GdbBackend;
 pub use ghidra::GhidraBackend;
-pub use ida::IdaBackend;
 pub use jadx::JadxBackend;
 pub use radare2::Radare2Backend;
 
@@ -29,7 +27,6 @@ pub struct BackendCatalog {
     pub gdb: BackendBinary,
     pub pwndbg_init: BackendBinary,
     pub ghidra_headless: BackendBinary,
-    pub idat64: BackendBinary,
     pub jadx: BackendBinary,
     pub radare2: BackendBinary,
 }
@@ -37,7 +34,6 @@ pub struct BackendCatalog {
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum BackendKind {
     Ghidra,
-    Ida,
     Gdb,
     Jadx,
     Radare2,
@@ -98,7 +94,6 @@ impl BackendRegistry {
         let catalog = BackendCatalog::detect();
         let backends: Vec<Box<dyn ReverseBackend>> = vec![
             Box::new(GhidraBackend::new(catalog.ghidra_headless.clone())),
-            Box::new(IdaBackend::new(catalog.idat64.clone())),
             Box::new(GdbBackend::new(
                 catalog.gdb.clone(),
                 catalog.pwndbg_init.clone(),
@@ -152,7 +147,6 @@ impl BackendCatalog {
                 ],
             ),
             ghidra_headless: probe_ghidra_headless(),
-            idat64: probe_binary("idat64", &["idat64", "idat", "ida64"]),
             jadx: probe_binary("jadx", &["jadx"]),
             radare2: probe_binary("r2", &["r2", "radare2"]),
         }
@@ -161,8 +155,6 @@ impl BackendCatalog {
     pub fn best_pseudocode_backend(&self) -> Option<&'static str> {
         if self.ghidra_headless.available {
             Some("ghidra")
-        } else if self.idat64.available {
-            Some("ida")
         } else {
             None
         }

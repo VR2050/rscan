@@ -106,12 +106,24 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
     let mut last_job: Option<String> = None;
     let mut pinned_job: Option<String> = None;
     let mut row_cache: HashMap<String, Vec<Value>> = HashMap::new();
+    let mut deep_mode = std::env::var("RSCAN_REVERSE_DEEP")
+        .ok()
+        .map(|v| matches!(v.as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or(false);
+    let mut rust_first_mode = std::env::var("RSCAN_REVERSE_RUST_FIRST")
+        .ok()
+        .map(|v| matches!(v.as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or(true);
     loop {
         print!("rscan-re> ");
         io::stdout().flush().map_err(RustpenError::Io)?;
 
         let mut line = String::new();
-        io::stdin().read_line(&mut line).map_err(RustpenError::Io)?;
+        let n = io::stdin().read_line(&mut line).map_err(RustpenError::Io)?;
+        if n == 0 {
+            cprintln!("[rscan] stdin closed, exiting interactive console");
+            break;
+        }
         let line = line.trim();
         if line.is_empty() {
             continue;
@@ -159,6 +171,34 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                 }
             }
             "help" => print_help(),
+            "mode-status" => {
+                cprintln!(
+                    "[rscan] mode deep={} rust-first={}",
+                    deep_mode,
+                    rust_first_mode
+                );
+            }
+            "deep" => {
+                let arg = parts.next().unwrap_or("on");
+                let on = matches!(arg.to_ascii_lowercase().as_str(), "on" | "1" | "true" | "yes");
+                deep_mode = on;
+                unsafe {
+                    std::env::set_var("RSCAN_REVERSE_DEEP", if deep_mode { "1" } else { "0" });
+                }
+                cprintln!("[rscan] deep={}", deep_mode);
+            }
+            "rust-first" => {
+                let arg = parts.next().unwrap_or("on");
+                let on = matches!(arg.to_ascii_lowercase().as_str(), "on" | "1" | "true" | "yes");
+                rust_first_mode = on;
+                unsafe {
+                    std::env::set_var(
+                        "RSCAN_REVERSE_RUST_FIRST",
+                        if rust_first_mode { "1" } else { "0" },
+                    );
+                }
+                cprintln!("[rscan] rust-first={}", rust_first_mode);
+            }
             "backend-status" => {
                 let c = BackendCatalog::detect();
                 cprintln!(
@@ -203,7 +243,7 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                 })?;
                 let engine = DecompilerEngine::parse(engine).ok_or_else(|| {
                     RustpenError::ParseError(
-                        "invalid engine. use objdump|radare2|ghidra|ida|jadx".to_string(),
+                        "invalid engine. use objdump|radare2|ghidra|jadx".to_string(),
                     )
                 })?;
                 let out_dir = parts.next().map(PathBuf::from);
@@ -275,11 +315,31 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
                     } else {
                         None
                     };
+                    let mut deep_now = deep_mode;
+                    let mut rust_first_now = rust_first_mode;
+                    for tok in parts {
+                        match tok.to_ascii_lowercase().as_str() {
+                            "deep" | "--deep" => deep_now = true,
+                            "no-deep" | "--no-deep" => deep_now = false,
+                            "rust-first" | "--rust-first" => rust_first_now = true,
+                            "no-rust-first" | "--no-rust-first" => rust_first_now = false,
+                            _ => {}
+                        }
+                    }
+                    unsafe {
+                        std::env::set_var(
+                            "RSCAN_REVERSE_RUST_FIRST",
+                            if rust_first_now { "1" } else { "0" },
+                        );
+                        std::env::set_var("RSCAN_REVERSE_DEEP", if deep_now { "1" } else { "0" });
+                    }
                     cprintln!(
-                        "[rscan] start decompile engine={} mode={:?} timeout={}s ...",
+                        "[rscan] start decompile engine={} mode={:?} timeout={}s deep={} rust-first={} ...",
                         engine_name,
                         mode,
-                        timeout_secs
+                        timeout_secs,
+                        deep_now,
+                        rust_first_now
                     );
                     let report = run_decompile_with_progress(
                         cfg.input.clone(),
@@ -3454,14 +3514,20 @@ fn print_help() {
     cprintln!("  tee-output <on|off>");
     cprintln!("  clear|cls");
     cprintln!("  help");
+    cprintln!("  mode-status");
+    cprintln!("  deep <on|off>");
+    cprintln!("  rust-first <on|off>");
     cprintln!("  backend-status");
     cprintln!("  analyze [rules_file]");
     cprintln!("  malware");
     cprintln!("  shell-audit <text>");
-    cprintln!("  plan <objdump|radare2|ghidra|ida|jadx> [out_dir]");
-    cprintln!("  pseudocode <auto|ghidra|ida> [out_dir] [index|full|function] [name_or_ea]");
+    cprintln!("  plan <objdump|radare2|ghidra|jadx> [out_dir]");
+    cprintln!("  pseudocode <auto|ghidra|jadx> [out_dir] [index|full|function] [name_or_ea]");
     cprintln!(
-        "  decompile|run <auto|ghidra|ida|r2|jadx> [workspace] [timeout_secs] [index|full|function] [name_or_ea]"
+        "  decompile|run <auto|ghidra|r2|jadx> [workspace] [timeout_secs] [index|full|function] [name_or_ea]"
+    );
+    cprintln!(
+        "    + optional flags: [deep|no-deep] [rust-first|no-rust-first]"
     );
     cprintln!("  jobs");
     cprintln!("  set-job <job_id>");

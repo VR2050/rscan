@@ -2,11 +2,14 @@
 
 // 导入标准库
 use std::net::{IpAddr, SocketAddr}; // IP地址和套接字地址
-use std::time::{Duration, Instant}; // 时间相关类型
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH}; // 时间相关类型
 
 // 导入Tokio异步运行时
 use tokio::net::TcpStream; // 异步TCP流
-use tokio::time::timeout; // 异步超时包装器
+use tokio::task::JoinSet;
+use tokio::time::{sleep, timeout}; // 异步超时包装器
 
 // 导入项目内部模块
 use super::models::{PortResult, PortStatus, Protocol, ScanResult};
@@ -17,10 +20,29 @@ use crate::errors::RustpenError; // 自定义错误类型 // 数据模型
 pub struct TcpConfig {
     /// 连接超时时间（秒）
     pub timeout_seconds: u64,
+    /// 连接超时时间（毫秒），优先级高于 timeout_seconds
+    pub timeout_ms: Option<u64>,
     /// 是否启用并发扫描
     pub concurrent: bool,
     /// 并发连接数（如果启用并发）
     pub concurrency: usize,
+    /// 连接失败后的重试次数（0 表示不重试）
+    pub retries: u32,
+    /// 全局速率上限（端口/秒），None 表示不限制
+    pub max_rate: Option<u32>,
+    /// 发送抖动（毫秒），用于平滑流量特征
+    pub jitter_ms: Option<u64>,
+    /// 端口调度顺序
+    pub scan_order: TcpScanOrder,
+    /// 自适应背压（filtered 偏高时自动增加小延迟）
+    pub adaptive_backpressure: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TcpScanOrder {
+    Serial,
+    Random,
+    Interleave,
 }
 
 // 为TcpConfig提供默认值
@@ -28,8 +50,14 @@ impl Default for TcpConfig {
     fn default() -> Self {
         Self {
             timeout_seconds: 3, // 默认3秒超时
-            concurrent: false,  // 默认禁用并发
-            concurrency: 1000,  // 默认100并发连接
+            timeout_ms: None,
+            concurrent: false, // 默认禁用并发
+            concurrency: 1000, // 默认100并发连接
+            retries: 0,
+            max_rate: None,
+            jitter_ms: None,
+            scan_order: TcpScanOrder::Serial,
+            adaptive_backpressure: false,
         }
     }
 }
@@ -46,55 +74,144 @@ impl TcpScanner {
         Self { config }
     }
 
-    /// 内部方法：检查单个TCP端口
-    async fn check_single_port(&self, host: IpAddr, port: u16) -> PortResult {
-        // 构建套接字地址
-        let addr = SocketAddr::new(host, port);
-        let start_time = Instant::now(); // 记录开始时间，用于计算延迟
+    fn mix64(mut x: u64) -> u64 {
+        x ^= x >> 33;
+        x = x.wrapping_mul(0xff51afd7ed558ccd);
+        x ^= x >> 33;
+        x = x.wrapping_mul(0xc4ceb9fe1a85ec53);
+        x ^= x >> 33;
+        x
+    }
 
-        // 使用tokio::timeout包装连接操作，避免无限等待
-        match timeout(
-            Duration::from_secs(self.config.timeout_seconds),
-            // TcpStream::connect(&addr)
-            async {
-                let stream = TcpStream::connect(&addr).await?;
-                // ⭐ 关键：启用 TCP_NODELAY
-                stream.set_nodelay(true)?;
-                Ok::<_, std::io::Error>(stream)
-            },
-        )
+    fn now_seed() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64
+    }
+
+    fn prepare_port_plan(&self, ports: &[u16]) -> Vec<u16> {
+        let mut out = ports.to_vec();
+        match self.config.scan_order {
+            TcpScanOrder::Serial => out,
+            TcpScanOrder::Random => {
+                if out.len() <= 1 {
+                    return out;
+                }
+                let mut seed = Self::mix64(Self::now_seed() ^ out.len() as u64);
+                for i in (1..out.len()).rev() {
+                    seed = Self::mix64(seed.wrapping_add(i as u64));
+                    let j = (seed as usize) % (i + 1);
+                    out.swap(i, j);
+                }
+                out
+            }
+            TcpScanOrder::Interleave => {
+                out.sort_unstable();
+                let stride = 8usize.min(out.len().max(1));
+                let mut interleaved = Vec::with_capacity(out.len());
+                for offset in 0..stride {
+                    let mut i = offset;
+                    while i < out.len() {
+                        interleaved.push(out[i]);
+                        i += stride;
+                    }
+                }
+                interleaved
+            }
+        }
+    }
+
+    fn worker_base_gap_ms(&self, worker_count: usize) -> Option<u64> {
+        let rate = self.config.max_rate?;
+        if rate == 0 {
+            return None;
+        }
+        let ms = ((1000.0 * worker_count as f64) / rate as f64).round() as u64;
+        Some(ms.max(1))
+    }
+
+    fn jitter_for(worker_id: usize, seq: u64, jitter_max_ms: u64) -> u64 {
+        if jitter_max_ms == 0 {
+            return 0;
+        }
+        let seed = Self::mix64((worker_id as u64).wrapping_mul(0x9e3779b97f4a7c15) ^ seq);
+        seed % (jitter_max_ms + 1)
+    }
+
+    async fn maybe_pace_probe(
+        base_gap_ms: Option<u64>,
+        jitter_ms: Option<u64>,
+        worker_id: usize,
+        seq: u64,
+        adaptive_delay_ms: u64,
+    ) {
+        let mut total_ms = adaptive_delay_ms;
+        if let Some(base) = base_gap_ms {
+            total_ms = total_ms.saturating_add(base);
+        }
+        if let Some(jit) = jitter_ms {
+            total_ms = total_ms.saturating_add(Self::jitter_for(worker_id, seq, jit));
+        }
+        if total_ms > 0 {
+            sleep(Duration::from_millis(total_ms)).await;
+        }
+    }
+
+    fn timeout_duration(&self) -> Duration {
+        if let Some(ms) = self.config.timeout_ms {
+            Duration::from_millis(ms.max(1))
+        } else {
+            Duration::from_secs(self.config.timeout_seconds.max(1))
+        }
+    }
+
+    async fn check_single_port_once(host: IpAddr, port: u16, timeout_dur: Duration) -> PortResult {
+        let addr = SocketAddr::new(host, port);
+        let start_time = Instant::now();
+        match timeout(timeout_dur, async {
+            let stream = TcpStream::connect(&addr).await?;
+            stream.set_nodelay(true)?;
+            Ok::<_, std::io::Error>(stream)
+        })
         .await
         {
             Ok(Ok(_stream)) => {
-                // 情况1：连接成功（超时内成功建立连接）
-                // 端口开放，计算连接延迟
                 let latency = start_time.elapsed().as_millis() as u16;
-                PortResult::new(port, PortStatus::Open, Protocol::Tcp) // 修复：添加Protocol参数
-                    .with_latency(latency) // 添加延迟信息
+                PortResult::new(port, PortStatus::Open, Protocol::Tcp).with_latency(latency)
             }
             Ok(Err(e)) => {
-                // 情况2：连接失败（在超时内立即失败）
-                // 根据错误类型判断端口状态
                 let status = if e.kind() == std::io::ErrorKind::ConnectionRefused {
-                    // 连接被拒绝 - 端口明确关闭
                     PortStatus::Closed
                 } else {
-                    // 其他错误（如网络不可达）- 端口可能被过滤
                     PortStatus::Filtered
                 };
-                PortResult::new(port, status, Protocol::Tcp) // 修复：添加Protocol参数
+                PortResult::new(port, status, Protocol::Tcp)
             }
-            Err(_) => {
-                // 情况3：连接超时（超过timeout_seconds仍未连接）
-                // 端口可能被防火墙过滤或服务响应慢
-                PortResult::new(port, PortStatus::Filtered, Protocol::Tcp) // 修复：添加Protocol参数
+            Err(_) => PortResult::new(port, PortStatus::Filtered, Protocol::Tcp),
+        }
+    }
+
+    /// 内部方法：检查单个TCP端口
+    async fn check_single_port(&self, host: IpAddr, port: u16) -> PortResult {
+        let timeout_dur = self.timeout_duration();
+        let mut attempts = 0_u32;
+        loop {
+            let result = Self::check_single_port_once(host, port, timeout_dur).await;
+            if result.status == PortStatus::Open || result.status == PortStatus::Closed {
+                return result;
             }
+            if attempts >= self.config.retries {
+                return result;
+            }
+            attempts += 1;
         }
     }
 
     /// 顺序扫描多个端口 - 逐个端口扫描（单线程）
     async fn scan_ports_sequential(&self, host: IpAddr, ports: &[u16]) -> ScanResult {
         let start_time = Instant::now(); // 记录整个扫描开始时间
+        let port_plan = self.prepare_port_plan(ports);
 
         // 创建扫描结果容器
         let mut scan_result = ScanResult::new(
@@ -104,7 +221,9 @@ impl TcpScanner {
         );
 
         // 顺序扫描每个端口
-        for &port in ports {
+        let base_gap_ms = self.worker_base_gap_ms(1);
+        for (seq, &port) in port_plan.iter().enumerate() {
+            Self::maybe_pace_probe(base_gap_ms, self.config.jitter_ms, 0, seq as u64, 0).await;
             // 异步检查单个端口
             let port_result = self.check_single_port(host, port).await;
 
@@ -124,40 +243,86 @@ impl TcpScanner {
 
     /// 并发扫描多个端口 - 同时扫描多个端口（多任务）
     async fn scan_ports_concurrent(&self, host: IpAddr, ports: &[u16]) -> ScanResult {
-        // 导入futures库的流处理功能
-        use futures::stream::{self, StreamExt};
-
         let start_time = Instant::now(); // 记录整个扫描开始时间
 
         // 创建扫描结果容器
         let mut scan_result = ScanResult::new(host.to_string(), host, Protocol::Tcp);
 
-        // 使用 buffer_unordered 控制并发，避免一次性分配所有任务
-        // 确保并发数至少为1
-        let concurrency = std::cmp::max(1, self.config.concurrency);
+        let port_plan = self.prepare_port_plan(ports);
+        let total_ports = port_plan.len();
+        if total_ports == 0 {
+            scan_result.scan_duration = start_time.elapsed();
+            return scan_result;
+        }
+        // 固定 worker 池 + 无锁索引分发，减少大量 Future 组合器开销
+        let worker_count = std::cmp::max(1, self.config.concurrency).min(total_ports);
+        let timeout_dur = self.timeout_duration();
+        let retries = self.config.retries;
+        let base_gap_ms = self.worker_base_gap_ms(worker_count);
+        let jitter_ms = self.config.jitter_ms;
+        let adaptive_backpressure = self.config.adaptive_backpressure;
+        let ports = Arc::new(port_plan);
+        let index = Arc::new(AtomicUsize::new(0));
+        let mut workers = JoinSet::new();
+        for worker_id in 0..worker_count {
+            let ports = Arc::clone(&ports);
+            let index = Arc::clone(&index);
+            workers.spawn(async move {
+                let mut local = Vec::with_capacity((ports.len() / worker_count).max(8));
+                let mut seq = 0_u64;
+                let mut adaptive_delay_ms = 0_u64;
+                loop {
+                    let i = index.fetch_add(1, Ordering::Relaxed);
+                    if i >= ports.len() {
+                        break;
+                    }
+                    let port = ports[i];
+                    Self::maybe_pace_probe(
+                        base_gap_ms,
+                        jitter_ms,
+                        worker_id,
+                        seq,
+                        adaptive_delay_ms,
+                    )
+                    .await;
+                    let mut attempts = 0_u32;
+                    let result = loop {
+                        let result = Self::check_single_port_once(host, port, timeout_dur).await;
+                        if result.status == PortStatus::Open || result.status == PortStatus::Closed
+                        {
+                            break result;
+                        }
+                        if attempts >= retries {
+                            break result;
+                        }
+                        attempts += 1;
+                    };
+                    if adaptive_backpressure {
+                        adaptive_delay_ms = match result.status {
+                            PortStatus::Filtered => (adaptive_delay_ms + 2).min(40),
+                            PortStatus::Error => (adaptive_delay_ms + 4).min(60),
+                            PortStatus::Open | PortStatus::Closed => {
+                                adaptive_delay_ms.saturating_sub(2)
+                            }
+                        };
+                    }
+                    seq = seq.wrapping_add(1);
+                    local.push(result);
+                }
+                local
+            });
+        }
+        while let Some(joined) = workers.join_next().await {
+            if let Ok(local_results) = joined {
+                for port_result in local_results {
+                    // 记录端口状态
+                    scan_result.record_port(port_result.port, port_result.status);
 
-        // 创建端口流，使用buffer_unordered实现并发控制
-        let results: Vec<PortResult> = stream::iter(ports.iter().copied())
-            .map(|port| {
-                // 克隆扫描器以便在异步任务中使用
-                let scanner = self.clone();
-                // 为每个端口创建异步检查任务
-                async move { scanner.check_single_port(host, port).await }
-            })
-            // 控制最大并发任务数，保持concurrency个任务同时运行
-            .buffer_unordered(concurrency)
-            // 收集所有结果
-            .collect()
-            .await;
-
-        // 处理所有端口扫描结果
-        for port_result in results {
-            // 记录端口状态
-            scan_result.record_port(port_result.port, port_result.status);
-
-            // 如果端口开放，保存详细信息
-            if port_result.status == PortStatus::Open {
-                scan_result.add_open_port_detail(port_result);
+                    // 如果端口开放，保存详细信息
+                    if port_result.status == PortStatus::Open {
+                        scan_result.add_open_port_detail(port_result);
+                    }
+                }
             }
         }
 
@@ -255,8 +420,14 @@ mod tests {
         // 创建启用并发的扫描器
         let config = TcpConfig {
             timeout_seconds: 1,
+            timeout_ms: None,
             concurrent: true,
             concurrency: 2,
+            retries: 0,
+            max_rate: None,
+            jitter_ms: None,
+            scan_order: TcpScanOrder::Serial,
+            adaptive_backpressure: false,
         };
         let scanner = TcpScanner::new(config);
 
@@ -285,8 +456,14 @@ pub mod test {
         let port_list = ports::parse_ports(ports).unwrap();
         let config = TcpConfig {
             timeout_seconds: 1,
+            timeout_ms: None,
             concurrent: true,
             concurrency: 1000,
+            retries: 0,
+            max_rate: None,
+            jitter_ms: None,
+            scan_order: TcpScanOrder::Serial,
+            adaptive_backpressure: false,
         };
         let start = Instant::now();
 
@@ -308,8 +485,14 @@ pub mod test {
         let port_list = ports::parse_ports(ports).unwrap();
         let config = TcpConfig {
             timeout_seconds: 1,
+            timeout_ms: None,
             concurrent: true,
             concurrency: 50,
+            retries: 0,
+            max_rate: None,
+            jitter_ms: None,
+            scan_order: TcpScanOrder::Serial,
+            adaptive_backpressure: false,
         };
         let scanner = TcpScanner::new(config);
         let rt = tokio::runtime::Runtime::new().unwrap();

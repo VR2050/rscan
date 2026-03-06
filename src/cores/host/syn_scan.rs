@@ -16,6 +16,8 @@ pub struct SynConfig {
     pub concurrency: usize,
     /// 可选源端口（如果为0会自动选择）
     pub source_port: u16,
+    /// 当原始 SYN 结果为 Filtered 时，是否回退到 TCP connect 二次确认
+    pub verify_filtered_with_connect: bool,
 }
 
 impl Default for SynConfig {
@@ -25,6 +27,7 @@ impl Default for SynConfig {
             concurrent: false,
             concurrency: 100,
             source_port: 0,
+            verify_filtered_with_connect: true,
         }
     }
 }
@@ -210,7 +213,13 @@ impl SynScanner {
         };
 
         if let Ok(Ok(status)) = pnet_res {
-            return PortResult::new(port, status, Protocol::Tcp).with_latency(0u16);
+            if status != PortStatus::Filtered {
+                return PortResult::new(port, status, Protocol::Tcp).with_latency(0u16);
+            }
+            if !self.config.verify_filtered_with_connect {
+                return PortResult::new(port, PortStatus::Filtered, Protocol::Tcp)
+                    .with_latency(0u16);
+            }
         }
 
         // 回退到标准 TCP 连接方法（与 TcpScanner 类似）
@@ -361,6 +370,7 @@ mod tests {
             concurrent: true,
             concurrency: 4,
             source_port: 0,
+            verify_filtered_with_connect: true,
         };
         let scanner = SynScanner::new(config);
 
@@ -386,6 +396,7 @@ mod tests {
             concurrent: true,
             concurrency: 4,
             source_port: 0,
+            verify_filtered_with_connect: true,
         };
         let scanner = SynScanner::new(config);
 
@@ -421,6 +432,7 @@ mod tests {
             concurrent: true,
             concurrency: 5000,
             source_port: 0,
+            verify_filtered_with_connect: true,
         };
         let start = Instant::now();
         let scanner = SynScanner::new(config);

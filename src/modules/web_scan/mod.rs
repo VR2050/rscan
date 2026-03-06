@@ -11,6 +11,7 @@ pub use scanner::WebScanConfig;
 pub use scanner::WebScanner;
 
 use serde::{Deserialize, Serialize};
+use reqwest::header::HeaderMap;
 
 /// 输出格式选项
 #[derive(Debug, Clone)]
@@ -134,6 +135,9 @@ pub struct ModuleScanConfig {
     /// 返回结果状态码过滤（inclusive）： (min, max)
     pub status_min: Option<u16>,
     pub status_max: Option<u16>,
+    /// 返回结果内容长度过滤（inclusive）
+    pub content_len_min: Option<u64>,
+    pub content_len_max: Option<u64>,
     /// 自动探测并过滤 wildcard 响应（减少目录/参数扫描误报）
     pub wildcard_filter: bool,
     /// wildcard 探测样本数量
@@ -150,8 +154,17 @@ pub struct ModuleScanConfig {
     pub adaptive_rate: bool,
     pub adaptive_initial_delay_ms: u64,
     pub adaptive_max_delay_ms: u64,
+    /// whether to follow HTTP redirects (3xx). When false, keep original status.
+    pub follow_redirects: bool,
     /// HTTP method for requests (GET/POST/PUT/DELETE/HEAD/OPTIONS/PATCH...)
     pub request_method: reqwest::Method,
+    /// optional per-request headers (applied to dir/fuzz/dns requests)
+    pub request_headers: Option<HeaderMap>,
+    /// optional request body template; FUZZ will be replaced in fuzz mode
+    pub request_body_template: Option<String>,
+    /// dns scan mode: when true, verify subdomains by HTTP/HTTPS reachability;
+    /// when false, only keep DNS-resolvable subdomains (rough discovery).
+    pub dns_http_verify: bool,
     /// enable recursive directory scanning (dir scan only)
     pub recursive: bool,
     /// max recursion depth for directory scanning
@@ -170,6 +183,8 @@ impl Default for ModuleScanConfig {
             output_format: None,
             status_min: None,
             status_max: None,
+            content_len_min: None,
+            content_len_max: None,
             wildcard_filter: false,
             wildcard_sample_count: 2,
             wildcard_len_tolerance: 16,
@@ -179,11 +194,28 @@ impl Default for ModuleScanConfig {
             adaptive_rate: false,
             adaptive_initial_delay_ms: 0,
             adaptive_max_delay_ms: 2000,
+            follow_redirects: true,
             request_method: reqwest::Method::GET,
+            request_headers: None,
+            request_body_template: None,
+            dns_http_verify: true,
             recursive: false,
             recursive_max_depth: 2,
         }
     }
+}
+
+pub fn render_request_body(
+    body_template: &Option<String>,
+    fuzz_value: Option<&str>,
+) -> Option<bytes::Bytes> {
+    body_template.as_ref().map(|tpl| {
+        if let Some(v) = fuzz_value {
+            bytes::Bytes::from(tpl.replace("FUZZ", v))
+        } else {
+            bytes::Bytes::from(tpl.clone())
+        }
+    })
 }
 
 // 导出常用函数

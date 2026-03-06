@@ -27,7 +27,10 @@ pub struct SecuritySignals {
     pub anti_debug_indicators: Vec<String>,
     pub dynamic_indicators: Vec<String>,
     pub packer_indicators: Vec<String>,
+    pub packer_family_hints: Vec<String>,
+    pub packer_confidence: u8,
     pub obfuscation_indicators: Vec<String>,
+    pub shell_loader_indicators: Vec<String>,
     pub suspicious_imports: Vec<String>,
     pub suspicious_strings: Vec<String>,
     pub entropy: f64,
@@ -73,7 +76,6 @@ pub enum DecompilerEngine {
     Objdump,
     Radare2,
     Ghidra,
-    Ida,
     Jadx,
 }
 
@@ -101,7 +103,6 @@ impl DecompilerEngine {
             "objdump" => Some(Self::Objdump),
             "radare2" | "r2" => Some(Self::Radare2),
             "ghidra" => Some(Self::Ghidra),
-            "ida" | "idat64" => Some(Self::Ida),
             "jadx" => Some(Self::Jadx),
             _ => None,
         }

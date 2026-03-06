@@ -1,15 +1,87 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::errors::RustpenError;
 
+use super::adapters::adapter_for_engine;
+use super::analyzer::detect_format;
 use super::orchestrator::ReverseOrchestrator;
 
 const DEFAULT_GHIDRA_AUTO_INDEX_THRESHOLD_MB: u64 = 25;
+const APK_SCAN_WINDOW: usize = 4 * 1024 * 1024;
+
+fn env_flag(key: &str, default: bool) -> bool {
+    match std::env::var(key) {
+        Ok(v) => matches!(v.as_str(), "1" | "true" | "yes" | "on"),
+        Err(_) => default,
+    }
+}
+
+fn reverse_deep_enabled() -> bool {
+    env_flag("RSCAN_REVERSE_DEEP", false)
+}
+
+fn reverse_rust_first_enabled() -> bool {
+    env_flag("RSCAN_REVERSE_RUST_FIRST", true)
+}
+
+fn ghidra_slim_enabled() -> bool {
+    env_flag("RSCAN_GHIDRA_SLIM", true)
+}
+
+fn is_probable_apk(path: &Path) -> bool {
+    if path
+        .extension()
+        .and_then(|s| s.to_str())
+        .map(|s| s.eq_ignore_ascii_case("apk"))
+        .unwrap_or(false)
+    {
+        return true;
+    }
+
+    let Ok(mut f) = std::fs::File::open(path) else {
+        return false;
+    };
+
+    let Ok(meta) = f.metadata() else {
+        return false;
+    };
+    if meta.len() < 4 {
+        return false;
+    }
+
+    let mut head = vec![0u8; APK_SCAN_WINDOW.min(meta.len() as usize)];
+    if f.read_exact(&mut head).is_err() {
+        return false;
+    }
+    if !head.starts_with(b"PK\x03\x04") {
+        return false;
+    }
+    if matches!(detect_format(&head), super::model::BinaryFormat::Apk) {
+        return true;
+    }
+
+    if meta.len() <= APK_SCAN_WINDOW as u64 {
+        return false;
+    }
+
+    let tail_len = APK_SCAN_WINDOW.min(meta.len() as usize);
+    if f.seek(SeekFrom::End(-(tail_len as i64))).is_err() {
+        return false;
+    }
+    let mut tail = vec![0u8; tail_len];
+    if f.read_exact(&mut tail).is_err() {
+        return false;
+    }
+
+    let mut merged = head;
+    merged.extend_from_slice(&tail);
+    matches!(detect_format(&merged), super::model::BinaryFormat::Apk)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ReverseJobStatus {
@@ -84,23 +156,24 @@ pub fn run_decompile_job(
     function: Option<&str>,
     timeout_secs: Option<u64>,
 ) -> Result<DecompileRunReport, RustpenError> {
-    let fast_reverse = std::env::var("RSCAN_FAST_REVERSE")
-        .ok()
-        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
+    let fast_reverse = env_flag("RSCAN_FAST_REVERSE", false);
+    let rust_first = reverse_rust_first_enabled();
+    let deep = reverse_deep_enabled();
+    let apk_like = is_probable_apk(input);
 
     // Fast path: lightweight Rust index (no Ghidra) when requested or auto for index.
     if mode == super::model::DecompileMode::Index
-        && (engine_name.eq_ignore_ascii_case("auto")
-            || engine_name.eq_ignore_ascii_case("rust")
-            || engine_name.eq_ignore_ascii_case("rust-index"))
+        && (engine_name.eq_ignore_ascii_case("rust")
+            || engine_name.eq_ignore_ascii_case("rust-index")
+            || (engine_name.eq_ignore_ascii_case("auto") && !apk_like && (rust_first && !deep)))
     {
         return run_rust_index_job(input, workspace);
     }
     // Optional lightweight ASM-only path (no pseudocode).
     if (mode == super::model::DecompileMode::Function || mode == super::model::DecompileMode::Full)
         && (engine_name.eq_ignore_ascii_case("rust-asm")
-            || engine_name.eq_ignore_ascii_case("rust"))
+            || engine_name.eq_ignore_ascii_case("rust")
+            || (engine_name.eq_ignore_ascii_case("auto") && !apk_like && (rust_first && !deep)))
     {
         return run_rust_asm_job(input, workspace, mode);
     }
@@ -124,7 +197,11 @@ pub fn run_decompile_job(
     std::fs::create_dir_all(&out_dir)?;
 
     let preferred = if engine_name.eq_ignore_ascii_case("auto") {
-        None
+        if apk_like {
+            Some("jadx")
+        } else {
+            None
+        }
     } else {
         Some(engine_name)
     };
@@ -138,12 +215,19 @@ pub fn run_decompile_job(
         function_arg_for_mode(effective_mode, function),
     )?;
     let mut adaptive_note: Option<String> = None;
-    if should_auto_switch_ghidra_full_to_index(
-        requested_mode,
-        &plan.program,
-        std::fs::metadata(input).ok().map(|m| m.len()),
-        ghidra_auto_index_threshold_bytes(),
-    ) {
+    let force_slim_ghidra =
+        requested_mode == super::model::DecompileMode::Full
+            && !deep
+            && ghidra_slim_enabled()
+            && is_ghidra_program(&plan.program);
+    if force_slim_ghidra
+        || should_auto_switch_ghidra_full_to_index(
+            requested_mode,
+            &plan.program,
+            std::fs::metadata(input).ok().map(|m| m.len()),
+            ghidra_auto_index_threshold_bytes(),
+        )
+    {
         effective_mode = super::model::DecompileMode::Index;
         plan = orchestrator.build_pseudocode_plan(
             input,
@@ -155,10 +239,14 @@ pub fn run_decompile_job(
         let file_size = std::fs::metadata(input).ok().map(|m| m.len()).unwrap_or(0);
         let threshold = ghidra_auto_index_threshold_bytes()
             .unwrap_or(DEFAULT_GHIDRA_AUTO_INDEX_THRESHOLD_MB * 1024 * 1024);
-        adaptive_note = Some(format!(
-            "adaptive_ghidra_mode: full->index (file_size={} bytes >= threshold={} bytes)",
-            file_size, threshold
-        ));
+        adaptive_note = if force_slim_ghidra {
+            Some("ghidra_slim_mode: full->index (deep mode disabled)".to_string())
+        } else {
+            Some(format!(
+                "adaptive_ghidra_mode: full->index (file_size={} bytes >= threshold={} bytes)",
+                file_size, threshold
+            ))
+        };
     }
     let backend = preferred.unwrap_or("auto").to_string();
     let artifact_name = match effective_mode {
@@ -166,6 +254,7 @@ pub fn run_decompile_job(
         super::model::DecompileMode::Index => "index.jsonl",
         super::model::DecompileMode::Function => "function.jsonl",
     };
+    let is_jadx = is_jadx_program(&plan.program);
     if plan
         .program
         .to_ascii_lowercase()
@@ -194,11 +283,19 @@ pub fn run_decompile_job(
             Some(ref n) => format!("{}; {}", plan.note, n),
             None => plan.note.clone(),
         },
-        artifacts: vec![
-            path_to_string(out_dir.join(artifact_name)),
-            path_to_string(job_dir.join("stdout.log")),
-            path_to_string(job_dir.join("stderr.log")),
-        ],
+        artifacts: {
+            let mut arts = vec![
+                path_to_string(job_dir.join("stdout.log")),
+                path_to_string(job_dir.join("stderr.log")),
+            ];
+            if is_jadx && effective_mode == super::model::DecompileMode::Full {
+                arts.push(path_to_string(out_dir.join("sources")));
+                arts.push(path_to_string(out_dir.join("resources")));
+            } else {
+                arts.push(path_to_string(out_dir.join(artifact_name)));
+            }
+            arts
+        },
         error: None,
     };
     save_job_meta(&job_dir.join("meta.json"), &job)?;
@@ -209,7 +306,7 @@ pub fn run_decompile_job(
 
     let stdout_log = job_dir.join("stdout.log");
     let stderr_log = job_dir.join("stderr.log");
-    let run_status = match run_with_logs_and_timeout(
+    let mut run_status = match run_with_logs_and_timeout(
         &plan.program,
         &plan.args,
         &stdout_log,
@@ -230,16 +327,75 @@ pub fn run_decompile_job(
             });
         }
     };
+    if run_status != Some(0) && is_ghidra_program(&plan.program) && stderr_has_ghidra_lock(&stderr_log) {
+        let old_reuse = std::env::var("RSCAN_GHIDRA_REUSE_PROJECT").ok();
+        let old_cache = std::env::var("RSCAN_GHIDRA_PROJECT_CACHE").ok();
+        unsafe {
+            std::env::set_var("RSCAN_GHIDRA_REUSE_PROJECT", "0");
+            std::env::set_var("RSCAN_GHIDRA_PROJECT_CACHE", "0");
+        }
+        if let Ok(retry_plan) = orchestrator.build_pseudocode_plan(
+            input,
+            &out_dir,
+            preferred,
+            effective_mode,
+            function_arg_for_mode(effective_mode, function),
+        ) {
+            let _ = std::fs::remove_file(&stdout_log);
+            let _ = std::fs::remove_file(&stderr_log);
+            if let Ok(status2) = run_with_logs_and_timeout(
+                &retry_plan.program,
+                &retry_plan.args,
+                &stdout_log,
+                &stderr_log,
+                timeout_secs,
+            ) {
+                run_status = status2;
+                job.program = retry_plan.program;
+                job.args = retry_plan.args;
+                job.note = format!("{}; ghidra lock retry without cache", job.note);
+            }
+        }
+        match old_reuse {
+            Some(v) => unsafe { std::env::set_var("RSCAN_GHIDRA_REUSE_PROJECT", v) },
+            None => unsafe { std::env::remove_var("RSCAN_GHIDRA_REUSE_PROJECT") },
+        }
+        match old_cache {
+            Some(v) => unsafe { std::env::set_var("RSCAN_GHIDRA_PROJECT_CACHE", v) },
+            None => unsafe { std::env::remove_var("RSCAN_GHIDRA_PROJECT_CACHE") },
+        }
+    }
 
     job.ended_at = Some(now_epoch_secs());
     job.exit_code = run_status;
     let pseudo_path = out_dir.join(artifact_name);
-    let pseudo_ok = pseudo_path.is_file()
-        && std::fs::metadata(&pseudo_path)
-            .map(|m| m.len() > 0)
-            .unwrap_or(false);
-    if run_status == Some(0) && pseudo_ok {
+    let pseudo_ok = path_is_nonempty_file(&pseudo_path);
+    let jadx_sources_ok = path_has_any_file(&out_dir.join("sources"));
+    let jadx_resources_ok = path_has_any_file(&out_dir.join("resources"));
+    let jadx_output_ok = jadx_sources_ok || jadx_resources_ok;
+    let success = if is_jadx && effective_mode == super::model::DecompileMode::Full {
+        (run_status == Some(0) && jadx_output_ok) || (run_status != Some(0) && jadx_output_ok)
+    } else {
+        run_status == Some(0) && pseudo_ok
+    };
+    if success {
         job.status = ReverseJobStatus::Succeeded;
+        if is_jadx && run_status != Some(0) {
+            let warn = format!(
+                "jadx finished with non-zero exit code {} but exported output exists",
+                run_status
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "unknown".to_string())
+            );
+            if job.note.trim().is_empty() {
+                job.note = warn;
+            } else {
+                job.note = format!("{}; {}", job.note, warn);
+            }
+        }
+        if let Ok(Some(ir_path)) = try_emit_ir_artifact(workspace, &job) {
+            job.artifacts.push(path_to_string(ir_path));
+        }
     } else {
         job.status = ReverseJobStatus::Failed;
         job.error = if run_status != Some(0) {
@@ -249,6 +405,11 @@ pub fn run_decompile_job(
                 run_status
                     .map(|v| v.to_string())
                     .unwrap_or_else(|| "unknown".to_string())
+            ))
+        } else if is_jadx && effective_mode == super::model::DecompileMode::Full {
+            Some(format!(
+                "jadx finished but output tree missing/empty: {}",
+                out_dir.display()
             ))
         } else {
             Some(format!(
@@ -453,7 +614,7 @@ fn load_asm_only_rows(base: &Path) -> Result<Option<Vec<serde_json::Value>>, Rus
     let row = serde_json::json!({
         "ea": format!("0x{:x}", ea),
         "name": "<asm-only>",
-        "pseudocode": "asm-only job: run ghidra/ida for pseudocode and function index.",
+        "pseudocode": "asm-only job: run ghidra for pseudocode/index, or JADX for APK source export.",
         "calls": [],
         "call_names": [],
         "xrefs": [],
@@ -624,7 +785,7 @@ fn load_lightweight_rows(
         obj.insert(
             "pseudocode".to_string(),
             serde_json::Value::String(
-                "rust fast path: no pseudocode. press 'd' to run ghidra/ida for pseudocode."
+                "rust fast path: no pseudocode. press 'd' to run ghidra for pseudocode."
                     .to_string(),
             ),
         );
@@ -893,6 +1054,121 @@ fn resolve_pseudocode_path(workspace: &Path, job: &ReverseJobMeta) -> PathBuf {
     }
 }
 
+fn infer_engine_for_ir(job: &ReverseJobMeta) -> Option<super::model::DecompilerEngine> {
+    let b = job.backend.to_ascii_lowercase();
+    if b.contains("ghidra") || job.program.to_ascii_lowercase().contains("analyzeheadless") {
+        return Some(super::model::DecompilerEngine::Ghidra);
+    }
+    if b.contains("jadx") || job.program.to_ascii_lowercase().contains("jadx") {
+        return Some(super::model::DecompilerEngine::Jadx);
+    }
+    if b.contains("radare2") || b == "r2" || job.program.to_ascii_lowercase().ends_with("/r2") {
+        return Some(super::model::DecompilerEngine::Radare2);
+    }
+    None
+}
+
+fn write_ir_jsonl(path: &Path, doc: &super::ir::ReverseIrDoc) -> Result<(), RustpenError> {
+    use std::io::Write;
+
+    let mut f = std::fs::File::create(path)?;
+    let meta = serde_json::json!({
+        "kind": "meta",
+        "payload": doc.meta
+    });
+    writeln!(
+        f,
+        "{}",
+        serde_json::to_string(&meta).map_err(|e| RustpenError::ParseError(e.to_string()))?
+    )
+    .map_err(RustpenError::Io)?;
+
+    for func in &doc.functions {
+        let row = serde_json::json!({
+            "kind": "function",
+            "payload": func
+        });
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(&row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+    Ok(())
+}
+
+fn try_emit_ir_artifact(workspace: &Path, job: &ReverseJobMeta) -> Result<Option<PathBuf>, RustpenError> {
+    let Some(engine) = infer_engine_for_ir(job) else {
+        return Ok(None);
+    };
+    let Some(adapter) = adapter_for_engine(engine) else {
+        return Ok(None);
+    };
+
+    let out_dir = workspace.join("reverse_out").join(&job.id);
+    let pseudo_path = resolve_pseudocode_path(workspace, job);
+    let pseudo_rows = if pseudo_path.exists() {
+        std::fs::read_to_string(&pseudo_path)
+            .ok()
+            .map(|text| {
+                text.lines()
+                    .filter_map(|line| {
+                        let s = line.trim();
+                        if s.is_empty() {
+                            return None;
+                        }
+                        serde_json::from_str::<serde_json::Value>(s).ok()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    let index_path = out_dir.join("index.jsonl");
+    let index_rows = if index_path.exists() {
+        std::fs::read_to_string(&index_path)
+            .ok()
+            .map(|text| {
+                text.lines()
+                    .filter_map(|line| {
+                        let s = line.trim();
+                        if s.is_empty() {
+                            return None;
+                        }
+                        serde_json::from_str::<serde_json::Value>(s).ok()
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    let is_jadx = matches!(engine, super::model::DecompilerEngine::Jadx);
+    if index_rows.is_empty() && pseudo_rows.is_empty() && !is_jadx {
+        return Ok(None);
+    }
+
+    let file_size = std::fs::metadata(&job.target).ok().map(|m| m.len());
+    let meta = super::ir::IrBinaryMeta {
+        sample: job.target.display().to_string(),
+        backend: adapter.name().to_string(),
+        format: None,
+        arch: None,
+        entry: None,
+        file_size,
+    };
+    let doc = adapter.build_doc_with_context(meta, &index_rows, &pseudo_rows, &out_dir, &job.target)?;
+    if doc.functions.is_empty() && index_rows.is_empty() && pseudo_rows.is_empty() {
+        return Ok(None);
+    }
+    let ir_path = out_dir.join("ir.jsonl");
+    write_ir_jsonl(&ir_path, &doc)?;
+    Ok(Some(ir_path))
+}
+
 fn function_arg_for_mode<'a>(
     mode: super::model::DecompileMode,
     function: Option<&'a str>,
@@ -941,6 +1217,49 @@ fn should_auto_switch_ghidra_full_to_index(
 fn is_ghidra_program(program: &str) -> bool {
     let p = program.to_ascii_lowercase();
     p.contains("analyzeheadless") || p.contains("ghidra")
+}
+
+fn is_jadx_program(program: &str) -> bool {
+    program.to_ascii_lowercase().contains("jadx")
+}
+
+fn path_is_nonempty_file(path: &Path) -> bool {
+    path.is_file() && std::fs::metadata(path).map(|m| m.len() > 0).unwrap_or(false)
+}
+
+fn path_has_any_file(path: &Path) -> bool {
+    if !path.exists() {
+        return false;
+    }
+    if path.is_file() {
+        return std::fs::metadata(path).map(|m| m.len() > 0).unwrap_or(false);
+    }
+    let Ok(rd) = std::fs::read_dir(path) else {
+        return false;
+    };
+    for entry in rd.flatten() {
+        let p = entry.path();
+        if p.is_file() {
+            if std::fs::metadata(&p).map(|m| m.len() > 0).unwrap_or(false) {
+                return true;
+            }
+            continue;
+        }
+        if p.is_dir() && path_has_any_file(&p) {
+            return true;
+        }
+    }
+    false
+}
+
+fn stderr_has_ghidra_lock(stderr_log: &Path) -> bool {
+    std::fs::read_to_string(stderr_log)
+        .ok()
+        .map(|s| {
+            let lc = s.to_ascii_lowercase();
+            lc.contains("lockexception") || lc.contains("unable to lock project")
+        })
+        .unwrap_or(false)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1537,6 +1856,50 @@ fn run_rust_index_job(input: &Path, workspace: &Path) -> Result<DecompileRunRepo
         )
         .map_err(RustpenError::Io)?;
     }
+    let ir_path = out_dir.join("ir.jsonl");
+    let mut ir_doc = super::ir::ReverseIrDoc {
+        meta: super::ir::IrBinaryMeta {
+            sample: input.display().to_string(),
+            backend: "rust-index".to_string(),
+            format: None,
+            arch: Some(format!("{arch:?}")),
+            entry: entry_addr.map(|v| format!("0x{:x}", v)),
+            file_size: std::fs::metadata(input).ok().map(|m| m.len()),
+        },
+        ..Default::default()
+    };
+    for row in &rows {
+        let ea = row
+            .get("ea")
+            .and_then(|v| v.as_str())
+            .unwrap_or("0x0")
+            .to_string();
+        let name = row
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("<unnamed>")
+            .to_string();
+        let signature = row
+            .get("signature")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let demangled = row
+            .get("demangled")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let size = row.get("size").and_then(|v| v.as_u64());
+        ir_doc.functions.push(super::ir::IrFunction {
+            ea,
+            name,
+            demangled,
+            signature,
+            size,
+            pseudocode: None,
+            asm_preview: None,
+            tags: Vec::new(),
+        });
+    }
+    write_ir_jsonl(&ir_path, &ir_doc)?;
 
     std::fs::write(
         &stdout_log,
@@ -1577,6 +1940,7 @@ fn run_rust_index_job(input: &Path, workspace: &Path) -> Result<DecompileRunRepo
                 path_to_string(sections_path),
                 path_to_string(strings_path),
                 path_to_string(strings_utf16_path),
+                path_to_string(ir_path),
             ];
             arts.extend(extra_artifacts.into_iter().map(path_to_string));
             arts
@@ -1827,13 +2191,34 @@ fn run_with_logs_and_timeout(
 
 #[cfg(test)]
 mod tests {
-    use super::{is_ghidra_program, should_auto_switch_ghidra_full_to_index};
-
+    use super::{
+        ReverseJobMeta, ReverseJobStatus, is_ghidra_program, is_jadx_program, is_probable_apk,
+        path_has_any_file,
+        should_auto_switch_ghidra_full_to_index, try_emit_ir_artifact,
+    };
     #[test]
     fn ghidra_program_detection_works() {
         assert!(is_ghidra_program("analyzeHeadless"));
         assert!(is_ghidra_program("/opt/ghidra/support/analyzeHeadless"));
-        assert!(!is_ghidra_program("idat64"));
+        assert!(!is_ghidra_program("jadx"));
+    }
+
+    #[test]
+    fn jadx_program_detection_works() {
+        assert!(is_jadx_program("jadx"));
+        assert!(is_jadx_program("/usr/bin/jadx"));
+        assert!(!is_jadx_program("analyzeHeadless"));
+    }
+
+    #[test]
+    fn path_has_any_file_detects_nested_tree() {
+        let root = std::env::temp_dir().join(format!("rscan_any_file_{}", super::new_job_id()));
+        let nested = root.join("sources").join("com").join("demo");
+        std::fs::create_dir_all(&nested).unwrap();
+        assert!(!path_has_any_file(&root));
+        std::fs::write(nested.join("A.java"), "class A {}\n").unwrap();
+        assert!(path_has_any_file(&root));
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]
@@ -1848,7 +2233,7 @@ mod tests {
         ));
         assert!(!should_auto_switch_ghidra_full_to_index(
             full,
-            "idat64",
+            "jadx",
             Some(30 * 1024 * 1024),
             Some(25 * 1024 * 1024)
         ));
@@ -1864,6 +2249,109 @@ mod tests {
             Some(10 * 1024 * 1024),
             Some(25 * 1024 * 1024)
         ));
+    }
+
+    #[test]
+    fn emit_ir_artifact_from_ghidra_index_rows() {
+        let ws = std::env::temp_dir().join(format!("rscan_ir_emit_{}", super::new_job_id()));
+        let out_dir = ws.join("reverse_out").join("job-test");
+        std::fs::create_dir_all(&out_dir).unwrap();
+        let index_path = out_dir.join("index.jsonl");
+        std::fs::write(
+            &index_path,
+            "{\"ea\":\"0x401000\",\"name\":\"main\",\"size\":64}\n",
+        )
+        .unwrap();
+        let target = ws.join("sample.bin");
+        std::fs::write(&target, b"\x7fELF").unwrap();
+        let job = ReverseJobMeta {
+            id: "job-test".to_string(),
+            kind: "decompile".to_string(),
+            backend: "ghidra".to_string(),
+            mode: Some("index".to_string()),
+            function: None,
+            target: target.clone(),
+            workspace: ws.clone(),
+            status: ReverseJobStatus::Succeeded,
+            created_at: 0,
+            started_at: None,
+            ended_at: None,
+            exit_code: Some(0),
+            program: "analyzeHeadless".to_string(),
+            args: Vec::new(),
+            note: String::new(),
+            artifacts: vec![index_path.to_string_lossy().to_string()],
+            error: None,
+        };
+        let ir = try_emit_ir_artifact(&ws, &job).unwrap();
+        assert!(ir.is_some());
+        let ir_path = ir.unwrap();
+        let text = std::fs::read_to_string(&ir_path).unwrap();
+        assert!(text.contains("\"kind\":\"meta\""));
+        assert!(text.contains("\"kind\":\"function\""));
+
+        let _ = std::fs::remove_file(index_path);
+        let _ = std::fs::remove_file(target);
+        let _ = std::fs::remove_file(ir_path);
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn apk_detection_uses_magic_and_markers() {
+        let p = std::env::temp_dir().join(format!("rscan_apk_probe_{}.zip", super::new_job_id()));
+        let mut blob = b"PK\x03\x04".to_vec();
+        blob.extend_from_slice(b"........AndroidManifest.xml....classes.dex....");
+        std::fs::write(&p, blob).unwrap();
+        assert!(is_probable_apk(&p));
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn emit_ir_artifact_from_jadx_sources_without_jsonl() {
+        let ws = std::env::temp_dir().join(format!("rscan_ir_jadx_{}", super::new_job_id()));
+        let out_dir = ws.join("reverse_out").join("job-jadx");
+        let src_dir = out_dir.join("sources").join("com").join("demo");
+        std::fs::create_dir_all(&src_dir).unwrap();
+        std::fs::write(
+            src_dir.join("MainActivity.java"),
+            "public class MainActivity {\n  public void onCreate(){\n  }\n}\n",
+        )
+        .unwrap();
+        let target = ws.join("sample.apk");
+        std::fs::write(
+            &target,
+            b"PK\x03\x04......AndroidManifest.xml....classes.dex....",
+        )
+        .unwrap();
+        let job = ReverseJobMeta {
+            id: "job-jadx".to_string(),
+            kind: "decompile".to_string(),
+            backend: "jadx".to_string(),
+            mode: Some("full".to_string()),
+            function: None,
+            target: target.clone(),
+            workspace: ws.clone(),
+            status: ReverseJobStatus::Succeeded,
+            created_at: 0,
+            started_at: None,
+            ended_at: None,
+            exit_code: Some(0),
+            program: "jadx".to_string(),
+            args: Vec::new(),
+            note: String::new(),
+            artifacts: Vec::new(),
+            error: None,
+        };
+        let ir = try_emit_ir_artifact(&ws, &job).unwrap();
+        assert!(ir.is_some());
+        let ir_path = ir.unwrap();
+        let text = std::fs::read_to_string(&ir_path).unwrap();
+        assert!(text.contains("\"kind\":\"function\""));
+        assert!(text.contains("jadx::"));
+
+        let _ = std::fs::remove_file(target);
+        let _ = std::fs::remove_file(ir_path);
+        let _ = std::fs::remove_dir_all(ws);
     }
 }
 fn build_reloc_symbol_map(bytes: &[u8]) -> Result<HashMap<u64, String>, RustpenError> {

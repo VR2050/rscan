@@ -49,22 +49,6 @@ impl ReverseTooling {
                     note: "Headless Ghidra decompile pipeline. Generate script via `rscan reverse ghidra-script --out <dir>/ghidra_export_pseudocode.java` first.".to_string(),
                 }
             }
-            DecompilerEngine::Ida => {
-                let out = output_dir
-                    .map(Path::to_path_buf)
-                    .unwrap_or_else(|| PathBuf::from("./ida_pseudo"));
-                let script = out.join("ida_export_pseudocode.py");
-                ToolInvocation {
-                    program: "idat64".to_string(),
-                    args: vec![
-                        "-A".to_string(),
-                        format!("-S{} {}", script.display(), out.display()),
-                        input.display().to_string(),
-                    ],
-                    note: "IDA batch with IDAPython script for function-level pseudocode export. Needs Hex-Rays availability."
-                        .to_string(),
-                }
-            }
             DecompilerEngine::Jadx => {
                 let out = output_dir
                     .map(Path::to_path_buf)
@@ -208,62 +192,6 @@ print("[rscan] gdb plugin loaded: rscan-regs/rscan-stack/rscan-heap/rscan-symbol
 
     pub fn write_gdb_python_plugin(output: &Path) -> Result<(), RustpenError> {
         std::fs::write(output, Self::generate_gdb_python_plugin())?;
-        Ok(())
-    }
-
-    pub fn generate_ida_export_script() -> String {
-        r#"# ida_export_pseudocode.py
-# usage: idat64 -A -S"ida_export_pseudocode.py <out_dir>" <binary>
-import os
-import json
-import ida_auto
-import ida_funcs
-import ida_hexrays
-import idaapi
-import idc
-
-def main():
-    out_dir = idc.ARGV[1] if len(idc.ARGV) > 1 else "."
-    os.makedirs(out_dir, exist_ok=True)
-    out_file = os.path.join(out_dir, "pseudocode.jsonl")
-
-    ida_auto.auto_wait()
-    has_hexrays = ida_hexrays.init_hexrays_plugin()
-
-    with open(out_file, "w", encoding="utf-8") as f:
-        for ea in ida_funcs.Functions():
-            fn = ida_funcs.get_func(ea)
-            if not fn:
-                continue
-            name = idaapi.get_func_name(ea)
-            row = {
-                "ea": hex(ea),
-                "name": name,
-                "pseudocode": None,
-                "error": None,
-            }
-            if has_hexrays:
-                try:
-                    cfunc = ida_hexrays.decompile(ea)
-                    if cfunc:
-                        row["pseudocode"] = "\n".join([line.line for line in cfunc.get_pseudocode()])
-                except Exception as e:
-                    row["error"] = str(e)
-            else:
-                row["error"] = "hexrays_not_available"
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-    print("[rscan] pseudocode exported to", out_file)
-    idc.qexit(0)
-
-if __name__ == "__main__":
-    main()
-"#
-        .to_string()
-    }
-
-    pub fn write_ida_export_script(output: &Path) -> Result<(), RustpenError> {
-        std::fs::write(output, Self::generate_ida_export_script())?;
         Ok(())
     }
 
@@ -932,13 +860,6 @@ mod tests {
         assert!(s.contains("rscan-regs"));
         assert!(s.contains("rscan-stack"));
         assert!(s.contains("rscan-symbols"));
-    }
-
-    #[test]
-    fn generated_ida_script_exports_jsonl() {
-        let s = ReverseTooling::generate_ida_export_script();
-        assert!(s.contains("pseudocode.jsonl"));
-        assert!(s.contains("ida_hexrays"));
     }
 
     #[test]

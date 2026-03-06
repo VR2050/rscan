@@ -31,7 +31,7 @@ impl Default for FetcherConfig {
             user_agent: Some("rscan-fetcher/0.1".to_string()),
             max_retries: 1,
             accept_invalid_certs: false,
-            per_host_concurrency: 2,
+            per_host_concurrency: 16,
             default_headers: None,
             honor_retry_after: true,
             backoff_base_ms: 100,
@@ -60,12 +60,15 @@ pub struct FetchRequest {
     pub timeout_ms: Option<u64>,
     /// 覆盖 FetcherConfig.max_retries
     pub max_retries: Option<u32>,
+    /// 是否跟随重定向。None 表示使用默认策略（跟随）
+    pub follow_redirects: Option<bool>,
 }
 
 /// 简单的 HTTP fetcher 封装
 #[derive(Debug, Clone)]
 pub struct Fetcher {
     client: Client,
+    client_no_redirect: Client,
     pub config: FetcherConfig,
     per_host_semaphores: Arc<RwLock<HashMap<String, Arc<Semaphore>>>>,
 }
@@ -87,9 +90,23 @@ impl Fetcher {
         let client = builder
             .build()
             .map_err(|e| RustpenError::NetworkError(e.to_string()))?;
+        let mut no_redirect_builder = Client::builder()
+            .timeout(config.timeout)
+            .danger_accept_invalid_certs(config.accept_invalid_certs)
+            .redirect(reqwest::redirect::Policy::none());
+        if let Some(ua) = &config.user_agent {
+            no_redirect_builder = no_redirect_builder.user_agent(ua);
+        }
+        if let Some(hdrs) = &config.default_headers {
+            no_redirect_builder = no_redirect_builder.default_headers(hdrs.clone());
+        }
+        let client_no_redirect = no_redirect_builder
+            .build()
+            .map_err(|e| RustpenError::NetworkError(e.to_string()))?;
 
         Ok(Self {
             client,
+            client_no_redirect,
             config,
             per_host_semaphores: Arc::new(RwLock::new(HashMap::new())),
         })
@@ -104,6 +121,7 @@ impl Fetcher {
             body: None,
             timeout_ms: None,
             max_retries: None,
+            follow_redirects: None,
         }
     }
 
@@ -116,6 +134,7 @@ impl Fetcher {
             body: None,
             timeout_ms: None,
             max_retries: None,
+            follow_redirects: None,
         };
         // 默认使用 config 中的 max_retries
         self.fetch_with_request(req).await
@@ -141,7 +160,9 @@ impl Fetcher {
             .to_string();
 
         // get or create semaphore for host
-        let sem_arc = {
+        let sem_arc = if let Some(s) = self.per_host_semaphores.read().await.get(&host).cloned() {
+            s
+        } else {
             let mut map = self.per_host_semaphores.write().await;
             map.entry(host.clone())
                 .or_insert_with(|| Arc::new(Semaphore::new(self.config.per_host_concurrency)))
@@ -160,7 +181,12 @@ impl Fetcher {
         loop {
             attempts += 1;
 
-            let mut builder = self.client.request(req.method.clone(), &req.url);
+            let client = if req.follow_redirects == Some(false) {
+                &self.client_no_redirect
+            } else {
+                &self.client
+            };
+            let mut builder = client.request(req.method.clone(), &req.url);
             if let Some(h) = &req.headers {
                 builder = builder.headers(h.clone());
             }

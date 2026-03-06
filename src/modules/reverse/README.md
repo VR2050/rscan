@@ -7,7 +7,7 @@
 - 静态分析：ELF/PE/APK 基础信息、加固信号、可疑导入/字符串、简单恶意特征
 - 受管反编译：统一 job 生命周期（创建/运行/日志/产物/健康检查）
 - 分阶段逆向：`index -> function -> full`，优先避免大样本全量反编译
-- 逆向脚本生成：Ghidra/IDA/GDB 脚本与插件
+- 逆向脚本生成：Ghidra/GDB 脚本与插件（APK 走 JADX）
 - 交互控制台：函数检索、xrefs/calls、符号/段/导入、快速 GDB 命令
 
 ## 2. 推荐工作流（分阶段）
@@ -49,17 +49,20 @@
 
 - 生成执行计划（支持多引擎）
   - `rscan reverse decompile-plan --input ./sample.bin --engine ghidra --output json`
-  - `rscan reverse decompile-plan --input ./sample.bin --engine ida --output json`
+  - `rscan reverse decompile-plan --input ./sample.apk --engine jadx --output json`
   - `rscan reverse decompile-plan --input ./sample.bin --engine objdump --output json`
 
 - 执行受管反编译作业（推荐）
   - `rscan reverse decompile-run --input ./sample.bin --engine auto --mode index --workspace ./reverse_ws --output json`
   - `rscan reverse decompile-run --input ./sample.bin --engine ghidra --mode function --function main --workspace ./reverse_ws --output json`
+  - `rscan reverse decompile-run --input ./sample.bin --engine auto --mode full --rust-first`（默认，优先 Rust pipeline）
+  - `rscan reverse decompile-run --input ./sample.bin --engine auto --mode full --deep --no-rust-first`（强制深度后端）
 
 - 批量执行
   - `rscan reverse decompile-batch --inputs ./a.bin --inputs ./b.bin --engine auto --mode index --workspace ./reverse_ws --parallel-jobs 4 --output json`
 
-提示：当前受管 pseudocode 作业请优先使用 `auto|ghidra|ida`。
+提示：当前受管 decompile 作业请优先使用 `auto|ghidra|jadx`。
+提示：`auto` 模式下默认开启 Rust-first；传 `--deep` 可切换到 Ghidra/JADX 深度链。
 
 ### 3.3 作业管理
 
@@ -83,11 +86,10 @@
 
 - 后端检测
   - `rscan reverse backend-status --output json`
-- GDB/IDA/Ghidra 脚本
+- GDB/Ghidra 脚本
   - `rscan reverse gdb-plugin --out ./rscan_gdb_plugin.py`
   - `rscan reverse debug-script --input ./sample.bin --profile pwndbg --script-out ./debug.gdb`
-  - `rscan reverse ida-script --out ./ida_export_pseudocode.py`
-- `rscan reverse ghidra-script --out ./ghidra_export_pseudocode.java`
+  - `rscan reverse ghidra-script --out ./ghidra_export_pseudocode.java`
 - `rscan reverse ghidra-index-script --out ./ghidra_export_index.java`
 - `rscan reverse ghidra-function-script --out ./ghidra_export_function.java`
 
@@ -109,14 +111,15 @@
 
 CLI 也支持覆盖：
 
-- `rscan reverse console --ghidra-home /home/vr2050/ghidra_core_headless_x86_min`
+- `rscan reverse -i ./sample.bin --ghidra-home /home/vr2050/ghidra_core_headless_x86_min`
 
 ## 4. 交互控制台
 
 启动：
 
-- `rscan reverse console --input ./sample.bin --workspace ./reverse_ws`
-- `rscan reverse console --input ./sample.bin --workspace ./reverse_ws --tui`
+- `rscan reverse -i ./sample.bin --workspace ./reverse_ws`
+- `rscan reverse -i ./sample.bin --workspace ./reverse_ws --tui`
+- 兼容旧命令：`rscan reverse console --input ./sample.bin --workspace ./reverse_ws`
 
 TUI 键位：
 
@@ -156,8 +159,8 @@ TUI 键位：
 
 核心命令：
 
-- `decompile|run <auto|ghidra|ida|r2|jadx> [workspace] [timeout_secs] [index|full|function] [name_or_ea]`
-- `pseudocode <auto|ghidra|ida> [out_dir] [index|full|function] [name_or_ea]`
+- `decompile|run <auto|ghidra|r2|jadx> [workspace] [timeout_secs] [index|full|function] [name_or_ea]`
+- `pseudocode <auto|ghidra|jadx> [out_dir] [index|full|function] [name_or_ea]`
 - `jobs`
 - `functions [job_id] [limit]`
 - `show <function_name_or_ea> [job_id]`

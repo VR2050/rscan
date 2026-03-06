@@ -48,11 +48,19 @@ struct MatchRule {
 pub struct ProbeDatabase {
     pub probes: Vec<ProbeSignature>,
     rules: Vec<MatchRule>,
+    skipped_rules: usize,
 }
 
 #[derive(Clone)]
 pub struct ServiceProbeEngine {
     db: ProbeDatabase,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ProbeLoadStats {
+    pub probes: usize,
+    pub loaded_rules: usize,
+    pub skipped_rules: usize,
 }
 
 impl ServiceProbeEngine {
@@ -100,13 +108,19 @@ impl ServiceProbeEngine {
                 continue;
             }
             if line.starts_with("match ") {
-                let rule = parse_match_line(line, false)?;
-                db.rules.push(rule);
+                if let Ok(rule) = parse_match_line(line, false) {
+                    db.rules.push(rule);
+                } else {
+                    db.skipped_rules += 1;
+                }
                 continue;
             }
             if line.starts_with("softmatch ") {
-                let rule = parse_match_line(line, true)?;
-                db.rules.push(rule);
+                if let Ok(rule) = parse_match_line(line, true) {
+                    db.rules.push(rule);
+                } else {
+                    db.skipped_rules += 1;
+                }
             }
         }
         Ok(Self { db })
@@ -114,6 +128,14 @@ impl ServiceProbeEngine {
 
     pub fn probes(&self) -> &[ProbeSignature] {
         &self.db.probes
+    }
+
+    pub fn load_stats(&self) -> ProbeLoadStats {
+        ProbeLoadStats {
+            probes: self.db.probes.len(),
+            loaded_rules: self.db.rules.len(),
+            skipped_rules: self.db.skipped_rules,
+        }
     }
 
     pub fn identify(&self, data: &[u8]) -> Option<ServiceFingerprint> {
@@ -252,20 +274,12 @@ fn parse_match_line(line: &str, soft: bool) -> Result<MatchRule, RustpenError> {
             "invalid match pattern prefix".to_string(),
         ));
     }
-    let delim = rest
-        .chars()
-        .nth(1)
-        .ok_or_else(|| RustpenError::ParseError("invalid match delimiter".to_string()))?;
-    let body_start = 2usize;
-    let tail = &rest[body_start..];
-    let body_end = tail
-        .find(delim)
+    let (pattern, remaining) = extract_delimited_body_and_remaining(rest, 'm')
         .ok_or_else(|| RustpenError::ParseError("invalid match pattern body".to_string()))?;
-    let pattern = tail[..body_end].to_string();
     let regex = Regex::new(&pattern)
         .map_err(|e| RustpenError::ParseError(format!("invalid regex: {e}")))?;
 
-    let remaining = tail[body_end + 1..].trim_start();
+    let remaining = remaining.trim_start();
     let version_hint = extract_tag_value(remaining, "p");
     let ports = extract_tag_value(remaining, "ports")
         .map(|s| parse_ports_field(&s))
@@ -360,21 +374,37 @@ fn confidence_for(soft: bool, rarity: Option<u8>) -> u8 {
 }
 
 fn parse_quoted_payload(payload_part: &str) -> Result<Vec<u8>, RustpenError> {
-    let body = extract_delimited_body(payload_part, 'q')
+    let (body, _) = extract_delimited_body_and_remaining(payload_part, 'q')
         .ok_or_else(|| RustpenError::ParseError("invalid probe payload".to_string()))?;
     Ok(unescape_nmap_payload(&body))
 }
 
-fn extract_delimited_body(input: &str, prefix: char) -> Option<String> {
-    // 支持 q|...| / m/.../ 等形式，分隔符为 prefix 后第一个字符
+fn extract_delimited_body_and_remaining(input: &str, prefix: char) -> Option<(String, String)> {
+    // 支持 q|...| / m/.../ 等形式，分隔符为 prefix 后第一个字符；
+    // 终止分隔符需是“未转义”的分隔符，兼容 \| 这类模式内容。
     let mut chars = input.chars();
     if chars.next()? != prefix {
         return None;
     }
     let delim = chars.next()?;
     let rest: String = chars.collect();
-    let end = rest.rfind(delim)?;
-    Some(rest[..end].to_string())
+    let mut escaped = false;
+    for (idx, ch) in rest.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == delim {
+            let body = rest[..idx].to_string();
+            let remaining = rest[idx + ch.len_utf8()..].to_string();
+            return Some((body, remaining));
+        }
+    }
+    None
 }
 
 fn extract_tag_value(input: &str, tag: &str) -> Option<String> {
@@ -483,5 +513,29 @@ softmatch http m|^HTTP/| p/soft/ ports/80,443/ rarity/8/
                 .identify_with_context(b"HTTP/1.1 200 OK\r\n\r\n", Some(1234))
                 .is_none()
         );
+    }
+
+    #[test]
+    fn parse_match_with_escaped_delimiter() {
+        let text = r#"
+Probe TCP Any q|PING\r\n|
+match custom m|^abc\|def$| p/pipe-service/
+"#;
+        let engine = ServiceProbeEngine::from_nmap_text(text).unwrap();
+        let fp = engine.identify(b"abc|def").unwrap();
+        assert_eq!(fp.service, "custom");
+        assert_eq!(fp.version, Some("pipe-service".to_string()));
+    }
+
+    #[test]
+    fn from_nmap_text_skips_invalid_match_rules() {
+        let text = r#"
+Probe TCP Any q|PING\r\n|
+match bad m|^(?=a).*| p/unsupported-lookahead/
+match ok m|^HELLO$| p/ok/
+"#;
+        let engine = ServiceProbeEngine::from_nmap_text(text).unwrap();
+        let fp = engine.identify(b"HELLO").unwrap();
+        assert_eq!(fp.service, "ok");
     }
 }
