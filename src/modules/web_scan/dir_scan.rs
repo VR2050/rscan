@@ -5,8 +5,8 @@ use crate::modules::web_scan::common::{
     ResponseFingerprint, build_fingerprint, build_joined_url, detect_dir_wildcard_signatures,
     is_near_duplicate, is_wildcard_match,
 };
-use crate::modules::web_scan::resume::{load_or_new, maybe_resume_path, save};
 use crate::modules::web_scan::render_request_body;
+use crate::modules::web_scan::resume::{load_or_new, maybe_resume_path, save};
 /// 在 modules 层提供更易用的目录扫描函数，内部使用 cores::web::Fetcher
 /// paths: 相对于 base 的路径列表（例如 ["/admin", "/login"]）
 use crate::modules::web_scan::{ModuleScanConfig, ModuleScanResult, format_scan_result};

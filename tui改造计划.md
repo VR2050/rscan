@@ -1,14 +1,42 @@
-**改造计划（仅规划，不执行）**  
-版本：`v0.1`  
-日期：`2026-03-03`  
-状态：`规划完成，暂不实施`
+**改造计划（执行中）**  
+版本：`v0.2`  
+日期：`2026-03-07`  
+状态：`已启动并持续推进（CLI 兼容保持）`
 
 本计划满足你的要求：  
 1. 保持并兼容现有 CLI。  
 2. 后续新增统一 TUI 多模块多面板。  
 3. 增加 Script 窗口，支持 Rust/Python 脚本编写与运行。  
 4. 可在 Alacritty + Zellij 中高效使用。  
-5. 当前仅输出计划，不做代码改动。
+5. 在不破坏既有行为前提下，优先做结构拆分和可维护性提升。
+
+---
+
+**执行进度（2026-03-07）**
+
+**已完成**
+1. `src/tui` 大文件拆分完成第一轮：
+   - `command_exec.rs`、`script_runtime.rs`、`project_store.rs`、`task_store.rs`、`models.rs`、`view.rs`
+2. 输入处理分层：
+   - `input.rs` 分发 + `input/command.rs`、`input/note.rs`、`input/script.rs`、`input/project.rs`、`input/results.rs`
+3. Normal 模式按键分层：
+   - `normal_global.rs`
+   - `normal_panes.rs` + `normal_panes/{dashboard,tasks,launcher,scripts,results,projects}.rs`
+4. 渲染层分层：
+   - `render.rs`（编排）+ `render/header.rs`、`render/mini_console.rs`
+   - `render/panes.rs` + `render/panes/{dashboard,tasks,launcher,scripts,results,projects}.rs`
+5. 主循环状态下沉：
+   - `app.rs` 已精简为主循环编排
+   - `app_state.rs` + `app_state/{init,runtime,render_ctx}.rs`
+   - `app_state/dispatch/{dispatch_normal,dispatch_input}.rs`
+
+**持续保持**
+1. CLI 行为兼容，不改命令语义。
+2. 每轮重构后执行回归验证：`cargo fmt --all`、`cargo test -q`、`rscan --help`、`rscan tui --help`。
+
+**下一步（紧接执行）**
+1. 继续压缩 `dispatch_normal` 构造样板，逐步降低阅读复杂度。
+2. 补充 TUI 模块说明文档与关键键位/状态流说明，便于后续维护。
 
 **当前基线（作为改造参考）**
 - CLI 主入口：[app.rs](/home/vr2050/RUST/rscan_codex/src/cli/app.rs)
@@ -133,8 +161,8 @@
 
 **十、当前结论**
 1. 这个方案可行。  
-2. 不会破坏现有 CLI。  
-3. 可以实现你要的 Script 窗口（Rust/Python）。  
-4. 现在按你的要求“先规划不实施”，本计划已完成并可作为后续执行蓝图。  
+2. 当前执行路径保持 CLI 向后兼容。  
+3. Script 窗口（Rust/Python）路线明确，可在后续阶段按 MVP 落地。  
+4. 计划已进入执行态，文档将随重构进度持续更新。  
 
-如果你后续要启动，我可以按这个计划先输出一份“Phase 0 完成检查清单模板”，用于你确认核心模块已优化完毕后再开工。
+后续可按本计划继续推进 Phase 3 以后的多模块面板联动与 Script 窗口能力。

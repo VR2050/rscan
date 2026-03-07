@@ -193,10 +193,11 @@ mod tests {
             )
             .unwrap();
         assert!(!doc.functions.is_empty());
-        assert!(doc
-            .functions
-            .iter()
-            .any(|f| f.ea.contains("MainActivity.java") && !f.tags.is_empty()));
+        assert!(
+            doc.functions
+                .iter()
+                .any(|f| f.ea.contains("MainActivity.java") && !f.tags.is_empty())
+        );
         let _ = fs::remove_dir_all(&root);
     }
 }

@@ -28,12 +28,15 @@ struct DnsBaseTarget {
 }
 
 fn parse_dns_base_target(base_domain: &str) -> DnsBaseTarget {
-    let raw = base_domain.trim().trim_end_matches('/').to_ascii_lowercase();
+    let raw = base_domain
+        .trim()
+        .trim_end_matches('/')
+        .to_ascii_lowercase();
     if let Ok(parsed) = url::Url::parse(&format!("http://{raw}"))
         && let Some(host) = parsed.host_str()
     {
-        let local_vhost_mode = host.eq_ignore_ascii_case("localhost")
-            || host.parse::<std::net::IpAddr>().is_ok();
+        let local_vhost_mode =
+            host.eq_ignore_ascii_case("localhost") || host.parse::<std::net::IpAddr>().is_ok();
         return DnsBaseTarget {
             host: host.to_string(),
             port: parsed.port(),
@@ -104,7 +107,11 @@ enum ProbeCandidate {
         fqdn: String,
         request: FetchRequest,
     },
-    Remote { fqdn: String, word: String, port: Option<u16> },
+    Remote {
+        fqdn: String,
+        word: String,
+        port: Option<u16>,
+    },
 }
 
 async fn build_probe_candidates(
@@ -203,7 +210,9 @@ async fn probe_candidate(
                     // Fallback to HTTPS when HTTP connection fails.
                     let req_https = build_dns_http_request("https", &fqdn, port, &word, cfg);
                     match fetcher.fetch_with_request(req_https).await {
-                        Ok(resp) if status_in_scope(resp.status, cfg) => Some(to_module_result(resp)),
+                        Ok(resp) if status_in_scope(resp.status, cfg) => {
+                            Some(to_module_result(resp))
+                        }
                         _ => None,
                     }
                 }

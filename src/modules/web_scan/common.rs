@@ -254,7 +254,8 @@ mod tests {
 
     #[test]
     fn wildcard_match_requires_content_similarity_for_same_length() {
-        let wildcard_body = b"<html><title>Not Found</title><body>default page qqq qqq qqq</body></html>";
+        let wildcard_body =
+            b"<html><title>Not Found</title><body>default page qqq qqq qqq</body></html>";
         let wildcard_fp = build_fingerprint(200, wildcard_body);
         let signatures = vec![WildcardSignature {
             status: 200,
@@ -263,7 +264,8 @@ mod tests {
             simhash: wildcard_fp.simhash,
         }];
 
-        let real_hit = b"<html><title>Dashboard</title><body>app index portal users auth</body></html>";
+        let real_hit =
+            b"<html><title>Dashboard</title><body>app index portal users auth</body></html>";
         assert!(!is_wildcard_match(
             200,
             wildcard_body.len() as u64,

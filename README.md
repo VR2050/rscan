@@ -2,7 +2,13 @@
 
 rscan 是用 Rust 编写的多合一安全扫描器，覆盖主机/端口探测、Web 目录与指纹识别、漏洞 PoC/Fuzz、以及二进制逆向分析（集成 Ghidra）。项目面向渗透测试、资产测绘与自动化安全评估场景，强调高并发、模块化和可扩展。
 
-> 状态：活跃开发中（2026-03-03）。接口随时可能调整，生产使用请留意版本变更。
+> 状态：活跃开发中（2026-03-07）。接口随时可能调整，生产使用请留意版本变更。
+
+## 最近更新（2026-03-07）
+- **TUI 分层重构完成第一阶段**：将原先大文件拆分为 `app`（主循环）、`app_state`（状态与调度）、`render`（渲染）、`input`（输入处理）、`normal_*`（按键分发）等子模块，降低耦合与维护成本。
+- **渲染层模块化**：`render` 已拆为 `header / panes / mini_console`，并进一步将 `panes` 按 `Dashboard/Tasks/Launcher/Scripts/Results/Projects` 拆分。
+- **输入与按键处理模块化**：`input` 按 `command/note/script/project/results` 切分；`dispatch` 按 `normal/non-normal` 分离，便于后续继续扩展。
+- **回归验证通过**：连续执行 `cargo fmt --all`、`cargo test -q`、`cargo run --quiet -- tui --help`、`cargo run --quiet -- --help` 均通过（仅保留既有非阻断 warning）。
 
 ## 能力概览
 - **主机/端口扫描**：TCP/UDP 全连接、SYN 半开、快速常用端口、ARP/ICMP 主机发现。
@@ -75,6 +81,11 @@ rscan web dns --domain example.com --words www,api,dev --output json
   - `reverse`：逆向任务编排、TUI/控制台交互、与外部反编译引擎的桥接。
   - `shell_generation`：生成恶意或测试用 payload/shell 片段。
 - **服务层** (`src/services/`)：`service_probe` 负责解析 nmap 式 probe 文件，输出 `ProbeResult` 并富化扫描结果元数据。
+- **TUI 层** (`src/tui/`)：
+  - `app.rs`：终端生命周期与主循环编排
+  - `app_state/`：运行时状态、初始化、分发、渲染上下文构建
+  - `render/`：Header/Pane/Mini Console 分层渲染
+  - `input/`、`normal_*`：输入模式处理与按键路由
 - **规则与数据**：`rules/` 用于自定义 PoC/探针；`third_party/` 持有 Ghidra 精简运行时等外部依赖。
 - **文档与基准**：`docs/` 提供结构与逆向使用说明；`benches/` 存放性能基准脚本；`scripts/web_bench_compare.sh` 与 `scripts/ci_web_bench_gate.sh` 提供 Web 扫描对比与门禁回归。
 完整目录说明见 `docs/PROJECT_STRUCTURE.md`。

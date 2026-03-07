@@ -197,11 +197,7 @@ pub fn run_decompile_job(
     std::fs::create_dir_all(&out_dir)?;
 
     let preferred = if engine_name.eq_ignore_ascii_case("auto") {
-        if apk_like {
-            Some("jadx")
-        } else {
-            None
-        }
+        if apk_like { Some("jadx") } else { None }
     } else {
         Some(engine_name)
     };
@@ -215,11 +211,10 @@ pub fn run_decompile_job(
         function_arg_for_mode(effective_mode, function),
     )?;
     let mut adaptive_note: Option<String> = None;
-    let force_slim_ghidra =
-        requested_mode == super::model::DecompileMode::Full
-            && !deep
-            && ghidra_slim_enabled()
-            && is_ghidra_program(&plan.program);
+    let force_slim_ghidra = requested_mode == super::model::DecompileMode::Full
+        && !deep
+        && ghidra_slim_enabled()
+        && is_ghidra_program(&plan.program);
     if force_slim_ghidra
         || should_auto_switch_ghidra_full_to_index(
             requested_mode,
@@ -327,7 +322,10 @@ pub fn run_decompile_job(
             });
         }
     };
-    if run_status != Some(0) && is_ghidra_program(&plan.program) && stderr_has_ghidra_lock(&stderr_log) {
+    if run_status != Some(0)
+        && is_ghidra_program(&plan.program)
+        && stderr_has_ghidra_lock(&stderr_log)
+    {
         let old_reuse = std::env::var("RSCAN_GHIDRA_REUSE_PROJECT").ok();
         let old_cache = std::env::var("RSCAN_GHIDRA_PROJECT_CACHE").ok();
         unsafe {
@@ -1098,7 +1096,10 @@ fn write_ir_jsonl(path: &Path, doc: &super::ir::ReverseIrDoc) -> Result<(), Rust
     Ok(())
 }
 
-fn try_emit_ir_artifact(workspace: &Path, job: &ReverseJobMeta) -> Result<Option<PathBuf>, RustpenError> {
+fn try_emit_ir_artifact(
+    workspace: &Path,
+    job: &ReverseJobMeta,
+) -> Result<Option<PathBuf>, RustpenError> {
     let Some(engine) = infer_engine_for_ir(job) else {
         return Ok(None);
     };
@@ -1160,7 +1161,8 @@ fn try_emit_ir_artifact(workspace: &Path, job: &ReverseJobMeta) -> Result<Option
         entry: None,
         file_size,
     };
-    let doc = adapter.build_doc_with_context(meta, &index_rows, &pseudo_rows, &out_dir, &job.target)?;
+    let doc =
+        adapter.build_doc_with_context(meta, &index_rows, &pseudo_rows, &out_dir, &job.target)?;
     if doc.functions.is_empty() && index_rows.is_empty() && pseudo_rows.is_empty() {
         return Ok(None);
     }
@@ -1224,7 +1226,10 @@ fn is_jadx_program(program: &str) -> bool {
 }
 
 fn path_is_nonempty_file(path: &Path) -> bool {
-    path.is_file() && std::fs::metadata(path).map(|m| m.len() > 0).unwrap_or(false)
+    path.is_file()
+        && std::fs::metadata(path)
+            .map(|m| m.len() > 0)
+            .unwrap_or(false)
 }
 
 fn path_has_any_file(path: &Path) -> bool {
@@ -1232,7 +1237,9 @@ fn path_has_any_file(path: &Path) -> bool {
         return false;
     }
     if path.is_file() {
-        return std::fs::metadata(path).map(|m| m.len() > 0).unwrap_or(false);
+        return std::fs::metadata(path)
+            .map(|m| m.len() > 0)
+            .unwrap_or(false);
     }
     let Ok(rd) = std::fs::read_dir(path) else {
         return false;
@@ -2193,8 +2200,7 @@ fn run_with_logs_and_timeout(
 mod tests {
     use super::{
         ReverseJobMeta, ReverseJobStatus, is_ghidra_program, is_jadx_program, is_probable_apk,
-        path_has_any_file,
-        should_auto_switch_ghidra_full_to_index, try_emit_ir_artifact,
+        path_has_any_file, should_auto_switch_ghidra_full_to_index, try_emit_ir_artifact,
     };
     #[test]
     fn ghidra_program_detection_works() {

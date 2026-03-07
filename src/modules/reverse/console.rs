@@ -180,7 +180,10 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
             }
             "deep" => {
                 let arg = parts.next().unwrap_or("on");
-                let on = matches!(arg.to_ascii_lowercase().as_str(), "on" | "1" | "true" | "yes");
+                let on = matches!(
+                    arg.to_ascii_lowercase().as_str(),
+                    "on" | "1" | "true" | "yes"
+                );
                 deep_mode = on;
                 unsafe {
                     std::env::set_var("RSCAN_REVERSE_DEEP", if deep_mode { "1" } else { "0" });
@@ -189,7 +192,10 @@ pub fn run_interactive(cfg: ReverseConsoleConfig) -> Result<(), RustpenError> {
             }
             "rust-first" => {
                 let arg = parts.next().unwrap_or("on");
-                let on = matches!(arg.to_ascii_lowercase().as_str(), "on" | "1" | "true" | "yes");
+                let on = matches!(
+                    arg.to_ascii_lowercase().as_str(),
+                    "on" | "1" | "true" | "yes"
+                );
                 rust_first_mode = on;
                 unsafe {
                     std::env::set_var(
@@ -3526,9 +3532,7 @@ fn print_help() {
     cprintln!(
         "  decompile|run <auto|ghidra|r2|jadx> [workspace] [timeout_secs] [index|full|function] [name_or_ea]"
     );
-    cprintln!(
-        "    + optional flags: [deep|no-deep] [rust-first|no-rust-first]"
-    );
+    cprintln!("    + optional flags: [deep|no-deep] [rust-first|no-rust-first]");
     cprintln!("  jobs");
     cprintln!("  set-job <job_id>");
     cprintln!("  pin-job <job_id>");

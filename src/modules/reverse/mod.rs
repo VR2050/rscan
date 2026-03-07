@@ -1,5 +1,6 @@
-pub mod analyzer;
 pub mod adapters;
+pub mod analyzer;
+pub mod android;
 pub mod backends;
 pub mod console;
 pub mod ir;
@@ -10,8 +11,9 @@ pub mod orchestrator;
 pub mod rules;
 pub mod tooling;
 
-pub use analyzer::ReverseAnalyzer;
 pub use adapters::{GhidraIrAdapter, IrAdapter, JadxIrAdapter, adapter_for_engine};
+pub use analyzer::ReverseAnalyzer;
+pub use android::{AndroidAnalyzer, AndroidReverseReport};
 pub use backends::{BackendCatalog, BackendRegistry, ReverseBackend};
 pub use console::{
     ReverseConsoleConfig, run_interactive as run_reverse_interactive, run_tui as run_reverse_tui,

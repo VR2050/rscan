@@ -10,8 +10,8 @@ pub mod scanner;
 pub use scanner::WebScanConfig;
 pub use scanner::WebScanner;
 
-use serde::{Deserialize, Serialize};
 use reqwest::header::HeaderMap;
+use serde::{Deserialize, Serialize};
 
 /// 输出格式选项
 #[derive(Debug, Clone)]
