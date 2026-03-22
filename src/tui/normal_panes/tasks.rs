@@ -3,6 +3,9 @@ use crossterm::event::KeyCode;
 use super::{PaneNormalAction, PaneNormalCtx};
 use crate::errors::RustpenError;
 use crate::tui::models::{InputMode, TaskTab};
+use crate::tui::task_actions::{
+    open_task_artifacts_in_runtime, open_task_logs_in_runtime, open_task_shell_in_runtime,
+};
 use crate::tui::task_store::apply_filter;
 
 pub(super) fn handle_tasks_key(
@@ -30,6 +33,42 @@ pub(super) fn handle_tasks_key(
         KeyCode::Char('n') => {
             ctx.note_buffer.clear();
             *ctx.input_mode = InputMode::NoteInput;
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('L') => {
+            if let Some(task) = ctx
+                .tasks
+                .get(*ctx.task_selected)
+                .or_else(|| ctx.all_tasks.first())
+            {
+                *ctx.status_line = open_task_logs_in_runtime(task);
+            } else {
+                *ctx.status_line = "当前没有可打开日志的任务".to_string();
+            }
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('W') => {
+            if let Some(task) = ctx
+                .tasks
+                .get(*ctx.task_selected)
+                .or_else(|| ctx.all_tasks.first())
+            {
+                *ctx.status_line = open_task_shell_in_runtime(task);
+            } else {
+                *ctx.status_line = "当前没有可打开 shell 的任务".to_string();
+            }
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('A') => {
+            if let Some(task) = ctx
+                .tasks
+                .get(*ctx.task_selected)
+                .or_else(|| ctx.all_tasks.first())
+            {
+                *ctx.status_line = open_task_artifacts_in_runtime(task);
+            } else {
+                *ctx.status_line = "当前没有可检查产物的任务".to_string();
+            }
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::Enter => {

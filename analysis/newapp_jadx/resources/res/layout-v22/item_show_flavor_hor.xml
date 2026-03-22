@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:id="@+id/ll_parent"
+    android:background="@drawable/item_show_tab_filter_bg"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="12dp">
+    <TextView
+        android:textSize="14sp"
+        android:textColor="@color/main_dcd7d7"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:id="@+id/tv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="26dp"
+        android:maxLines="1"/>
+    <ImageView
+        android:id="@+id/iv_del"
+        android:visibility="gone"
+        android:layout_width="6dp"
+        android:layout_height="6dp"
+        android:layout_marginLeft="3dp"
+        android:src="@drawable/home_delete_icon"
+        android:scaleType="fitCenter"
+        app:tint="?attr/my_txt_color"/>
+</LinearLayout>

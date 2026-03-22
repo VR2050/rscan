@@ -173,6 +173,43 @@ pub(super) fn handle_console(
     Ok(())
 }
 
+pub(super) fn handle_workbench(
+    workspace: Option<PathBuf>,
+    project: Option<PathBuf>,
+    input: Option<PathBuf>,
+) -> Result<(), RustpenError> {
+    let workspace =
+        workspace.unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    crate::tui::reverse_workbench::run_reverse_workbench(workspace, project, input)
+}
+
+pub(super) fn handle_surface(
+    workspace: Option<PathBuf>,
+    project: Option<PathBuf>,
+) -> Result<(), RustpenError> {
+    let workspace =
+        workspace.unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    crate::tui::reverse_surface::run_reverse_surface(workspace, project)
+}
+
+pub(super) fn handle_deck(
+    workspace: Option<PathBuf>,
+    project: Option<PathBuf>,
+) -> Result<(), RustpenError> {
+    let workspace =
+        workspace.unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    crate::tui::reverse_deck::run_reverse_deck(workspace, project)
+}
+
+pub(super) fn handle_picker(
+    workspace: Option<PathBuf>,
+    project: Option<PathBuf>,
+) -> Result<(), RustpenError> {
+    let workspace =
+        workspace.unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    crate::tui::reverse_picker::run_reverse_picker(workspace, project)
+}
+
 pub(super) async fn handle_backend_status(
     output: String,
     out: Option<PathBuf>,

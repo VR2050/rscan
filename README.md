@@ -2,13 +2,17 @@
 
 rscan 是用 Rust 编写的多合一安全扫描器，覆盖主机/端口探测、Web 目录与指纹识别、漏洞 PoC/Fuzz、以及二进制逆向分析（集成 Ghidra）。项目面向渗透测试、资产测绘与自动化安全评估场景，强调高并发、模块化和可扩展。
 
-> 状态：活跃开发中（2026-03-07）。接口随时可能调整，生产使用请留意版本变更。
+> 状态：活跃开发中（2026-03-18）。接口随时可能调整，生产使用请留意版本变更。
 
-## 最近更新（2026-03-07）
-- **TUI 分层重构完成第一阶段**：将原先大文件拆分为 `app`（主循环）、`app_state`（状态与调度）、`render`（渲染）、`input`（输入处理）、`normal_*`（按键分发）等子模块，降低耦合与维护成本。
+## 最近更新（2026-03-18）
+- **TUI Workbench 原生可视化**：`Dashboard` 现在会直接显示 `.rscan/zellij/panes.json` 的 native pane registry 摘要与最近绑定；`Tasks / Results` 详情会显式展示 `runtime.tab / pane / cwd / command`，控制面真正“知道”自己在操控哪块 zellij 工作区。
+- **zellij-native runtime 深度收口**：managed tabs 固定为 `Control / Work / Inspect / Reverse`；`Tasks / Results` 可直接把当前任务送进原生日志 pane、artifact shell、task shell，reverse jobs 继续与普通任务共享统一表面。
+- **pane 复用更稳**：优先基于 `zellij action dump-layout` 查找命名 pane；若 live layout 无法命中，则会回退到 `.rscan/zellij/panes.json` 的最近绑定作为 soft hint 聚焦对应 tab，尽量减少 pane 爆炸。
+- **TUI 结构继续瘦身**：`zellij.rs` 继续拆为 `zellij / zellij_layout / zellij_query`；命令输入拆为 `input/command.rs + completion.rs + editing.rs`；任务文本构建集中到 `pane_text.rs`，后续接 plugin/glue 层更容易继续演化。
 - **渲染层模块化**：`render` 已拆为 `header / panes / mini_console`，并进一步将 `panes` 按 `Dashboard/Tasks/Launcher/Scripts/Results/Projects` 拆分。
 - **输入与按键处理模块化**：`input` 按 `command/note/script/project/results` 切分；`dispatch` 按 `normal/non-normal` 分离，便于后续继续扩展。
-- **回归验证通过**：连续执行 `cargo fmt --all`、`cargo test -q`、`cargo run --quiet -- tui --help`、`cargo run --quiet -- --help` 均通过（仅保留既有非阻断 warning）。
+- **缓存修正**：Task/Result/Dashboard 缓存签名现在纳入 `TaskMeta.extra.runtime` 与 pane registry 变化，runtime 绑定更新后不再出现 detail 面板“明明变了却没刷新”的错觉。
+- **回归验证通过**：连续执行 `cargo fmt --all`、`cargo test -q`、`cargo run --quiet -- tui --help` 均通过（仅保留既有非阻断 warning）。
 
 ## 能力概览
 - **主机/端口扫描**：TCP/UDP 全连接、SYN 半开、快速常用端口、ARP/ICMP 主机发现。
@@ -49,6 +53,41 @@ rscan web dns --domain example.com --words www,api,dev --output json
 ```
 更多命令见 `CLI_USAGE.md` 或 `rscan --help`。
 
+### 启动统一 TUI
+```bash
+# 默认以 zellij managed layout 启动（推荐直接在 alacritty 等真实终端中运行）
+cargo run -- tui
+
+# 显式启用 zellij session / layout
+RSCAN_ZELLIJ=1 cargo run -- tui
+```
+- `Control` tab 运行 `rscan` TUI 控制面板，负责调度与状态展示。
+- `Control` tab 下方自带一个真实工作 shell，`g` 会直接聚焦它，适合临时命令与交互工具。
+- `Work` tab 现在默认是 `work hub + real shell`：上半区已升级为真正的 `ratatui` 工作台，默认三栏展示 `Projects / Recent Tasks / Scripts`，`h/l` 切焦点、`j/k` 移动，切换 project 会即时同步 active project；`Enter` 会按焦点执行动作：project 打开 shell、task 打开 task shell、script 在 Work 新开原生 command pane 运行。
+- `Inspect` tab 现在默认是 `inspect hub + real shell`：上半区已升级为真正的 `ratatui` 检视台，默认展示 `Projects / Tasks / Detail + Log Preview`；`h/l` 切焦点、`j/k` 选任务、`f` 循环状态过滤、`Enter/L` 开日志、`A` 开 artifacts、`W` 开 shell，`b` 可直接跳下方真实 shell。
+- `Reverse` tab 现在默认是一屏 `reverse surface`，不再启动自家的 `reverse picker`。
+- 在 `reverse surface` 里直接按 `Enter` / `p` / `F4` 就会拉起 zellij 原生 `filepicker`；选中文件后会自动绑定独立 reverse project、请求打开 viewer，并在当前 target 还没有可复用主分析时自动补一条 `index` job。
+- `reverse surface` 直接承载完整 reverse TUI 的桥接层，里面就是 `Jobs / Functions / Pseudocode / Asm / Strings`；TUI 现在按样本维护 primary jobs，不再把单函数 decompile 暴露成独立 job；退出 viewer 后，可再次按 `Enter` / `p` / `F4` 重新选样本，或在已有 target 上按 `Enter` 重新打开 viewer。
+- 若仍想用旧的 line-command launcher，`rscan reverse workbench --workspace <root_ws>` 仍然保留，但已退居为 legacy 入口，不再占默认布局。
+- `reverse decompile-run` 产生的 jobs 仍会并入统一 `Tasks / Results`，所以 Reverse tab 是 native workspace，Control tab 仍是统一控制面。
+- `host/web/vuln/reverse` 等模块命令在 zellij 模式下仍然走后台 task engine，结果统一回到 `Tasks / Results`，而不是把每个模块都变成终端页。
+- `Tasks / Results` 中可使用 `L/W/A` 打开当前任务的原生日志 pane、task shell 与 artifact shell。
+- `Dashboard` 会直接展示 native pane registry 摘要与最近绑定，让控制面和真实 zellij 工作区之间不再是“盲操”。
+- `Tasks / Results` 详情会显式展示任务当前的 runtime 绑定，包括 `session/tab/pane/cwd/command`，便于确认任务和哪个原生 pane 在绑定。
+- reverse decompile job 可直接在命令模式中用 `r.run <input> [engine] [mode]` 发起，日志/产物会落到当前 project 的 `jobs/` 与 `reverse_out/`，并自动回流到统一任务面。
+- 命令模式支持 `zlogs <task_id>`、`zshell <task_id>`、`zart <task_id>`、`zrev`、`zfocus <control|work|inspect|reverse>`。
+- 对带固定语义的 pane（如任务日志、artifact、reverse workspace），现在会优先复用已存在的命名 pane；若 live layout 暂时无法命中，则会使用最近 registry 绑定作为 soft hint 聚焦到对应 tab。
+- 命名 pane 的最近一次绑定会持久化到 `.rscan/zellij/panes.json`，为后续更深的 plugin/精确聚焦集成保留稳定锚点。
+- zellij managed layout 现在始终以 project root 为基准生成；具体 pane 仍可切到 task/reverse 的真实工作目录，避免把 task 目录误当 workspace。
+- zellij 模式下不再在 TUI 内维护 mini PTY，避免重复终端模拟带来的延迟与重绘负担。
+- 更细的设计说明见 `docs/ZELLIJ_NATIVE_INTEGRATION.md`。
+
+#### Reverse Workspace 操作建议
+- 若 `Reverse` pane 按键被 zellij 拦截，先按一次 `Ctrl-g` 切到 `Locked`；完整 viewer 会吃 `h/l`、`1..6`、`S` 等按键。
+- 左侧 picker 进入原生 `filepicker` 后，尽量直接复用它自己的键位：方向键或 `j/k` 移动，`Tab` 或右方向把目标加入当前 `PATH`，`Enter` 确认并回传该 `PATH`，`Backspace` 回上级，`Ctrl-e` 切 hidden files。
+- 推荐把逆向目标放进当前 project 的 `binaries/`；左侧 picker 会优先从这里开始，也支持切到 filesystem root。
+- `Reverse` 里发起的 full/index jobs 会在后台继续跑，完成后自动回流到 `Control -> Tasks/Results`；viewer 里的 `d` 也默认只发样本级 job，若输入 `fn=main` / `function main` 会自动折叠为 `full`；下方 `reverse deck` 会直接露出最近 sessions 和日志尾巴，需要额外原生 shell 时再用 `zrev` 临时打开。
+
 ### 端口与并发控制
 - 端口支持单值、范围与混合：`--ports 80`、`--ports 1-1000`、`--ports 22,80,443,1000-2000`。
 - 使用 `--concurrency`（若子命令支持）配合内置信号量，避免资源耗尽；大范围扫描会自动分批。
@@ -86,6 +125,11 @@ rscan web dns --domain example.com --words www,api,dev --output json
   - `app_state/`：运行时状态、初始化、分发、渲染上下文构建
   - `render/`：Header/Pane/Mini Console 分层渲染
   - `input/`、`normal_*`：输入模式处理与按键路由
+  - `pane_text.rs`：Dashboard / Task Detail / Result Detail 的文本聚合与 runtime/native pane 可视化
+  - `zellij.rs`：managed session/pane orchestration 与原生动作入口
+  - `zellij_layout.rs`：project-root 下的 layout 资产生成与 KDL 模板拼装
+  - `zellij_query.rs`：session/query/layout dump 读取与 pane 复用查找
+  - `task_actions.rs`：任务到 zellij 原生 pane 的桥接动作
 - **规则与数据**：`rules/` 用于自定义 PoC/探针；`third_party/` 持有 Ghidra 精简运行时等外部依赖。
 - **文档与基准**：`docs/` 提供结构与逆向使用说明；`benches/` 存放性能基准脚本；`scripts/web_bench_compare.sh` 与 `scripts/ci_web_bench_gate.sh` 提供 Web 扫描对比与门禁回归。
 完整目录说明见 `docs/PROJECT_STRUCTURE.md`。
@@ -131,6 +175,7 @@ rscan web dns --domain example.com --words www,api,dev --output json
   - 入口命令：`reverse`（默认进入 console，需 `-i` 指定输入）、`reverse analyze`（静态信息）、`reverse decompile-run`（执行反编译任务，支持 full/index/function）、`reverse decompile-plan`（生成外部脚本）、`reverse decompile-batch`（批处理）、`reverse console`/`--tui`（兼容旧用法）。
   - 引擎选择：优先环境变量指定 Ghidra；否则使用仓库内置精简版。可生成 radare/jadx 命令计划以便外部跑。
   - 任务模型：每次反编译形成 job，产物/日志/索引存储于 workspace；`job-status`/`job-logs`/`job-artifacts`/`job-functions`/`job-search` 统一管理。
+  - TUI 语义：reverse TUI / zellij Reverse tab 只展示样本级 primary jobs，避免出现“一函数一个 job”的管理噪音；CLI 仍保留 `--mode function` 以便脚本化或精确导出。
   - 索引与搜索：Tantivy 建索引 (`project_index.jsonl`)，支持跨 job 搜索字符串/函数签名/伪代码。
   - 交互特性：TUI 多窗格、快捷键丰富（见 `docs/REVERSE_USAGE.md`），支持行内注释、调用/引用图导出、函数级别重编译。
   - 动态补充：`--dynamic` 开启 strace 抽样，可配置 syscall 白/黑名单及超时；适合快速行为线索收集。

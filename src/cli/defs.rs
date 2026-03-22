@@ -54,6 +54,12 @@ pub enum RequestBodyModeArg {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum NativePaneKind {
+    Work,
+    Inspect,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum DnsDiscoveryMode {
     /// rough discovery: DNS-resolvable subdomains only
     Rough,
@@ -143,6 +149,13 @@ pub enum Commands {
         /// auto refresh interval in ms
         #[arg(long, default_value = "500")]
         refresh_ms: u64,
+    },
+    #[command(hide = true)]
+    Pane {
+        #[arg(long)]
+        workspace: Option<PathBuf>,
+        #[arg(value_enum, long)]
+        kind: NativePaneKind,
     },
 }
 

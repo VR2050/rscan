@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -30,7 +30,7 @@ fn reverse_rust_first_enabled() -> bool {
 }
 
 fn ghidra_slim_enabled() -> bool {
-    env_flag("RSCAN_GHIDRA_SLIM", true)
+    env_flag("RSCAN_GHIDRA_SLIM", false)
 }
 
 fn is_probable_apk(path: &Path) -> bool {
@@ -417,6 +417,9 @@ pub fn run_decompile_job(
         };
     }
     save_job_meta(&job_dir.join("meta.json"), &job)?;
+    if success {
+        let _ = prune_superseded_primary_sample_jobs(workspace, &job);
+    }
 
     Ok(DecompileRunReport {
         job,
@@ -518,6 +521,146 @@ pub fn list_jobs(workspace: &Path) -> Result<Vec<ReverseJobMeta>, RustpenError> 
     Ok(jobs)
 }
 
+pub fn is_primary_reverse_job(job: &ReverseJobMeta) -> bool {
+    !job.mode
+        .as_deref()
+        .is_some_and(|mode| mode.trim().eq_ignore_ascii_case("function"))
+}
+
+pub fn list_primary_jobs(workspace: &Path) -> Result<Vec<ReverseJobMeta>, RustpenError> {
+    Ok(list_jobs(workspace)?
+        .into_iter()
+        .filter(is_primary_reverse_job)
+        .collect())
+}
+
+pub fn list_primary_sample_jobs(workspace: &Path) -> Result<Vec<ReverseJobMeta>, RustpenError> {
+    Ok(collapse_primary_jobs_by_target(list_primary_jobs(
+        workspace,
+    )?))
+}
+
+fn collapse_primary_jobs_by_target(jobs: Vec<ReverseJobMeta>) -> Vec<ReverseJobMeta> {
+    let mut grouped: HashMap<PathBuf, ReverseJobMeta> = HashMap::new();
+    for job in jobs {
+        let key = std::fs::canonicalize(&job.target).unwrap_or_else(|_| job.target.clone());
+        match grouped.get_mut(&key) {
+            Some(current) => {
+                if primary_sample_job_priority(&job) > primary_sample_job_priority(current) {
+                    *current = job;
+                }
+            }
+            None => {
+                grouped.insert(key, job);
+            }
+        }
+    }
+
+    let mut collapsed: Vec<_> = grouped.into_values().collect();
+    collapsed.sort_by(|a, b| {
+        primary_sample_job_priority(b)
+            .cmp(&primary_sample_job_priority(a))
+            .then_with(|| b.created_at.cmp(&a.created_at))
+            .then_with(|| a.target.cmp(&b.target))
+    });
+    collapsed
+}
+
+fn prune_superseded_primary_sample_jobs(
+    workspace: &Path,
+    keep_job: &ReverseJobMeta,
+) -> Result<usize, RustpenError> {
+    if keep_job.status != ReverseJobStatus::Succeeded {
+        return Ok(0);
+    }
+    let keep_mode = keep_job.mode.as_deref().unwrap_or_default();
+    if !keep_mode.eq_ignore_ascii_case("full") || keep_job.backend.eq_ignore_ascii_case("rust-asm")
+    {
+        return Ok(0);
+    }
+
+    let keep_target =
+        std::fs::canonicalize(&keep_job.target).unwrap_or_else(|_| keep_job.target.clone());
+    let mut removed = 0usize;
+    for job in list_primary_jobs(workspace)? {
+        if job.id == keep_job.id || job.status == ReverseJobStatus::Running {
+            continue;
+        }
+        let target = std::fs::canonicalize(&job.target).unwrap_or_else(|_| job.target.clone());
+        if target != keep_target {
+            continue;
+        }
+        remove_job_storage(workspace, &job.id)?;
+        removed += 1;
+    }
+    Ok(removed)
+}
+
+fn remove_job_storage(workspace: &Path, job_id: &str) -> Result<(), RustpenError> {
+    let job_dir = workspace.join("jobs").join(job_id);
+    if job_dir.is_dir() {
+        std::fs::remove_dir_all(&job_dir)?;
+    }
+    let out_dir = workspace.join("reverse_out").join(job_id);
+    if out_dir.is_dir() {
+        std::fs::remove_dir_all(&out_dir)?;
+    }
+    Ok(())
+}
+
+fn primary_sample_job_priority(job: &ReverseJobMeta) -> (u8, u8, u8, u64, u8) {
+    // Prefer the most capable primary session first, then keep usable sample sessions visible.
+    // A newer failed/queued session should not hide an older succeeded session for the same target.
+    (
+        primary_sample_job_mode_rank(job),
+        primary_sample_job_backend_rank(job),
+        primary_sample_job_state_group(&job.status),
+        job.created_at,
+        primary_sample_job_status_rank(&job.status),
+    )
+}
+
+fn primary_sample_job_state_group(status: &ReverseJobStatus) -> u8 {
+    match status {
+        ReverseJobStatus::Succeeded | ReverseJobStatus::Running => 2,
+        ReverseJobStatus::Queued => 1,
+        ReverseJobStatus::Failed => 0,
+    }
+}
+
+fn primary_sample_job_status_rank(status: &ReverseJobStatus) -> u8 {
+    match status {
+        ReverseJobStatus::Running => 4,
+        ReverseJobStatus::Succeeded => 3,
+        ReverseJobStatus::Queued => 2,
+        ReverseJobStatus::Failed => 1,
+    }
+}
+
+fn primary_sample_job_backend_rank(job: &ReverseJobMeta) -> u8 {
+    let backend = job.backend.trim().to_ascii_lowercase();
+    match backend.as_str() {
+        "ghidra" => 5,
+        "jadx" => 5,
+        "radare2" | "r2" => 4,
+        "rust-index" => 3,
+        "rust-asm" | "rust" => 1,
+        _ if backend.contains("ghidra") => 5,
+        _ if backend.contains("jadx") => 5,
+        _ if backend.contains("radare") => 4,
+        _ => 2,
+    }
+}
+
+fn primary_sample_job_mode_rank(job: &ReverseJobMeta) -> u8 {
+    match job.mode.as_deref().map(str::trim) {
+        Some(mode) if mode.eq_ignore_ascii_case("full") => 3,
+        Some(mode) if mode.eq_ignore_ascii_case("index") => 2,
+        Some(mode) if !mode.is_empty() => 1,
+        _ => 0,
+    }
+}
+
 pub fn load_job_by_id(workspace: &Path, job_id: &str) -> Result<ReverseJobMeta, RustpenError> {
     let meta = workspace.join("jobs").join(job_id).join("meta.json");
     load_job_meta(&meta)
@@ -584,6 +727,14 @@ fn value_to_addr(v: &serde_json::Value) -> Option<u64> {
     None
 }
 
+fn as_str_vec(v: Option<&serde_json::Value>) -> Vec<String> {
+    v.and_then(|value| value.as_array().cloned())
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|item| item.as_str().map(|s| s.to_string()))
+        .collect()
+}
+
 fn load_asm_only_rows(base: &Path) -> Result<Option<Vec<serde_json::Value>>, RustpenError> {
     let candidates = [base.join("function_asm.jsonl"), base.join("asm_full.jsonl")];
     let asm_path = candidates.iter().find(|p| p.exists());
@@ -612,12 +763,20 @@ fn load_asm_only_rows(base: &Path) -> Result<Option<Vec<serde_json::Value>>, Rus
     let row = serde_json::json!({
         "ea": format!("0x{:x}", ea),
         "name": "<asm-only>",
+        "source": "asm-only",
+        "analysis_tags": ["asm-only"],
         "pseudocode": "asm-only job: run ghidra for pseudocode/index, or JADX for APK source export.",
         "calls": [],
         "call_names": [],
         "xrefs": [],
         "ext_refs": [],
         "asm": asm_lines,
+        "call_count": 0,
+        "xref_count": 0,
+        "ext_ref_count": 0,
+        "asm_count": rows.len().min(200),
+        "string_count": 0,
+        "cfg_block_count": 0,
     });
     Ok(Some(vec![row]))
 }
@@ -643,9 +802,12 @@ fn load_lightweight_rows(
     let calls_func_path = base.join("calls_functions.jsonl");
     let xrefs_func_path = base.join("xrefs_functions.jsonl");
     let cfg_path = base.join("cfg_functions.jsonl");
+    let asm_functions_path = base.join("asm_functions.jsonl");
+    let strings_functions_path = base.join("strings_functions.jsonl");
     let asm_preview_path = base.join("asm_preview.jsonl");
 
     let mut call_map: HashMap<String, (Vec<String>, Vec<String>)> = HashMap::new();
+    let mut ext_map: HashMap<String, Vec<String>> = HashMap::new();
     if calls_func_path.exists() {
         for row in read_jsonl(&calls_func_path)? {
             let func = row
@@ -655,6 +817,7 @@ fn load_lightweight_rows(
                 .to_ascii_lowercase();
             let mut addrs = Vec::new();
             let mut names = Vec::new();
+            let mut ext_refs = Vec::new();
             if let Some(edges) = row.get("calls").and_then(|v| v.as_array()) {
                 for e in edges {
                     let to = e
@@ -667,9 +830,23 @@ fn load_lightweight_rows(
                         .and_then(|v| v.as_str())
                         .unwrap_or("")
                         .to_string();
+                    let external = e.get("external").and_then(|v| v.as_bool()).unwrap_or(false);
                     addrs.push(to);
                     names.push(name);
+                    if external {
+                        push_unique_limited(
+                            &mut ext_refs,
+                            e.get("symbol")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or_default()
+                                .to_string(),
+                            64,
+                        );
+                    }
                 }
+            }
+            if !ext_refs.is_empty() {
+                ext_map.insert(func.clone(), ext_refs);
             }
             call_map.insert(func, (addrs, names));
         }
@@ -723,13 +900,21 @@ fn load_lightweight_rows(
         }
     }
 
-    let asm_preview = if asm_preview_path.exists() {
-        read_jsonl(&asm_preview_path).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
     let mut asm_group: HashMap<String, Vec<String>> = HashMap::new();
-    if !asm_preview.is_empty() {
+    if asm_functions_path.exists() {
+        for row in read_jsonl(&asm_functions_path)? {
+            let func = row
+                .get("func")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let asm = as_str_vec(row.get("asm"));
+            if !asm.is_empty() {
+                asm_group.insert(func, asm);
+            }
+        }
+    } else if asm_preview_path.exists() {
+        let asm_preview = read_jsonl(&asm_preview_path).unwrap_or_default();
         let mut func_addrs: Vec<u64> = rows
             .iter()
             .filter_map(|r| {
@@ -764,6 +949,21 @@ fn load_lightweight_rows(
         }
     }
 
+    let mut strings_map: HashMap<String, Vec<String>> = HashMap::new();
+    if strings_functions_path.exists() {
+        for row in read_jsonl(&strings_functions_path)? {
+            let func = row
+                .get("func")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let strings = as_str_vec(row.get("strings"));
+            if !strings.is_empty() {
+                strings_map.insert(func, strings);
+            }
+        }
+    }
+
     for r in &mut rows {
         let Some(obj) = r.as_object_mut() else {
             continue;
@@ -778,8 +978,51 @@ fn load_lightweight_rows(
             .cloned()
             .unwrap_or_else(|| (Vec::new(), Vec::new()));
         let xrefs = xref_map.get(&ea).cloned().unwrap_or_default();
+        let ext_refs = ext_map.get(&ea).cloned().unwrap_or_default();
         let asm = asm_group.get(&ea).cloned().unwrap_or_default();
         let cfg_lines = cfg_map.get(&ea).cloned().unwrap_or_default();
+        let strings = strings_map.get(&ea).cloned().unwrap_or_default();
+        let call_count = calls.len();
+        let xref_count = xrefs.len();
+        let ext_ref_count = ext_refs.len();
+        let asm_count = asm
+            .iter()
+            .filter(|line| !is_placeholder_asm_line(line))
+            .count();
+        let string_count = strings.len();
+        let cfg_block_count = cfg_lines.len();
+        let mut tags = as_str_vec(obj.get("analysis_tags"));
+        if looks_like_plt_stub(&asm) {
+            push_unique_limited(&mut tags, "plt-stub".to_string(), 8);
+        }
+        if tags.is_empty() {
+            let inferred =
+                if obj.get("name").and_then(|v| v.as_str()).unwrap_or_default() == "entry" {
+                    "entry"
+                } else if obj.get("demangled").and_then(|v| v.as_str()).is_some()
+                    || !obj
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default()
+                        .starts_with("sub_")
+                {
+                    "symbol"
+                } else {
+                    "discovered"
+                };
+            tags.push(inferred.to_string());
+        }
+        let source = obj
+            .get("source")
+            .and_then(|v| v.as_str())
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| {
+                primary_function_source(
+                    &tags,
+                    obj.get("name").and_then(|v| v.as_str()).unwrap_or_default(),
+                )
+                .to_string()
+            });
         obj.insert(
             "pseudocode".to_string(),
             serde_json::Value::String(
@@ -804,8 +1047,15 @@ fn load_lightweight_rows(
             "xrefs".to_string(),
             serde_json::Value::Array(xrefs.into_iter().map(serde_json::Value::String).collect()),
         );
-        obj.entry("ext_refs".to_string())
-            .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+        obj.insert(
+            "ext_refs".to_string(),
+            serde_json::Value::Array(
+                ext_refs
+                    .into_iter()
+                    .map(serde_json::Value::String)
+                    .collect(),
+            ),
+        );
         obj.insert(
             "asm".to_string(),
             serde_json::Value::Array(if asm.is_empty() {
@@ -818,6 +1068,31 @@ fn load_lightweight_rows(
                     .collect::<Vec<_>>()
             }),
         );
+        obj.insert("source".to_string(), serde_json::Value::String(source));
+        obj.insert(
+            "analysis_tags".to_string(),
+            serde_json::Value::Array(tags.into_iter().map(serde_json::Value::String).collect()),
+        );
+        obj.insert("call_count".to_string(), serde_json::json!(call_count));
+        obj.insert("xref_count".to_string(), serde_json::json!(xref_count));
+        obj.insert(
+            "ext_ref_count".to_string(),
+            serde_json::json!(ext_ref_count),
+        );
+        obj.insert("asm_count".to_string(), serde_json::json!(asm_count));
+        obj.insert("string_count".to_string(), serde_json::json!(string_count));
+        obj.insert(
+            "cfg_block_count".to_string(),
+            serde_json::json!(cfg_block_count),
+        );
+        if !strings.is_empty() {
+            obj.insert(
+                "strings".to_string(),
+                serde_json::Value::Array(
+                    strings.into_iter().map(serde_json::Value::String).collect(),
+                ),
+            );
+        }
         if !cfg_lines.is_empty() {
             obj.insert(
                 "cfg".to_string(),
@@ -1298,8 +1573,1321 @@ fn detect_arch(bytes: &[u8]) -> DisasmArch {
     }
 }
 
+#[derive(Debug, Clone)]
+struct ExecRegion {
+    va_start: u64,
+    file_start: usize,
+    len: usize,
+}
+
+impl ExecRegion {
+    fn contains(&self, addr: u64) -> bool {
+        addr >= self.va_start && addr < self.va_start.saturating_add(self.len as u64)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct AddressMapRegion {
+    va_start: u64,
+    va_end: u64,
+    file_start: usize,
+}
+
+#[derive(Debug, Clone)]
+struct FunctionEdge {
+    from: u64,
+    to: u64,
+    symbol: Option<String>,
+    external: bool,
+}
+
+#[derive(Debug, Clone)]
+struct FunctionBlock {
+    addr: u64,
+    len: u64,
+    flow: String,
+    targets: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct DecodedInstruction {
+    addr: u64,
+    len: u64,
+    text: String,
+    flow: String,
+    branch_target: Option<u64>,
+    string_refs: Vec<String>,
+}
+
+fn insert_function_candidate(addrs: &mut Vec<u64>, known: &mut HashSet<u64>, addr: u64) -> bool {
+    if !known.insert(addr) {
+        return false;
+    }
+    match addrs.binary_search(&addr) {
+        Ok(_) => false,
+        Err(pos) => {
+            addrs.insert(pos, addr);
+            true
+        }
+    }
+}
+
+fn lookup_function(addr: u64, funcs: &[u64]) -> Option<u64> {
+    let idx = funcs.partition_point(|candidate| *candidate <= addr);
+    idx.checked_sub(1).and_then(|pos| funcs.get(pos).copied())
+}
+
+fn exec_regions_contain(regions: &[ExecRegion], addr: u64) -> bool {
+    let idx = regions.partition_point(|region| region.va_start <= addr);
+    idx.checked_sub(1)
+        .and_then(|pos| regions.get(pos))
+        .is_some_and(|region| region.contains(addr))
+}
+
+fn file_offset_to_va(regions: &[AddressMapRegion], file_off: usize) -> Option<u64> {
+    regions.iter().find_map(|region| {
+        let start = region.file_start;
+        let end = start.saturating_add((region.va_end - region.va_start) as usize);
+        if file_off >= start && file_off < end {
+            Some(region.va_start + (file_off - start) as u64)
+        } else {
+            None
+        }
+    })
+}
+
+fn push_unique_limited(items: &mut Vec<String>, value: String, limit: usize) {
+    if value.is_empty() || items.len() >= limit || items.iter().any(|existing| existing == &value) {
+        return;
+    }
+    items.push(value);
+}
+
+fn tag_function(func_tags: &mut HashMap<u64, Vec<String>>, addr: u64, tag: &str) {
+    push_unique_limited(func_tags.entry(addr).or_default(), tag.to_string(), 8);
+}
+
+fn primary_function_source(tags: &[String], name: &str) -> &'static str {
+    if tags.iter().any(|tag| tag == "entry") || name == "entry" {
+        "entry"
+    } else if tags.iter().any(|tag| tag == "symbol") {
+        "symbol"
+    } else if tags.iter().any(|tag| tag == "recovered") {
+        "recovered"
+    } else if tags.iter().any(|tag| tag == "call-target") {
+        "call-target"
+    } else if tags.iter().any(|tag| tag == "asm-only") {
+        "asm-only"
+    } else {
+        "discovered"
+    }
+}
+
+fn is_placeholder_asm_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    trimmed.is_empty() || trimmed.starts_with('<')
+}
+
+fn looks_like_plt_stub(asm: &[String]) -> bool {
+    let mut real_lines = asm
+        .iter()
+        .filter(|line| !is_placeholder_asm_line(line))
+        .map(|line| line.trim().to_ascii_lowercase());
+    let Some(first) = real_lines.next() else {
+        return false;
+    };
+    if !first.starts_with("jmp") {
+        return false;
+    }
+    let rest = real_lines.take(3).collect::<Vec<_>>();
+    rest.is_empty()
+        || rest.iter().any(|line| line.starts_with("push"))
+        || rest.iter().any(|line| line.starts_with("bnd jmp"))
+}
+
+fn is_x86_padding_byte(byte: u8) -> bool {
+    matches!(byte, 0x00 | 0x90 | 0xcc)
+}
+
+fn is_x86_boundary_byte(byte: u8) -> bool {
+    matches!(byte, 0xc2 | 0xc3 | 0xca | 0xcb | 0xe9 | 0xeb | 0xcc)
+}
+
+fn x86_boundary_hint_score(bytes: &[u8], file_off: usize, region_start: usize) -> u8 {
+    if file_off == region_start {
+        return 5;
+    }
+    let start = file_off.saturating_sub(8).max(region_start);
+    let prefix = &bytes[start..file_off];
+    if prefix.is_empty() {
+        return 0;
+    }
+
+    let mut score = 0;
+    let pad_run = prefix
+        .iter()
+        .rev()
+        .take_while(|byte| is_x86_padding_byte(**byte))
+        .count();
+    if pad_run >= 4 {
+        score += 4;
+    } else if pad_run >= 2 {
+        score += 3;
+    } else if pad_run == 1 {
+        score += 1;
+    }
+    if let Some(last) = prefix.last().copied()
+        && is_x86_boundary_byte(last)
+    {
+        score += 3;
+    }
+    if (file_off - region_start) % 16 == 0 {
+        score += 1;
+    }
+    score
+}
+
+fn x86_prologue_score(window: &[u8], is_64: bool) -> u8 {
+    if window.starts_with(&[0xf3, 0x0f, 0x1e, 0xfa, 0x55, 0x48, 0x89, 0xe5]) {
+        return 8;
+    }
+    if window.starts_with(&[0xf3, 0x0f, 0x1e, 0xfa, 0x55, 0x89, 0xe5]) {
+        return 8;
+    }
+    if window.starts_with(&[0xf3, 0x0f, 0x1e, 0xfa, 0x48, 0x83, 0xec])
+        || window.starts_with(&[0xf3, 0x0f, 0x1e, 0xfa, 0x48, 0x81, 0xec])
+    {
+        return 7;
+    }
+    if window.starts_with(&[0xf3, 0x0f, 0x1e, 0xfa]) {
+        return 5;
+    }
+
+    if is_64 {
+        if window.starts_with(&[0x55, 0x48, 0x89, 0xe5]) {
+            return 7;
+        }
+        if window.starts_with(&[0x53, 0x48, 0x83, 0xec])
+            || window.starts_with(&[0x56, 0x48, 0x83, 0xec])
+            || window.starts_with(&[0x57, 0x48, 0x83, 0xec])
+        {
+            return 6;
+        }
+        if window.starts_with(&[0x48, 0x83, 0xec]) || window.starts_with(&[0x48, 0x81, 0xec]) {
+            return 5;
+        }
+    } else {
+        if window.starts_with(&[0x55, 0x89, 0xe5]) {
+            return 7;
+        }
+        if window.starts_with(&[0x53, 0x83, 0xec])
+            || window.starts_with(&[0x56, 0x83, 0xec])
+            || window.starts_with(&[0x57, 0x83, 0xec])
+        {
+            return 6;
+        }
+        if window.starts_with(&[0x83, 0xec]) || window.starts_with(&[0x81, 0xec]) {
+            return 5;
+        }
+    }
+
+    0
+}
+
+fn collect_x86_prologue_candidates(
+    bytes: &[u8],
+    exec_regions: &[ExecRegion],
+    known_funcs: &HashSet<u64>,
+    is_64: bool,
+) -> Vec<u64> {
+    const MAX_CANDIDATES: usize = 8192;
+
+    let mut recovered = Vec::new();
+    for region in exec_regions {
+        let region_start = region.file_start;
+        let region_end = region
+            .file_start
+            .saturating_add(region.len)
+            .min(bytes.len());
+        if region_end <= region_start {
+            continue;
+        }
+        for file_off in region_start..region_end {
+            let addr = region.va_start + (file_off - region_start) as u64;
+            if known_funcs.contains(&addr) {
+                continue;
+            }
+            let window_end = (file_off + 12).min(region_end);
+            let window = &bytes[file_off..window_end];
+            let prologue = x86_prologue_score(window, is_64);
+            if prologue == 0 {
+                continue;
+            }
+            let boundary = x86_boundary_hint_score(bytes, file_off, region_start);
+            if prologue + boundary < 8 {
+                continue;
+            }
+            recovered.push(addr);
+            if recovered.len() >= MAX_CANDIDATES {
+                return recovered;
+            }
+        }
+    }
+    recovered
+}
+
+fn x86_data_reference_candidates(instr: &iced_x86::Instruction) -> Vec<u64> {
+    use iced_x86::{OpKind, Register};
+
+    let mut refs = Vec::new();
+    if instr.is_ip_rel_memory_operand() {
+        refs.push(instr.ip_rel_memory_address());
+    } else if instr.memory_base() == Register::None && instr.memory_index() == Register::None {
+        let disp = instr.memory_displacement64();
+        if disp != 0 {
+            refs.push(disp);
+        }
+    }
+
+    for operand in 0..instr.op_count() {
+        match instr.op_kind(operand) {
+            OpKind::Immediate8 => refs.push(instr.immediate8() as u64),
+            OpKind::Immediate16 => refs.push(instr.immediate16() as u64),
+            OpKind::Immediate32 => refs.push(instr.immediate32() as u64),
+            OpKind::Immediate64 => refs.push(instr.immediate64()),
+            OpKind::Immediate8to16 => refs.push(instr.immediate8to16() as i64 as u64),
+            OpKind::Immediate8to32 => refs.push(instr.immediate8to32() as i64 as u64),
+            OpKind::Immediate8to64 => refs.push(instr.immediate8to64() as u64),
+            OpKind::Immediate32to64 => refs.push(instr.immediate32to64() as u64),
+            _ => {}
+        }
+    }
+
+    refs.sort_unstable();
+    refs.dedup();
+    refs
+}
+
+fn resolve_target_symbol(
+    addr: u64,
+    symbol_map: &HashMap<u64, String>,
+    import_map: &HashMap<u64, String>,
+    reloc_map: &HashMap<u64, String>,
+) -> (Option<String>, bool) {
+    if let Some(name) = symbol_map.get(&addr) {
+        return (Some(name.clone()), false);
+    }
+    if let Some(name) = import_map.get(&addr) {
+        return (Some(name.clone()), true);
+    }
+    if let Some(name) = reloc_map.get(&addr) {
+        return (Some(name.clone()), true);
+    }
+    (None, false)
+}
+
 /// Lightweight index + asm/calls/sections/strings (Rust-only, no Ghidra).
 fn run_rust_index_job(input: &Path, workspace: &Path) -> Result<DecompileRunReport, RustpenError> {
+    run_rust_index_job_native(input, workspace)
+}
+
+fn run_rust_index_job_native(
+    input: &Path,
+    workspace: &Path,
+) -> Result<DecompileRunReport, RustpenError> {
+    use addr2line::Context;
+    use capstone::{Capstone, arch::BuildsCapstone};
+    use goblin::Object;
+    use goblin::elf::{section_header::SHF_EXECINSTR, sym::STT_FUNC};
+    use iced_x86::{Decoder, DecoderOptions, Formatter, Instruction, Mnemonic, NasmFormatter};
+    use serde_json::json;
+    use std::io::Write;
+
+    const ASM_LIMIT_INDEX: usize = 400_000;
+    const FUNCTION_ASM_LIMIT: usize = 240;
+    const FUNCTION_STRINGS_LIMIT: usize = 64;
+    const PE_IMAGE_SCN_MEM_EXECUTE: u32 = 0x2000_0000;
+
+    std::fs::create_dir_all(workspace)?;
+    let id = new_job_id();
+    let jobs_root = workspace.join("jobs");
+    let job_dir = jobs_root.join(&id);
+    std::fs::create_dir_all(&job_dir)?;
+    let out_dir = workspace.join("reverse_out").join(&id);
+    std::fs::create_dir_all(&out_dir)?;
+
+    let index_path = out_dir.join("index.jsonl");
+    let asm_path = out_dir.join("asm_preview.jsonl");
+    let calls_path = out_dir.join("calls_preview.jsonl");
+    let xrefs_path = out_dir.join("xrefs_preview.jsonl");
+    let sections_path = out_dir.join("sections.jsonl");
+    let strings_path = out_dir.join("strings_ascii.jsonl");
+    let strings_utf16_path = out_dir.join("strings_utf16.jsonl");
+    let calls_func_path = out_dir.join("calls_functions.jsonl");
+    let xrefs_func_path = out_dir.join("xrefs_functions.jsonl");
+    let cfg_path = out_dir.join("cfg_functions.jsonl");
+    let asm_functions_path = out_dir.join("asm_functions.jsonl");
+    let strings_functions_path = out_dir.join("strings_functions.jsonl");
+    let stdout_log = job_dir.join("stdout.log");
+    let stderr_log = job_dir.join("stderr.log");
+
+    let bytes = std::fs::read(input)?;
+    let arch = detect_arch(&bytes);
+
+    let mut rows = Vec::new();
+    let mut asm_out = Vec::new();
+    let mut calls_out = Vec::new();
+    let mut xrefs_map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut symbol_map: HashMap<u64, String> = HashMap::new();
+    let mut func_tags: HashMap<u64, Vec<String>> = HashMap::new();
+    let mut import_map: HashMap<u64, String> = HashMap::new();
+    let mut sections_out = Vec::new();
+    let mut strings_out = Vec::new();
+    let mut strings_out_utf16 = Vec::new();
+    let extra_artifacts: Vec<PathBuf> = vec![
+        calls_func_path.clone(),
+        xrefs_func_path.clone(),
+        cfg_path.clone(),
+        asm_functions_path.clone(),
+        strings_functions_path.clone(),
+    ];
+    let mut exec_regions = Vec::<ExecRegion>::new();
+    let mut addr_regions = Vec::<AddressMapRegion>::new();
+
+    let obj = addr2line::object::File::parse(&*bytes).ok();
+    let mut dwarf_ctx: Option<
+        Context<addr2line::gimli::EndianReader<addr2line::gimli::RunTimeEndian, std::rc::Rc<[u8]>>>,
+    > = None;
+    if let Some(ref ofile) = obj
+        && let Ok(ctx) = Context::new(ofile)
+    {
+        dwarf_ctx = Some(ctx);
+    }
+
+    let demangle = |name: &str| -> Option<String> {
+        let d = symbolic_demangle::demangle(name);
+        match d {
+            std::borrow::Cow::Owned(s) => Some(s),
+            std::borrow::Cow::Borrowed(s) if s != name => Some(s.to_string()),
+            _ => None,
+        }
+    };
+
+    let entry_addr = match Object::parse(&bytes) {
+        Ok(Object::Elf(elf)) => {
+            let entry = elf.entry;
+            tag_function(&mut func_tags, entry, "entry");
+            rows.push(json!({
+                "ea": format!("0x{:x}", entry),
+                "name": "entry",
+                "signature": "",
+                "size": 0,
+                "source": "entry",
+                "analysis_tags": ["entry"],
+            }));
+            for sym in elf.syms.iter() {
+                if sym.st_type() != STT_FUNC || sym.st_value == 0 {
+                    continue;
+                }
+                let Some(name) = elf.strtab.get_at(sym.st_name) else {
+                    continue;
+                };
+                let mut row = json!({
+                    "ea": format!("0x{:x}", sym.st_value),
+                    "name": name,
+                    "signature": "",
+                    "size": sym.st_size,
+                    "source": "symbol",
+                    "analysis_tags": ["symbol"],
+                });
+                if let Some(demangled) = demangle(name) {
+                    row["demangled"] = serde_json::Value::String(demangled.clone());
+                    symbol_map.insert(sym.st_value, demangled);
+                } else {
+                    symbol_map.insert(sym.st_value, name.to_string());
+                }
+                tag_function(&mut func_tags, sym.st_value, "symbol");
+                if let Some(ctx) = dwarf_ctx.as_ref()
+                    && let Ok(Some(loc)) = ctx.find_location(sym.st_value)
+                    && let (Some(file), Some(line)) = (loc.file, loc.line)
+                {
+                    row["signature"] = json!(format!("{}:{}", file, line));
+                }
+                rows.push(row);
+            }
+            for sh in &elf.section_headers {
+                if let Some(name) = elf.shdr_strtab.get_at(sh.sh_name) {
+                    sections_out.push(json!({
+                        "name": name,
+                        "addr": format!("0x{:x}", sh.sh_addr),
+                        "size": sh.sh_size,
+                        "flags": sh.sh_flags,
+                    }));
+                }
+
+                let file_start = sh.sh_offset as usize;
+                let raw_len = sh.sh_size as usize;
+                if raw_len == 0 || file_start >= bytes.len() {
+                    continue;
+                }
+                let len = raw_len.min(bytes.len().saturating_sub(file_start));
+                if len == 0 {
+                    continue;
+                }
+                addr_regions.push(AddressMapRegion {
+                    va_start: sh.sh_addr,
+                    va_end: sh.sh_addr.saturating_add(len as u64),
+                    file_start,
+                });
+                if (sh.sh_flags & SHF_EXECINSTR as u64) != 0 {
+                    exec_regions.push(ExecRegion {
+                        va_start: sh.sh_addr,
+                        file_start,
+                        len,
+                    });
+                }
+            }
+            for sym in elf.dynsyms.iter() {
+                if sym.st_value == 0 {
+                    continue;
+                }
+                if let Some(name) = elf.dynstrtab.get_at(sym.st_name) {
+                    import_map.insert(sym.st_value, name.to_string());
+                }
+            }
+            Some(entry)
+        }
+        Ok(Object::PE(pe)) => {
+            let image_base = pe
+                .header
+                .optional_header
+                .map(|o| o.windows_fields.image_base)
+                .unwrap_or(0);
+            let entry = (pe.entry as u64).saturating_add(image_base);
+            tag_function(&mut func_tags, entry, "entry");
+            rows.push(json!({
+                "ea": format!("0x{:x}", entry),
+                "name": "entry",
+                "signature": "",
+                "size": 0,
+                "source": "entry",
+                "analysis_tags": ["entry"],
+            }));
+            for exp in &pe.exports {
+                let va = exp.rva as u64 + image_base;
+                if let Some(name) = exp.name {
+                    let demangled = demangle(name).unwrap_or_else(|| name.to_string());
+                    symbol_map.insert(va, demangled.clone());
+                    tag_function(&mut func_tags, va, "symbol");
+                    rows.push(json!({
+                        "ea": format!("0x{:x}", va),
+                        "name": name,
+                        "demangled": demangled,
+                        "signature": "",
+                        "size": 0,
+                        "source": "symbol",
+                        "analysis_tags": ["symbol"],
+                    }));
+                } else {
+                    tag_function(&mut func_tags, va, "symbol");
+                    rows.push(json!({
+                        "ea": format!("0x{:x}", va),
+                        "name": "export",
+                        "signature": "",
+                        "size": 0,
+                        "source": "symbol",
+                        "analysis_tags": ["symbol"],
+                    }));
+                }
+            }
+            for imp in &pe.imports {
+                let name = if !imp.name.is_empty() {
+                    imp.name.to_string()
+                } else if imp.ordinal != 0 {
+                    format!("#{}", imp.ordinal)
+                } else {
+                    "<ordinal>".to_string()
+                };
+                import_map.insert(imp.rva as u64 + image_base, format!("{}!{}", imp.dll, name));
+            }
+            for section in &pe.sections {
+                sections_out.push(json!({
+                    "name": section.name().unwrap_or("<none>"),
+                    "addr": format!("0x{:x}", section.virtual_address as u64 + image_base),
+                    "size": section.virtual_size.max(section.size_of_raw_data) as u64,
+                    "characteristics": section.characteristics,
+                }));
+
+                let file_start = section.pointer_to_raw_data as usize;
+                let raw_len = section.size_of_raw_data as usize;
+                if raw_len == 0 || file_start >= bytes.len() {
+                    continue;
+                }
+                let len = raw_len.min(bytes.len().saturating_sub(file_start));
+                if len == 0 {
+                    continue;
+                }
+                let va_start = section.virtual_address as u64 + image_base;
+                addr_regions.push(AddressMapRegion {
+                    va_start,
+                    va_end: va_start.saturating_add(len as u64),
+                    file_start,
+                });
+                if (section.characteristics & PE_IMAGE_SCN_MEM_EXECUTE) != 0 {
+                    exec_regions.push(ExecRegion {
+                        va_start,
+                        file_start,
+                        len,
+                    });
+                }
+            }
+            Some(entry)
+        }
+        _ => {
+            return Err(RustpenError::ParseError(
+                "unsupported binary for rust index backend (expect ELF/PE)".to_string(),
+            ));
+        }
+    };
+
+    if exec_regions.is_empty() && !bytes.is_empty() {
+        exec_regions.push(ExecRegion {
+            va_start: 0,
+            file_start: 0,
+            len: bytes.len(),
+        });
+    }
+    exec_regions.sort_by_key(|region| region.va_start);
+    addr_regions.sort_by_key(|region| region.va_start);
+
+    const STR_MIN: usize = 4;
+    const STR_MAX: usize = 5000;
+    let mut string_addr_map: HashMap<u64, String> = HashMap::new();
+
+    let mut cur = Vec::new();
+    for (i, b) in bytes.iter().enumerate() {
+        if (0x20..=0x7e).contains(b) {
+            cur.push(*b);
+        } else {
+            if cur.len() >= STR_MIN {
+                let off = i + 1 - cur.len();
+                let text = String::from_utf8_lossy(&cur).to_string();
+                strings_out.push(json!({ "off": format!("0x{:x}", off), "s": text.clone() }));
+                if let Some(va) = file_offset_to_va(&addr_regions, off) {
+                    string_addr_map.entry(va).or_insert(text);
+                }
+                if strings_out.len() >= STR_MAX {
+                    break;
+                }
+            }
+            cur.clear();
+        }
+    }
+    if cur.len() >= STR_MIN && strings_out.len() < STR_MAX {
+        let off = bytes.len().saturating_sub(cur.len());
+        let text = String::from_utf8_lossy(&cur).to_string();
+        strings_out.push(json!({ "off": format!("0x{:x}", off), "s": text.clone() }));
+        if let Some(va) = file_offset_to_va(&addr_regions, off) {
+            string_addr_map.entry(va).or_insert(text);
+        }
+    }
+
+    let mut cur16 = Vec::<u16>::new();
+    for (idx, chunk) in bytes.chunks_exact(2).enumerate() {
+        let v = u16::from_le_bytes([chunk[0], chunk[1]]);
+        if (0x20u16..=0x7eu16).contains(&v) {
+            cur16.push(v);
+        } else {
+            if cur16.len() >= STR_MIN {
+                let off = idx * 2 + 2 - cur16.len() * 2;
+                let text = String::from_utf16_lossy(&cur16);
+                strings_out_utf16.push(json!({ "off": format!("0x{:x}", off), "s": text.clone() }));
+                if let Some(va) = file_offset_to_va(&addr_regions, off) {
+                    string_addr_map.entry(va).or_insert(text);
+                }
+                if strings_out_utf16.len() >= STR_MAX {
+                    break;
+                }
+            }
+            cur16.clear();
+        }
+    }
+    if cur16.len() >= STR_MIN && strings_out_utf16.len() < STR_MAX {
+        let off = bytes.len().saturating_sub(cur16.len() * 2);
+        let text = String::from_utf16_lossy(&cur16);
+        strings_out_utf16.push(json!({ "off": format!("0x{:x}", off), "s": text.clone() }));
+        if let Some(va) = file_offset_to_va(&addr_regions, off) {
+            string_addr_map.entry(va).or_insert(text);
+        }
+    }
+
+    let reloc_syms = build_reloc_symbol_map(&bytes).unwrap_or_default();
+    let mut func_addrs: Vec<u64> = symbol_map.keys().copied().collect();
+    func_addrs.sort_unstable();
+    func_addrs.dedup();
+    let mut known_funcs: HashSet<u64> = func_addrs.iter().copied().collect();
+    if let Some(entry) = entry_addr {
+        let _ = insert_function_candidate(&mut func_addrs, &mut known_funcs, entry);
+        tag_function(&mut func_tags, entry, "entry");
+    }
+    let mut recovered_prologues = 0usize;
+    if matches!(arch, DisasmArch::X86_64 | DisasmArch::X86_32) {
+        for candidate in collect_x86_prologue_candidates(
+            &bytes,
+            &exec_regions,
+            &known_funcs,
+            matches!(arch, DisasmArch::X86_64),
+        ) {
+            if insert_function_candidate(&mut func_addrs, &mut known_funcs, candidate) {
+                recovered_prologues += 1;
+                tag_function(&mut func_tags, candidate, "recovered");
+            }
+        }
+    }
+    let mut func_calls: HashMap<u64, Vec<FunctionEdge>> = HashMap::new();
+    let mut func_xrefs: HashMap<u64, Vec<FunctionEdge>> = HashMap::new();
+    let mut func_blocks: HashMap<u64, Vec<FunctionBlock>> = HashMap::new();
+    let mut func_asm: HashMap<u64, Vec<String>> = HashMap::new();
+    let mut func_strings: HashMap<u64, Vec<String>> = HashMap::new();
+    let mut func_end: HashMap<u64, u64> = HashMap::new();
+
+    match arch {
+        DisasmArch::X86_64 | DisasmArch::X86_32 => {
+            let bitness = if matches!(arch, DisasmArch::X86_64) {
+                64
+            } else {
+                32
+            };
+            let mut decoded = Vec::<DecodedInstruction>::new();
+            let mut raw_edges = Vec::<FunctionEdge>::new();
+            let mut count = 0usize;
+            for region in &exec_regions {
+                if count >= ASM_LIMIT_INDEX {
+                    break;
+                }
+                let end = region
+                    .file_start
+                    .saturating_add(region.len)
+                    .min(bytes.len());
+                if end <= region.file_start {
+                    continue;
+                }
+                let mut decoder = Decoder::with_ip(
+                    bitness,
+                    &bytes[region.file_start..end],
+                    region.va_start,
+                    DecoderOptions::NONE,
+                );
+                let mut formatter = NasmFormatter::new();
+                formatter.options_mut().set_first_operand_char_index(10);
+                let mut instr = Instruction::default();
+                while decoder.can_decode() && count < ASM_LIMIT_INDEX {
+                    decoder.decode_out(&mut instr);
+                    let mut line = String::new();
+                    let _ = formatter.format(&instr, &mut line);
+                    let addr = instr.ip();
+                    let inst_len = instr.len() as u64;
+                    asm_out.push(json!({ "ea": format!("0x{:x}", addr), "text": line.clone() }));
+                    let branch_target = if instr.mnemonic() == Mnemonic::Jmp
+                        && (instr.op0_kind() == iced_x86::OpKind::NearBranch64
+                            || instr.op0_kind() == iced_x86::OpKind::NearBranch32)
+                    {
+                        Some(instr.near_branch_target())
+                    } else {
+                        None
+                    };
+                    let flow = format!("{:?}", instr.flow_control());
+                    let string_refs = x86_data_reference_candidates(&instr)
+                        .into_iter()
+                        .filter_map(|candidate| string_addr_map.get(&candidate).cloned())
+                        .collect::<Vec<_>>();
+                    decoded.push(DecodedInstruction {
+                        addr,
+                        len: inst_len,
+                        text: line.clone(),
+                        flow,
+                        branch_target,
+                        string_refs,
+                    });
+
+                    if instr.is_call_near() || instr.is_call_far() {
+                        let op0 = instr.op0_kind();
+                        if op0 == iced_x86::OpKind::NearBranch64
+                            || op0 == iced_x86::OpKind::NearBranch32
+                        {
+                            let to = instr.near_branch_target();
+                            if exec_regions_contain(&exec_regions, to) {
+                                if insert_function_candidate(&mut func_addrs, &mut known_funcs, to)
+                                {
+                                    tag_function(&mut func_tags, to, "call-target");
+                                }
+                            }
+                            let (name, external) =
+                                resolve_target_symbol(to, &symbol_map, &import_map, &reloc_syms);
+                            let from = format!("0x{:x}", addr);
+                            let to_str = format!("0x{:x}", to);
+                            calls_out.push(json!({
+                                "from": from.clone(),
+                                "to": to_str.clone(),
+                                "symbol": name,
+                                "external": external,
+                            }));
+                            xrefs_map.entry(to_str).or_default().push(from.clone());
+                            raw_edges.push(FunctionEdge {
+                                from: addr,
+                                to,
+                                symbol: name,
+                                external,
+                            });
+                        }
+                    }
+
+                    if instr.mnemonic() == Mnemonic::Jmp
+                        && (instr.op0_kind() == iced_x86::OpKind::NearBranch64
+                            || instr.op0_kind() == iced_x86::OpKind::NearBranch32)
+                    {
+                        let to = instr.near_branch_target();
+                        let (name, external) =
+                            resolve_target_symbol(to, &symbol_map, &import_map, &reloc_syms);
+                        let from = format!("0x{:x}", addr);
+                        let to_str = format!("0x{:x}", to);
+                        xrefs_map
+                            .entry(to_str.clone())
+                            .or_default()
+                            .push(from.clone());
+                        calls_out.push(json!({
+                            "from": from,
+                            "to": to_str,
+                            "symbol": name.clone(),
+                            "external": external,
+                            "tail": true,
+                        }));
+                    }
+
+                    count += 1;
+                }
+            }
+
+            for inst in &decoded {
+                let Some(func) = lookup_function(inst.addr, &func_addrs) else {
+                    continue;
+                };
+                func_end
+                    .entry(func)
+                    .and_modify(|end_addr| {
+                        *end_addr = (*end_addr).max(inst.addr.saturating_add(inst.len))
+                    })
+                    .or_insert(inst.addr.saturating_add(inst.len));
+
+                let blocks = func_blocks.entry(func).or_default();
+                if blocks
+                    .last()
+                    .map(|last| last.flow != inst.flow)
+                    .unwrap_or(true)
+                {
+                    blocks.push(FunctionBlock {
+                        addr: inst.addr,
+                        len: inst.len,
+                        flow: inst.flow.clone(),
+                        targets: inst
+                            .branch_target
+                            .map(|target| vec![format!("0x{:x}", target)])
+                            .unwrap_or_default(),
+                    });
+                } else if let Some(last) = blocks.last_mut() {
+                    last.len = last.len.saturating_add(inst.len);
+                    if let Some(target) = inst.branch_target {
+                        push_unique_limited(&mut last.targets, format!("0x{:x}", target), 8);
+                    }
+                }
+
+                let asm_lines = func_asm.entry(func).or_default();
+                if asm_lines.len() < FUNCTION_ASM_LIMIT {
+                    asm_lines.push(inst.text.clone());
+                }
+
+                for string_ref in &inst.string_refs {
+                    push_unique_limited(
+                        func_strings.entry(func).or_default(),
+                        string_ref.clone(),
+                        FUNCTION_STRINGS_LIMIT,
+                    );
+                }
+            }
+
+            for edge in raw_edges {
+                if let Some(func) = lookup_function(edge.from, &func_addrs) {
+                    func_calls.entry(func).or_default().push(edge.clone());
+                }
+                if exec_regions_contain(&exec_regions, edge.to)
+                    && let Some(func) = lookup_function(edge.to, &func_addrs)
+                {
+                    func_xrefs.entry(func).or_default().push(edge);
+                }
+            }
+        }
+        DisasmArch::Arm | DisasmArch::Arm64 => {
+            let cs = if matches!(arch, DisasmArch::Arm64) {
+                Capstone::new()
+                    .arm64()
+                    .mode(capstone::arch::arm64::ArchMode::Arm)
+                    .detail(false)
+                    .build()
+            } else {
+                Capstone::new()
+                    .arm()
+                    .mode(capstone::arch::arm::ArchMode::Arm)
+                    .detail(false)
+                    .build()
+            }
+            .map_err(|e| RustpenError::ParseError(format!("capstone init: {}", e)))?;
+
+            let mut count = 0usize;
+            for region in &exec_regions {
+                if count >= ASM_LIMIT_INDEX {
+                    break;
+                }
+                let end = region
+                    .file_start
+                    .saturating_add(region.len)
+                    .min(bytes.len());
+                if end <= region.file_start {
+                    continue;
+                }
+                let insns = cs
+                    .disasm_all(&bytes[region.file_start..end], region.va_start)
+                    .map_err(|e| RustpenError::ParseError(format!("capstone disasm: {}", e)))?;
+                for ins in insns.iter() {
+                    if count >= ASM_LIMIT_INDEX {
+                        break;
+                    }
+                    let addr = ins.address();
+                    let line = ins.to_string();
+                    let mnemonic = ins.mnemonic().unwrap_or("").to_ascii_lowercase();
+                    let inst_len = ins.bytes().len() as u64;
+                    asm_out.push(json!({ "ea": format!("0x{:x}", addr), "text": line.clone() }));
+
+                    if let Some(func) = lookup_function(addr, &func_addrs) {
+                        func_end
+                            .entry(func)
+                            .and_modify(|end_addr| {
+                                *end_addr = (*end_addr).max(addr.saturating_add(inst_len))
+                            })
+                            .or_insert(addr.saturating_add(inst_len));
+
+                        let flow = if mnemonic.starts_with("ret") || mnemonic == "bx" {
+                            "Return".to_string()
+                        } else if mnemonic.starts_with('b') {
+                            "Branch".to_string()
+                        } else {
+                            "Next".to_string()
+                        };
+                        let mut targets = Vec::new();
+                        if flow == "Branch"
+                            && let Some(op) = ins.op_str()
+                            && let Some(hex) = op.trim().strip_prefix("0x")
+                            && let Ok(target) = u64::from_str_radix(hex, 16)
+                        {
+                            targets.push(format!("0x{:x}", target));
+                        }
+                        let blocks = func_blocks.entry(func).or_default();
+                        if blocks.last().map(|last| last.flow != flow).unwrap_or(true) {
+                            blocks.push(FunctionBlock {
+                                addr,
+                                len: inst_len,
+                                flow,
+                                targets,
+                            });
+                        } else if let Some(last) = blocks.last_mut() {
+                            last.len = last.len.saturating_add(inst_len);
+                            for target in targets {
+                                push_unique_limited(&mut last.targets, target, 8);
+                            }
+                        }
+
+                        let asm_lines = func_asm.entry(func).or_default();
+                        if asm_lines.len() < FUNCTION_ASM_LIMIT {
+                            asm_lines.push(line);
+                        }
+                    }
+
+                    if mnemonic.starts_with("bl")
+                        && let Some(op) = ins.op_str()
+                        && let Some(hex) = op.trim().strip_prefix("0x")
+                        && let Ok(to) = u64::from_str_radix(hex, 16)
+                    {
+                        if exec_regions_contain(&exec_regions, to) {
+                            if insert_function_candidate(&mut func_addrs, &mut known_funcs, to) {
+                                tag_function(&mut func_tags, to, "call-target");
+                            }
+                        }
+                        let (name, external) =
+                            resolve_target_symbol(to, &symbol_map, &import_map, &reloc_syms);
+                        let from = format!("0x{:x}", addr);
+                        let to_str = format!("0x{:x}", to);
+                        calls_out.push(json!({
+                            "from": from.clone(),
+                            "to": to_str.clone(),
+                            "symbol": name,
+                            "external": external,
+                        }));
+                        xrefs_map.entry(to_str).or_default().push(from);
+                        if let Some(func) = lookup_function(addr, &func_addrs) {
+                            func_calls.entry(func).or_default().push(FunctionEdge {
+                                from: addr,
+                                to,
+                                symbol: name.clone(),
+                                external,
+                            });
+                        }
+                        if let Some(func) = lookup_function(to, &func_addrs) {
+                            func_xrefs.entry(func).or_default().push(FunctionEdge {
+                                from: addr,
+                                to,
+                                symbol: name,
+                                external,
+                            });
+                        }
+                    }
+
+                    count += 1;
+                }
+            }
+        }
+        DisasmArch::Unsupported => {}
+    }
+
+    let mut row_by_addr = HashMap::<u64, usize>::new();
+    for (idx, row) in rows.iter().enumerate() {
+        if let Some(addr) = row
+            .get("ea")
+            .and_then(|v| v.as_str())
+            .and_then(parse_addr_str)
+        {
+            row_by_addr.insert(addr, idx);
+        }
+    }
+    for func in &func_addrs {
+        let size = func_end
+            .get(func)
+            .map(|end_addr| end_addr.saturating_sub(*func))
+            .unwrap_or(0);
+        if let Some(existing) = row_by_addr.get(func).copied() {
+            if size > 0 {
+                rows[existing]["size"] = json!(size);
+            }
+            let mut tags = func_tags.get(func).cloned().unwrap_or_default();
+            if tags.is_empty() {
+                tags.push("discovered".to_string());
+            }
+            rows[existing]["source"] = json!(primary_function_source(
+                &tags,
+                rows[existing]
+                    .get("name")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or_default()
+            ));
+            rows[existing]["analysis_tags"] = json!(tags);
+            continue;
+        }
+        let (name, _) = resolve_target_symbol(*func, &symbol_map, &import_map, &reloc_syms);
+        let name = name.unwrap_or_else(|| format!("sub_{:x}", func));
+        let mut tags = func_tags.get(func).cloned().unwrap_or_default();
+        if tags.is_empty() {
+            tags.push("discovered".to_string());
+        }
+        let source = primary_function_source(&tags, &name);
+        rows.push(json!({
+            "ea": format!("0x{:x}", func),
+            "name": name,
+            "signature": "",
+            "size": size,
+            "source": source,
+            "analysis_tags": tags,
+        }));
+    }
+    rows.sort_by_key(|row| {
+        row.get("ea")
+            .and_then(|v| v.as_str())
+            .and_then(parse_addr_str)
+            .unwrap_or(u64::MAX)
+    });
+
+    let mut f = std::fs::File::create(&index_path).map_err(RustpenError::Io)?;
+    for row in &rows {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f = std::fs::File::create(&asm_path).map_err(RustpenError::Io)?;
+    for row in &asm_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f = std::fs::File::create(&calls_path).map_err(RustpenError::Io)?;
+    for row in &calls_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f = std::fs::File::create(&xrefs_path).map_err(RustpenError::Io)?;
+    for (to, froms) in &xrefs_map {
+        let row = json!({ "to": to, "froms": froms });
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(&row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f = std::fs::File::create(&sections_path).map_err(RustpenError::Io)?;
+    for row in &sections_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f = std::fs::File::create(&strings_path).map_err(RustpenError::Io)?;
+    for row in &strings_out {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f = std::fs::File::create(&strings_utf16_path).map_err(RustpenError::Io)?;
+    for row in &strings_out_utf16 {
+        writeln!(
+            f,
+            "{}",
+            serde_json::to_string(row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let mut f_calls = std::fs::File::create(&calls_func_path).map_err(RustpenError::Io)?;
+    let mut f_xrefs = std::fs::File::create(&xrefs_func_path).map_err(RustpenError::Io)?;
+    let mut f_cfg = std::fs::File::create(&cfg_path).map_err(RustpenError::Io)?;
+    let mut f_asm_funcs = std::fs::File::create(&asm_functions_path).map_err(RustpenError::Io)?;
+    let mut f_string_funcs =
+        std::fs::File::create(&strings_functions_path).map_err(RustpenError::Io)?;
+    for func in &func_addrs {
+        let (name_opt, _) = resolve_target_symbol(*func, &symbol_map, &import_map, &reloc_syms);
+        let name = name_opt.unwrap_or_else(|| format!("sub_{:x}", func));
+        let calls_row = json!({
+            "func": format!("0x{:x}", func),
+            "name": name,
+            "calls": func_calls.get(func).cloned().unwrap_or_default().into_iter().map(|edge| json!({
+                "from": edge.from,
+                "to": edge.to,
+                "symbol": edge.symbol,
+                "external": edge.external,
+            })).collect::<Vec<_>>(),
+        });
+        writeln!(
+            f_calls,
+            "{}",
+            serde_json::to_string(&calls_row)
+                .map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+
+        let xrefs_row = json!({
+            "func": format!("0x{:x}", func),
+            "name": resolve_target_symbol(*func, &symbol_map, &import_map, &reloc_syms)
+                .0
+                .unwrap_or_else(|| format!("sub_{:x}", func)),
+            "xrefs": func_xrefs.get(func).cloned().unwrap_or_default().into_iter().map(|edge| json!({
+                "from": edge.from,
+                "to": edge.to,
+                "symbol": edge.symbol,
+                "external": edge.external,
+            })).collect::<Vec<_>>(),
+        });
+        writeln!(
+            f_xrefs,
+            "{}",
+            serde_json::to_string(&xrefs_row)
+                .map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+
+        let cfg_row = json!({
+            "func": format!("0x{:x}", func),
+            "name": resolve_target_symbol(*func, &symbol_map, &import_map, &reloc_syms)
+                .0
+                .unwrap_or_else(|| format!("sub_{:x}", func)),
+            "blocks": func_blocks.get(func).cloned().unwrap_or_default().into_iter().map(|block| json!({
+                "addr": format!("0x{:x}", block.addr),
+                "len": block.len,
+                "flow": block.flow,
+                "targets": block.targets,
+            })).collect::<Vec<_>>(),
+        });
+        writeln!(
+            f_cfg,
+            "{}",
+            serde_json::to_string(&cfg_row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+
+        let asm_row = json!({
+            "func": format!("0x{:x}", func),
+            "name": resolve_target_symbol(*func, &symbol_map, &import_map, &reloc_syms)
+                .0
+                .unwrap_or_else(|| format!("sub_{:x}", func)),
+            "asm": func_asm.get(func).cloned().unwrap_or_default(),
+        });
+        writeln!(
+            f_asm_funcs,
+            "{}",
+            serde_json::to_string(&asm_row).map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+
+        let strings_row = json!({
+            "func": format!("0x{:x}", func),
+            "name": resolve_target_symbol(*func, &symbol_map, &import_map, &reloc_syms)
+                .0
+                .unwrap_or_else(|| format!("sub_{:x}", func)),
+            "strings": func_strings.get(func).cloned().unwrap_or_default(),
+        });
+        writeln!(
+            f_string_funcs,
+            "{}",
+            serde_json::to_string(&strings_row)
+                .map_err(|e| RustpenError::ParseError(e.to_string()))?
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    let ir_path = out_dir.join("ir.jsonl");
+    let mut ir_doc = super::ir::ReverseIrDoc {
+        meta: super::ir::IrBinaryMeta {
+            sample: input.display().to_string(),
+            backend: "rust-index".to_string(),
+            format: None,
+            arch: Some(format!("{arch:?}")),
+            entry: entry_addr.map(|v| format!("0x{:x}", v)),
+            file_size: std::fs::metadata(input).ok().map(|m| m.len()),
+        },
+        ..Default::default()
+    };
+    for row in &rows {
+        let ea = row
+            .get("ea")
+            .and_then(|v| v.as_str())
+            .unwrap_or("0x0")
+            .to_string();
+        let name = row
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("<unnamed>")
+            .to_string();
+        let signature = row
+            .get("signature")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let demangled = row
+            .get("demangled")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let size = row.get("size").and_then(|v| v.as_u64());
+        ir_doc.functions.push(super::ir::IrFunction {
+            ea,
+            name,
+            demangled,
+            signature,
+            size,
+            pseudocode: None,
+            asm_preview: None,
+            tags: Vec::new(),
+        });
+    }
+    write_ir_jsonl(&ir_path, &ir_doc)?;
+
+    std::fs::write(
+        &stdout_log,
+        format!(
+            "rust index arch={:?} rows={} funcs={} recovered_prologues={} asm={} calls={} xrefs={} strings16={}\n",
+            arch,
+            rows.len(),
+            func_addrs.len(),
+            recovered_prologues,
+            asm_out.len(),
+            calls_out.len(),
+            xrefs_map.len(),
+            strings_out_utf16.len()
+        ),
+    )?;
+    std::fs::write(&stderr_log, "")?;
+
+    let job = ReverseJobMeta {
+        id,
+        kind: "decompile".to_string(),
+        backend: "rust-index".to_string(),
+        mode: Some("index".to_string()),
+        function: None,
+        target: input.to_path_buf(),
+        workspace: workspace.to_path_buf(),
+        status: ReverseJobStatus::Succeeded,
+        created_at: now_epoch_secs(),
+        started_at: Some(now_epoch_secs()),
+        ended_at: Some(now_epoch_secs()),
+        exit_code: Some(0),
+        program: "rust-index".to_string(),
+        args: Vec::new(),
+        note: "rust index backend (no Ghidra)".to_string(),
+        artifacts: {
+            let mut arts = vec![
+                path_to_string(index_path),
+                path_to_string(asm_path),
+                path_to_string(calls_path),
+                path_to_string(xrefs_path),
+                path_to_string(sections_path),
+                path_to_string(strings_path),
+                path_to_string(strings_utf16_path),
+                path_to_string(ir_path),
+            ];
+            arts.extend(extra_artifacts.into_iter().map(path_to_string));
+            arts
+        },
+        error: None,
+    };
+    save_job_meta(&job_dir.join("meta.json"), &job)?;
+
+    Ok(DecompileRunReport {
+        job,
+        stdout_log,
+        stderr_log,
+    })
+}
+
+/// Legacy Rust index path kept temporarily while the native function-level pipeline settles.
+#[allow(dead_code)]
+fn run_rust_index_job_legacy(
+    input: &Path,
+    workspace: &Path,
+) -> Result<DecompileRunReport, RustpenError> {
     use addr2line::Context;
     use capstone::{Capstone, arch::BuildsCapstone};
     use goblin::Object;
@@ -1492,7 +3080,6 @@ fn run_rust_index_job(input: &Path, workspace: &Path) -> Result<DecompileRunRepo
 
     // Disassembly & calls (stream all; soft cap to avoid OOM)
     const ASM_LIMIT_INDEX: usize = 400_000;
-    const ASM_LIMIT_ASM: usize = 200_000;
     let asm_limit = ASM_LIMIT_INDEX;
     match arch {
         DisasmArch::X86_64 | DisasmArch::X86_32 => {
@@ -2199,9 +3786,12 @@ fn run_with_logs_and_timeout(
 #[cfg(test)]
 mod tests {
     use super::{
-        ReverseJobMeta, ReverseJobStatus, is_ghidra_program, is_jadx_program, is_probable_apk,
-        path_has_any_file, should_auto_switch_ghidra_full_to_index, try_emit_ir_artifact,
+        ReverseJobMeta, ReverseJobStatus, collapse_primary_jobs_by_target, is_ghidra_program,
+        is_jadx_program, is_probable_apk, load_lightweight_rows, path_has_any_file,
+        prune_superseded_primary_sample_jobs, should_auto_switch_ghidra_full_to_index,
+        try_emit_ir_artifact,
     };
+    use std::collections::HashSet;
     #[test]
     fn ghidra_program_detection_works() {
         assert!(is_ghidra_program("analyzeHeadless"));
@@ -2255,6 +3845,346 @@ mod tests {
             Some(10 * 1024 * 1024),
             Some(25 * 1024 * 1024)
         ));
+    }
+
+    #[test]
+    fn collapse_primary_jobs_keeps_one_representative_per_target() {
+        let ws = std::env::temp_dir().join(format!("rscan_sample_jobs_{}", super::new_job_id()));
+        let target_a = ws.join("a.bin");
+        let target_b = ws.join("b.bin");
+        let jobs = vec![
+            ReverseJobMeta {
+                id: "job-a-index".to_string(),
+                kind: "decompile".to_string(),
+                backend: "ghidra".to_string(),
+                mode: Some("index".to_string()),
+                function: None,
+                target: target_a.clone(),
+                workspace: ws.clone(),
+                status: ReverseJobStatus::Succeeded,
+                created_at: 10,
+                started_at: None,
+                ended_at: None,
+                exit_code: Some(0),
+                program: "analyzeHeadless".to_string(),
+                args: Vec::new(),
+                note: String::new(),
+                artifacts: Vec::new(),
+                error: None,
+            },
+            ReverseJobMeta {
+                id: "job-a-full-running".to_string(),
+                kind: "decompile".to_string(),
+                backend: "ghidra".to_string(),
+                mode: Some("full".to_string()),
+                function: None,
+                target: target_a.clone(),
+                workspace: ws.clone(),
+                status: ReverseJobStatus::Running,
+                created_at: 11,
+                started_at: Some(11),
+                ended_at: None,
+                exit_code: None,
+                program: "analyzeHeadless".to_string(),
+                args: Vec::new(),
+                note: String::new(),
+                artifacts: Vec::new(),
+                error: None,
+            },
+            ReverseJobMeta {
+                id: "job-b-full".to_string(),
+                kind: "decompile".to_string(),
+                backend: "ghidra".to_string(),
+                mode: Some("full".to_string()),
+                function: None,
+                target: target_b.clone(),
+                workspace: ws.clone(),
+                status: ReverseJobStatus::Succeeded,
+                created_at: 20,
+                started_at: Some(20),
+                ended_at: Some(21),
+                exit_code: Some(0),
+                program: "analyzeHeadless".to_string(),
+                args: Vec::new(),
+                note: String::new(),
+                artifacts: Vec::new(),
+                error: None,
+            },
+            ReverseJobMeta {
+                id: "job-b-index-newer".to_string(),
+                kind: "decompile".to_string(),
+                backend: "ghidra".to_string(),
+                mode: Some("index".to_string()),
+                function: None,
+                target: target_b,
+                workspace: ws,
+                status: ReverseJobStatus::Succeeded,
+                created_at: 25,
+                started_at: Some(25),
+                ended_at: Some(26),
+                exit_code: Some(0),
+                program: "analyzeHeadless".to_string(),
+                args: Vec::new(),
+                note: String::new(),
+                artifacts: Vec::new(),
+                error: None,
+            },
+        ];
+
+        let collapsed = collapse_primary_jobs_by_target(jobs);
+        assert_eq!(collapsed.len(), 2);
+        assert_eq!(collapsed[0].id, "job-b-full");
+        assert_eq!(collapsed[1].id, "job-a-full-running");
+    }
+
+    #[test]
+    fn collapse_primary_jobs_prefers_older_success_over_newer_failed_full() {
+        let ws =
+            std::env::temp_dir().join(format!("rscan_sample_jobs_fail_{}", super::new_job_id()));
+        let target = ws.join("same.bin");
+        let jobs = vec![
+            ReverseJobMeta {
+                id: "job-success-full".to_string(),
+                kind: "decompile".to_string(),
+                backend: "ghidra".to_string(),
+                mode: Some("full".to_string()),
+                function: None,
+                target: target.clone(),
+                workspace: ws.clone(),
+                status: ReverseJobStatus::Succeeded,
+                created_at: 10,
+                started_at: Some(10),
+                ended_at: Some(11),
+                exit_code: Some(0),
+                program: "analyzeHeadless".to_string(),
+                args: Vec::new(),
+                note: String::new(),
+                artifacts: Vec::new(),
+                error: None,
+            },
+            ReverseJobMeta {
+                id: "job-failed-full".to_string(),
+                kind: "decompile".to_string(),
+                backend: "ghidra".to_string(),
+                mode: Some("full".to_string()),
+                function: None,
+                target,
+                workspace: ws,
+                status: ReverseJobStatus::Failed,
+                created_at: 20,
+                started_at: Some(20),
+                ended_at: Some(21),
+                exit_code: Some(1),
+                program: "analyzeHeadless".to_string(),
+                args: Vec::new(),
+                note: String::new(),
+                artifacts: Vec::new(),
+                error: Some("boom".to_string()),
+            },
+        ];
+
+        let collapsed = collapse_primary_jobs_by_target(jobs);
+        assert_eq!(collapsed.len(), 1);
+        assert_eq!(collapsed[0].id, "job-success-full");
+    }
+
+    #[test]
+    fn successful_full_prunes_older_primary_jobs_for_same_target() {
+        let ws = std::env::temp_dir().join(format!("rscan_prune_jobs_{}", super::new_job_id()));
+        let jobs_root = ws.join("jobs");
+        let out_root = ws.join("reverse_out");
+        let target = ws.join("same.bin");
+        std::fs::create_dir_all(&jobs_root).unwrap();
+        std::fs::create_dir_all(&out_root).unwrap();
+        std::fs::write(&target, b"\x7fELF").unwrap();
+
+        let old_job = ReverseJobMeta {
+            id: "job-old-index".to_string(),
+            kind: "decompile".to_string(),
+            backend: "ghidra".to_string(),
+            mode: Some("index".to_string()),
+            function: None,
+            target: target.clone(),
+            workspace: ws.clone(),
+            status: ReverseJobStatus::Succeeded,
+            created_at: 10,
+            started_at: Some(10),
+            ended_at: Some(11),
+            exit_code: Some(0),
+            program: "analyzeHeadless".to_string(),
+            args: Vec::new(),
+            note: String::new(),
+            artifacts: Vec::new(),
+            error: None,
+        };
+        let keep_job = ReverseJobMeta {
+            id: "job-new-full".to_string(),
+            kind: "decompile".to_string(),
+            backend: "ghidra".to_string(),
+            mode: Some("full".to_string()),
+            function: None,
+            target: target.clone(),
+            workspace: ws.clone(),
+            status: ReverseJobStatus::Succeeded,
+            created_at: 20,
+            started_at: Some(20),
+            ended_at: Some(21),
+            exit_code: Some(0),
+            program: "analyzeHeadless".to_string(),
+            args: Vec::new(),
+            note: String::new(),
+            artifacts: Vec::new(),
+            error: None,
+        };
+
+        for job in [&old_job, &keep_job] {
+            let job_dir = jobs_root.join(&job.id);
+            let out_dir = out_root.join(&job.id);
+            std::fs::create_dir_all(&job_dir).unwrap();
+            std::fs::create_dir_all(&out_dir).unwrap();
+            std::fs::write(
+                job_dir.join("meta.json"),
+                serde_json::to_string_pretty(job).unwrap(),
+            )
+            .unwrap();
+            std::fs::write(job_dir.join("stdout.log"), "").unwrap();
+            std::fs::write(job_dir.join("stderr.log"), "").unwrap();
+            std::fs::write(out_dir.join("marker.txt"), job.id.as_bytes()).unwrap();
+        }
+
+        let removed = prune_superseded_primary_sample_jobs(&ws, &keep_job).unwrap();
+        assert_eq!(removed, 1);
+        assert!(!jobs_root.join(&old_job.id).exists());
+        assert!(!out_root.join(&old_job.id).exists());
+        assert!(jobs_root.join(&keep_job.id).exists());
+        assert!(out_root.join(&keep_job.id).exists());
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn load_lightweight_rows_prefers_function_level_artifacts() {
+        let ws =
+            std::env::temp_dir().join(format!("rscan_lightweight_rows_{}", super::new_job_id()));
+        let out_dir = ws.join("reverse_out").join("job-test");
+        std::fs::create_dir_all(&out_dir).unwrap();
+        std::fs::write(
+            out_dir.join("index.jsonl"),
+            "{\"ea\":\"0x401000\",\"name\":\"main\",\"signature\":\"\",\"size\":32}\n\
+             {\"ea\":\"0x401020\",\"name\":\"puts_stub\",\"signature\":\"\",\"size\":16}\n",
+        )
+        .unwrap();
+        std::fs::write(
+            out_dir.join("calls_functions.jsonl"),
+            "{\"func\":\"0x401000\",\"name\":\"main\",\"calls\":[{\"from\":4198400,\"to\":4198432,\"symbol\":\"puts\",\"external\":true}]}\n",
+        )
+        .unwrap();
+        std::fs::write(
+            out_dir.join("xrefs_functions.jsonl"),
+            "{\"func\":\"0x401020\",\"name\":\"puts_stub\",\"xrefs\":[{\"from\":4198400,\"to\":4198432,\"symbol\":\"puts\",\"external\":true}]}\n",
+        )
+        .unwrap();
+        std::fs::write(
+            out_dir.join("cfg_functions.jsonl"),
+            "{\"func\":\"0x401000\",\"name\":\"main\",\"blocks\":[{\"addr\":\"0x401000\",\"len\":5,\"flow\":\"Call\",\"targets\":[\"0x401020\"]}]}\n",
+        )
+        .unwrap();
+        std::fs::write(
+            out_dir.join("asm_functions.jsonl"),
+            "{\"func\":\"0x401000\",\"name\":\"main\",\"asm\":[\"push rbp\",\"call 0x401020\"]}\n",
+        )
+        .unwrap();
+        std::fs::write(
+            out_dir.join("strings_functions.jsonl"),
+            "{\"func\":\"0x401000\",\"name\":\"main\",\"strings\":[\"hello from rust-index\"]}\n",
+        )
+        .unwrap();
+        let job = ReverseJobMeta {
+            id: "job-test".to_string(),
+            kind: "decompile".to_string(),
+            backend: "rust-index".to_string(),
+            mode: Some("index".to_string()),
+            function: None,
+            target: ws.join("sample.bin"),
+            workspace: ws.clone(),
+            status: ReverseJobStatus::Succeeded,
+            created_at: 0,
+            started_at: None,
+            ended_at: None,
+            exit_code: Some(0),
+            program: "rust-index".to_string(),
+            args: Vec::new(),
+            note: String::new(),
+            artifacts: vec![out_dir.join("index.jsonl").display().to_string()],
+            error: None,
+        };
+
+        let rows = load_lightweight_rows(&ws, &job).unwrap();
+        let main = rows
+            .iter()
+            .find(|row| row.get("ea").and_then(|v| v.as_str()) == Some("0x401000"))
+            .unwrap();
+        assert_eq!(
+            main.get("asm")
+                .and_then(|v| v.as_array())
+                .map(|v| v.len())
+                .unwrap_or_default(),
+            2
+        );
+        assert_eq!(
+            main.get("strings")
+                .and_then(|v| v.as_array())
+                .and_then(|v| v.first())
+                .and_then(|v| v.as_str()),
+            Some("hello from rust-index")
+        );
+        assert_eq!(
+            main.get("ext_refs")
+                .and_then(|v| v.as_array())
+                .and_then(|v| v.first())
+                .and_then(|v| v.as_str()),
+            Some("puts")
+        );
+        assert_eq!(main.get("source").and_then(|v| v.as_str()), Some("symbol"));
+        assert_eq!(main.get("call_count").and_then(|v| v.as_u64()), Some(1));
+        assert_eq!(
+            main.get("cfg_block_count").and_then(|v| v.as_u64()),
+            Some(1)
+        );
+        assert_eq!(main.get("string_count").and_then(|v| v.as_u64()), Some(1));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn lookup_function_uses_sorted_predecessor() {
+        let funcs = vec![0x401000, 0x401040, 0x401080];
+        assert_eq!(super::lookup_function(0x400fff, &funcs), None);
+        assert_eq!(super::lookup_function(0x401000, &funcs), Some(0x401000));
+        assert_eq!(super::lookup_function(0x401055, &funcs), Some(0x401040));
+        assert_eq!(super::lookup_function(0x4010ff, &funcs), Some(0x401080));
+    }
+
+    #[test]
+    fn collect_x86_prologue_candidates_prefers_real_boundaries() {
+        let bytes = vec![
+            0x55, 0x48, 0x89, 0xe5, 0x48, 0x83, 0xec, 0x10, // 0x1000 real function
+            0x48, 0x8b, 0x45, 0xf8, 0x55, 0x48, 0x89,
+            0xe5, // embedded prologue bytes, not a new function
+            0xc3, 0x90, 0x90, 0x90, // terminal + padding
+            0x55, 0x48, 0x89, 0xe5, 0x48, 0x83, 0xec, 0x20, // 0x1014 real function
+            0xc3,
+        ];
+        let regions = vec![super::ExecRegion {
+            va_start: 0x1000,
+            file_start: 0,
+            len: bytes.len(),
+        }];
+        let known = HashSet::from([0x1000_u64]);
+
+        let recovered = super::collect_x86_prologue_candidates(&bytes, &regions, &known, true);
+
+        assert_eq!(recovered, vec![0x1014]);
     }
 
     #[test]

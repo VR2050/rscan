@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:id="@+id/ll_top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <include layout="@layout/view_secondary_tab"/>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:layout_width="210dp"
+            android:layout_height="26dp"
+            android:layout_marginRight="6.5dp">
+            <com.qunidayede.supportlibrary.widget.ClearEditText
+                android:textSize="13sp"
+                android:textColor="?attr/my_txt_color"
+                android:textColorHint="?attr/my_txt_color4"
+                android:layout_gravity="center_vertical"
+                android:id="@+id/cet_input"
+                android:background="@drawable/search_bar_bg"
+                android:paddingLeft="15dp"
+                android:paddingRight="10dp"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:hint="搜索合集"
+                android:singleLine="true"
+                android:layout_weight="1"
+                android:imeOptions="actionSearch"
+                android:drawableTint="?attr/my_txt_color"/>
+            <TextView
+                android:textSize="15sp"
+                android:textColor="?attr/my_txt_color"
+                android:gravity="center"
+                android:id="@+id/tv_search"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="搜索"
+                android:paddingHorizontal="12dp"/>
+        </LinearLayout>
+    </LinearLayout>
+    <androidx.viewpager.widget.ViewPager
+        android:id="@+id/vp_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:overScrollMode="never"/>
+</LinearLayout>

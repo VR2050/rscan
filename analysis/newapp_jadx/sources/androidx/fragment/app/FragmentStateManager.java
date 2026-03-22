@@ -1,0 +1,806 @@
+package androidx.fragment.app;
+
+import android.app.Activity;
+import android.content.res.Resources;
+import android.os.Bundle;
+import android.os.Parcelable;
+import android.util.SparseArray;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.fragment.C0407R;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.SpecialEffectsController;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.ViewModelStoreOwner;
+import p005b.p131d.p132a.p133a.C1499a;
+
+/* loaded from: classes.dex */
+public class FragmentStateManager {
+    private static final String TAG = "FragmentManager";
+    private static final String TARGET_REQUEST_CODE_STATE_TAG = "android:target_req_state";
+    private static final String TARGET_STATE_TAG = "android:target_state";
+    private static final String USER_VISIBLE_HINT_TAG = "android:user_visible_hint";
+    private static final String VIEW_REGISTRY_STATE_TAG = "android:view_registry_state";
+    private static final String VIEW_STATE_TAG = "android:view_state";
+    private final FragmentLifecycleCallbacksDispatcher mDispatcher;
+
+    @NonNull
+    private final Fragment mFragment;
+    private final FragmentStore mFragmentStore;
+    private boolean mMovingToState = false;
+    private int mFragmentManagerState = -1;
+
+    /* renamed from: androidx.fragment.app.FragmentStateManager$2 */
+    public static /* synthetic */ class C04562 {
+        public static final /* synthetic */ int[] $SwitchMap$androidx$lifecycle$Lifecycle$State;
+
+        static {
+            Lifecycle.State.values();
+            int[] iArr = new int[5];
+            $SwitchMap$androidx$lifecycle$Lifecycle$State = iArr;
+            try {
+                iArr[Lifecycle.State.RESUMED.ordinal()] = 1;
+            } catch (NoSuchFieldError unused) {
+            }
+            try {
+                $SwitchMap$androidx$lifecycle$Lifecycle$State[Lifecycle.State.STARTED.ordinal()] = 2;
+            } catch (NoSuchFieldError unused2) {
+            }
+            try {
+                $SwitchMap$androidx$lifecycle$Lifecycle$State[Lifecycle.State.CREATED.ordinal()] = 3;
+            } catch (NoSuchFieldError unused3) {
+            }
+            try {
+                $SwitchMap$androidx$lifecycle$Lifecycle$State[Lifecycle.State.INITIALIZED.ordinal()] = 4;
+            } catch (NoSuchFieldError unused4) {
+            }
+        }
+    }
+
+    public FragmentStateManager(@NonNull FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher, @NonNull FragmentStore fragmentStore, @NonNull Fragment fragment) {
+        this.mDispatcher = fragmentLifecycleCallbacksDispatcher;
+        this.mFragmentStore = fragmentStore;
+        this.mFragment = fragment;
+    }
+
+    private boolean isFragmentViewChild(@NonNull View view) {
+        if (view == this.mFragment.mView) {
+            return true;
+        }
+        for (ViewParent parent = view.getParent(); parent != null; parent = parent.getParent()) {
+            if (parent == this.mFragment.mView) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Bundle saveBasicState() {
+        Bundle bundle = new Bundle();
+        this.mFragment.performSaveInstanceState(bundle);
+        this.mDispatcher.dispatchOnFragmentSaveInstanceState(this.mFragment, bundle, false);
+        if (bundle.isEmpty()) {
+            bundle = null;
+        }
+        if (this.mFragment.mView != null) {
+            saveViewState();
+        }
+        if (this.mFragment.mSavedViewState != null) {
+            if (bundle == null) {
+                bundle = new Bundle();
+            }
+            bundle.putSparseParcelableArray(VIEW_STATE_TAG, this.mFragment.mSavedViewState);
+        }
+        if (this.mFragment.mSavedViewRegistryState != null) {
+            if (bundle == null) {
+                bundle = new Bundle();
+            }
+            bundle.putBundle(VIEW_REGISTRY_STATE_TAG, this.mFragment.mSavedViewRegistryState);
+        }
+        if (!this.mFragment.mUserVisibleHint) {
+            if (bundle == null) {
+                bundle = new Bundle();
+            }
+            bundle.putBoolean(USER_VISIBLE_HINT_TAG, this.mFragment.mUserVisibleHint);
+        }
+        return bundle;
+    }
+
+    public void activityCreated() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("moveto ACTIVITY_CREATED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        Fragment fragment = this.mFragment;
+        fragment.performActivityCreated(fragment.mSavedFragmentState);
+        FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher = this.mDispatcher;
+        Fragment fragment2 = this.mFragment;
+        fragmentLifecycleCallbacksDispatcher.dispatchOnFragmentActivityCreated(fragment2, fragment2.mSavedFragmentState, false);
+    }
+
+    public void addViewToContainer() {
+        int findFragmentIndexInContainer = this.mFragmentStore.findFragmentIndexInContainer(this.mFragment);
+        Fragment fragment = this.mFragment;
+        fragment.mContainer.addView(fragment.mView, findFragmentIndexInContainer);
+    }
+
+    public void attach() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("moveto ATTACHED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        Fragment fragment = this.mFragment;
+        Fragment fragment2 = fragment.mTarget;
+        FragmentStateManager fragmentStateManager = null;
+        if (fragment2 != null) {
+            FragmentStateManager fragmentStateManager2 = this.mFragmentStore.getFragmentStateManager(fragment2.mWho);
+            if (fragmentStateManager2 == null) {
+                StringBuilder m586H2 = C1499a.m586H("Fragment ");
+                m586H2.append(this.mFragment);
+                m586H2.append(" declared target fragment ");
+                m586H2.append(this.mFragment.mTarget);
+                m586H2.append(" that does not belong to this FragmentManager!");
+                throw new IllegalStateException(m586H2.toString());
+            }
+            Fragment fragment3 = this.mFragment;
+            fragment3.mTargetWho = fragment3.mTarget.mWho;
+            fragment3.mTarget = null;
+            fragmentStateManager = fragmentStateManager2;
+        } else {
+            String str = fragment.mTargetWho;
+            if (str != null && (fragmentStateManager = this.mFragmentStore.getFragmentStateManager(str)) == null) {
+                StringBuilder m586H3 = C1499a.m586H("Fragment ");
+                m586H3.append(this.mFragment);
+                m586H3.append(" declared target fragment ");
+                throw new IllegalStateException(C1499a.m582D(m586H3, this.mFragment.mTargetWho, " that does not belong to this FragmentManager!"));
+            }
+        }
+        if (fragmentStateManager != null && (FragmentManager.USE_STATE_MANAGER || fragmentStateManager.getFragment().mState < 1)) {
+            fragmentStateManager.moveToExpectedState();
+        }
+        Fragment fragment4 = this.mFragment;
+        fragment4.mHost = fragment4.mFragmentManager.getHost();
+        Fragment fragment5 = this.mFragment;
+        fragment5.mParentFragment = fragment5.mFragmentManager.getParent();
+        this.mDispatcher.dispatchOnFragmentPreAttached(this.mFragment, false);
+        this.mFragment.performAttach();
+        this.mDispatcher.dispatchOnFragmentAttached(this.mFragment, false);
+    }
+
+    public int computeExpectedState() {
+        Fragment fragment;
+        ViewGroup viewGroup;
+        Fragment fragment2 = this.mFragment;
+        if (fragment2.mFragmentManager == null) {
+            return fragment2.mState;
+        }
+        int i2 = this.mFragmentManagerState;
+        int ordinal = fragment2.mMaxState.ordinal();
+        if (ordinal == 1) {
+            i2 = Math.min(i2, 0);
+        } else if (ordinal == 2) {
+            i2 = Math.min(i2, 1);
+        } else if (ordinal == 3) {
+            i2 = Math.min(i2, 5);
+        } else if (ordinal != 4) {
+            i2 = Math.min(i2, -1);
+        }
+        Fragment fragment3 = this.mFragment;
+        if (fragment3.mFromLayout) {
+            if (fragment3.mInLayout) {
+                i2 = Math.max(this.mFragmentManagerState, 2);
+                View view = this.mFragment.mView;
+                if (view != null && view.getParent() == null) {
+                    i2 = Math.min(i2, 2);
+                }
+            } else {
+                i2 = this.mFragmentManagerState < 4 ? Math.min(i2, fragment3.mState) : Math.min(i2, 1);
+            }
+        }
+        if (!this.mFragment.mAdded) {
+            i2 = Math.min(i2, 1);
+        }
+        SpecialEffectsController.Operation.LifecycleImpact lifecycleImpact = null;
+        if (FragmentManager.USE_STATE_MANAGER && (viewGroup = (fragment = this.mFragment).mContainer) != null) {
+            lifecycleImpact = SpecialEffectsController.getOrCreateController(viewGroup, fragment.getParentFragmentManager()).getAwaitingCompletionLifecycleImpact(this);
+        }
+        if (lifecycleImpact == SpecialEffectsController.Operation.LifecycleImpact.ADDING) {
+            i2 = Math.min(i2, 6);
+        } else if (lifecycleImpact == SpecialEffectsController.Operation.LifecycleImpact.REMOVING) {
+            i2 = Math.max(i2, 3);
+        } else {
+            Fragment fragment4 = this.mFragment;
+            if (fragment4.mRemoving) {
+                i2 = fragment4.isInBackStack() ? Math.min(i2, 1) : Math.min(i2, -1);
+            }
+        }
+        Fragment fragment5 = this.mFragment;
+        if (fragment5.mDeferStart && fragment5.mState < 5) {
+            i2 = Math.min(i2, 4);
+        }
+        if (FragmentManager.isLoggingEnabled(2)) {
+            StringBuilder m588J = C1499a.m588J("computeExpectedState() of ", i2, " for ");
+            m588J.append(this.mFragment);
+            m588J.toString();
+        }
+        return i2;
+    }
+
+    public void create() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("moveto CREATED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        Fragment fragment = this.mFragment;
+        if (fragment.mIsCreated) {
+            fragment.restoreChildFragmentState(fragment.mSavedFragmentState);
+            this.mFragment.mState = 1;
+            return;
+        }
+        this.mDispatcher.dispatchOnFragmentPreCreated(fragment, fragment.mSavedFragmentState, false);
+        Fragment fragment2 = this.mFragment;
+        fragment2.performCreate(fragment2.mSavedFragmentState);
+        FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher = this.mDispatcher;
+        Fragment fragment3 = this.mFragment;
+        fragmentLifecycleCallbacksDispatcher.dispatchOnFragmentCreated(fragment3, fragment3.mSavedFragmentState, false);
+    }
+
+    public void createView() {
+        String str;
+        if (this.mFragment.mFromLayout) {
+            return;
+        }
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("moveto CREATE_VIEW: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        Fragment fragment = this.mFragment;
+        LayoutInflater performGetLayoutInflater = fragment.performGetLayoutInflater(fragment.mSavedFragmentState);
+        ViewGroup viewGroup = null;
+        Fragment fragment2 = this.mFragment;
+        ViewGroup viewGroup2 = fragment2.mContainer;
+        if (viewGroup2 != null) {
+            viewGroup = viewGroup2;
+        } else {
+            int i2 = fragment2.mContainerId;
+            if (i2 != 0) {
+                if (i2 == -1) {
+                    StringBuilder m586H2 = C1499a.m586H("Cannot create fragment ");
+                    m586H2.append(this.mFragment);
+                    m586H2.append(" for a container view with no id");
+                    throw new IllegalArgumentException(m586H2.toString());
+                }
+                viewGroup = (ViewGroup) fragment2.mFragmentManager.getContainer().onFindViewById(this.mFragment.mContainerId);
+                if (viewGroup == null) {
+                    Fragment fragment3 = this.mFragment;
+                    if (!fragment3.mRestored) {
+                        try {
+                            str = fragment3.getResources().getResourceName(this.mFragment.mContainerId);
+                        } catch (Resources.NotFoundException unused) {
+                            str = "unknown";
+                        }
+                        StringBuilder m586H3 = C1499a.m586H("No view found for id 0x");
+                        m586H3.append(Integer.toHexString(this.mFragment.mContainerId));
+                        m586H3.append(" (");
+                        m586H3.append(str);
+                        m586H3.append(") for fragment ");
+                        m586H3.append(this.mFragment);
+                        throw new IllegalArgumentException(m586H3.toString());
+                    }
+                }
+            }
+        }
+        Fragment fragment4 = this.mFragment;
+        fragment4.mContainer = viewGroup;
+        fragment4.performCreateView(performGetLayoutInflater, viewGroup, fragment4.mSavedFragmentState);
+        View view = this.mFragment.mView;
+        if (view != null) {
+            boolean z = false;
+            view.setSaveFromParentEnabled(false);
+            Fragment fragment5 = this.mFragment;
+            fragment5.mView.setTag(C0407R.id.fragment_container_view_tag, fragment5);
+            if (viewGroup != null) {
+                addViewToContainer();
+            }
+            Fragment fragment6 = this.mFragment;
+            if (fragment6.mHidden) {
+                fragment6.mView.setVisibility(8);
+            }
+            if (ViewCompat.isAttachedToWindow(this.mFragment.mView)) {
+                ViewCompat.requestApplyInsets(this.mFragment.mView);
+            } else {
+                final View view2 = this.mFragment.mView;
+                view2.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() { // from class: androidx.fragment.app.FragmentStateManager.1
+                    @Override // android.view.View.OnAttachStateChangeListener
+                    public void onViewAttachedToWindow(View view3) {
+                        view2.removeOnAttachStateChangeListener(this);
+                        ViewCompat.requestApplyInsets(view2);
+                    }
+
+                    @Override // android.view.View.OnAttachStateChangeListener
+                    public void onViewDetachedFromWindow(View view3) {
+                    }
+                });
+            }
+            this.mFragment.performViewCreated();
+            FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher = this.mDispatcher;
+            Fragment fragment7 = this.mFragment;
+            fragmentLifecycleCallbacksDispatcher.dispatchOnFragmentViewCreated(fragment7, fragment7.mView, fragment7.mSavedFragmentState, false);
+            int visibility = this.mFragment.mView.getVisibility();
+            float alpha = this.mFragment.mView.getAlpha();
+            if (FragmentManager.USE_STATE_MANAGER) {
+                this.mFragment.setPostOnViewCreatedAlpha(alpha);
+                Fragment fragment8 = this.mFragment;
+                if (fragment8.mContainer != null && visibility == 0) {
+                    View findFocus = fragment8.mView.findFocus();
+                    if (findFocus != null) {
+                        this.mFragment.setFocusedView(findFocus);
+                        if (FragmentManager.isLoggingEnabled(2)) {
+                            String str2 = "requestFocus: Saved focused view " + findFocus + " for Fragment " + this.mFragment;
+                        }
+                    }
+                    this.mFragment.mView.setAlpha(0.0f);
+                }
+            } else {
+                Fragment fragment9 = this.mFragment;
+                if (visibility == 0 && fragment9.mContainer != null) {
+                    z = true;
+                }
+                fragment9.mIsNewlyAdded = z;
+            }
+        }
+        this.mFragment.mState = 2;
+    }
+
+    public void destroy() {
+        Fragment findActiveFragment;
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("movefrom CREATED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        Fragment fragment = this.mFragment;
+        boolean z = true;
+        boolean z2 = fragment.mRemoving && !fragment.isInBackStack();
+        if (!(z2 || this.mFragmentStore.getNonConfig().shouldDestroy(this.mFragment))) {
+            String str = this.mFragment.mTargetWho;
+            if (str != null && (findActiveFragment = this.mFragmentStore.findActiveFragment(str)) != null && findActiveFragment.mRetainInstance) {
+                this.mFragment.mTarget = findActiveFragment;
+            }
+            this.mFragment.mState = 0;
+            return;
+        }
+        FragmentHostCallback<?> fragmentHostCallback = this.mFragment.mHost;
+        if (fragmentHostCallback instanceof ViewModelStoreOwner) {
+            z = this.mFragmentStore.getNonConfig().isCleared();
+        } else if (fragmentHostCallback.getContext() instanceof Activity) {
+            z = true ^ ((Activity) fragmentHostCallback.getContext()).isChangingConfigurations();
+        }
+        if (z2 || z) {
+            this.mFragmentStore.getNonConfig().clearNonConfigState(this.mFragment);
+        }
+        this.mFragment.performDestroy();
+        this.mDispatcher.dispatchOnFragmentDestroyed(this.mFragment, false);
+        for (FragmentStateManager fragmentStateManager : this.mFragmentStore.getActiveFragmentStateManagers()) {
+            if (fragmentStateManager != null) {
+                Fragment fragment2 = fragmentStateManager.getFragment();
+                if (this.mFragment.mWho.equals(fragment2.mTargetWho)) {
+                    fragment2.mTarget = this.mFragment;
+                    fragment2.mTargetWho = null;
+                }
+            }
+        }
+        Fragment fragment3 = this.mFragment;
+        String str2 = fragment3.mTargetWho;
+        if (str2 != null) {
+            fragment3.mTarget = this.mFragmentStore.findActiveFragment(str2);
+        }
+        this.mFragmentStore.makeInactive(this);
+    }
+
+    public void destroyFragmentView() {
+        View view;
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("movefrom CREATE_VIEW: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        Fragment fragment = this.mFragment;
+        ViewGroup viewGroup = fragment.mContainer;
+        if (viewGroup != null && (view = fragment.mView) != null) {
+            viewGroup.removeView(view);
+        }
+        this.mFragment.performDestroyView();
+        this.mDispatcher.dispatchOnFragmentViewDestroyed(this.mFragment, false);
+        Fragment fragment2 = this.mFragment;
+        fragment2.mContainer = null;
+        fragment2.mView = null;
+        fragment2.mViewLifecycleOwner = null;
+        fragment2.mViewLifecycleOwnerLiveData.setValue(null);
+        this.mFragment.mInLayout = false;
+    }
+
+    public void detach() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("movefrom ATTACHED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        this.mFragment.performDetach();
+        boolean z = false;
+        this.mDispatcher.dispatchOnFragmentDetached(this.mFragment, false);
+        Fragment fragment = this.mFragment;
+        fragment.mState = -1;
+        fragment.mHost = null;
+        fragment.mParentFragment = null;
+        fragment.mFragmentManager = null;
+        if (fragment.mRemoving && !fragment.isInBackStack()) {
+            z = true;
+        }
+        if (z || this.mFragmentStore.getNonConfig().shouldDestroy(this.mFragment)) {
+            if (FragmentManager.isLoggingEnabled(3)) {
+                StringBuilder m586H2 = C1499a.m586H("initState called for fragment: ");
+                m586H2.append(this.mFragment);
+                m586H2.toString();
+            }
+            this.mFragment.initState();
+        }
+    }
+
+    public void ensureInflatedView() {
+        Fragment fragment = this.mFragment;
+        if (fragment.mFromLayout && fragment.mInLayout && !fragment.mPerformedCreateView) {
+            if (FragmentManager.isLoggingEnabled(3)) {
+                StringBuilder m586H = C1499a.m586H("moveto CREATE_VIEW: ");
+                m586H.append(this.mFragment);
+                m586H.toString();
+            }
+            Fragment fragment2 = this.mFragment;
+            fragment2.performCreateView(fragment2.performGetLayoutInflater(fragment2.mSavedFragmentState), null, this.mFragment.mSavedFragmentState);
+            View view = this.mFragment.mView;
+            if (view != null) {
+                view.setSaveFromParentEnabled(false);
+                Fragment fragment3 = this.mFragment;
+                fragment3.mView.setTag(C0407R.id.fragment_container_view_tag, fragment3);
+                Fragment fragment4 = this.mFragment;
+                if (fragment4.mHidden) {
+                    fragment4.mView.setVisibility(8);
+                }
+                this.mFragment.performViewCreated();
+                FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher = this.mDispatcher;
+                Fragment fragment5 = this.mFragment;
+                fragmentLifecycleCallbacksDispatcher.dispatchOnFragmentViewCreated(fragment5, fragment5.mView, fragment5.mSavedFragmentState, false);
+                this.mFragment.mState = 2;
+            }
+        }
+    }
+
+    @NonNull
+    public Fragment getFragment() {
+        return this.mFragment;
+    }
+
+    public void moveToExpectedState() {
+        ViewGroup viewGroup;
+        ViewGroup viewGroup2;
+        ViewGroup viewGroup3;
+        if (this.mMovingToState) {
+            if (FragmentManager.isLoggingEnabled(2)) {
+                StringBuilder m586H = C1499a.m586H("Ignoring re-entrant call to moveToExpectedState() for ");
+                m586H.append(getFragment());
+                m586H.toString();
+                return;
+            }
+            return;
+        }
+        try {
+            this.mMovingToState = true;
+            while (true) {
+                int computeExpectedState = computeExpectedState();
+                Fragment fragment = this.mFragment;
+                int i2 = fragment.mState;
+                if (computeExpectedState == i2) {
+                    if (FragmentManager.USE_STATE_MANAGER && fragment.mHiddenChanged) {
+                        if (fragment.mView != null && (viewGroup = fragment.mContainer) != null) {
+                            SpecialEffectsController orCreateController = SpecialEffectsController.getOrCreateController(viewGroup, fragment.getParentFragmentManager());
+                            if (this.mFragment.mHidden) {
+                                orCreateController.enqueueHide(this);
+                            } else {
+                                orCreateController.enqueueShow(this);
+                            }
+                        }
+                        Fragment fragment2 = this.mFragment;
+                        FragmentManager fragmentManager = fragment2.mFragmentManager;
+                        if (fragmentManager != null) {
+                            fragmentManager.invalidateMenuForFragment(fragment2);
+                        }
+                        Fragment fragment3 = this.mFragment;
+                        fragment3.mHiddenChanged = false;
+                        fragment3.onHiddenChanged(fragment3.mHidden);
+                    }
+                    return;
+                }
+                if (computeExpectedState <= i2) {
+                    switch (i2 - 1) {
+                        case -1:
+                            detach();
+                            break;
+                        case 0:
+                            destroy();
+                            break;
+                        case 1:
+                            destroyFragmentView();
+                            this.mFragment.mState = 1;
+                            break;
+                        case 2:
+                            fragment.mInLayout = false;
+                            fragment.mState = 2;
+                            break;
+                        case 3:
+                            if (FragmentManager.isLoggingEnabled(3)) {
+                                String str = "movefrom ACTIVITY_CREATED: " + this.mFragment;
+                            }
+                            Fragment fragment4 = this.mFragment;
+                            if (fragment4.mView != null && fragment4.mSavedViewState == null) {
+                                saveViewState();
+                            }
+                            Fragment fragment5 = this.mFragment;
+                            if (fragment5.mView != null && (viewGroup3 = fragment5.mContainer) != null) {
+                                SpecialEffectsController.getOrCreateController(viewGroup3, fragment5.getParentFragmentManager()).enqueueRemove(this);
+                            }
+                            this.mFragment.mState = 3;
+                            break;
+                        case 4:
+                            stop();
+                            break;
+                        case 5:
+                            fragment.mState = 5;
+                            break;
+                        case 6:
+                            pause();
+                            break;
+                    }
+                } else {
+                    switch (i2 + 1) {
+                        case 0:
+                            attach();
+                            break;
+                        case 1:
+                            create();
+                            break;
+                        case 2:
+                            ensureInflatedView();
+                            createView();
+                            break;
+                        case 3:
+                            activityCreated();
+                            break;
+                        case 4:
+                            if (fragment.mView != null && (viewGroup2 = fragment.mContainer) != null) {
+                                SpecialEffectsController.getOrCreateController(viewGroup2, fragment.getParentFragmentManager()).enqueueAdd(SpecialEffectsController.Operation.State.from(this.mFragment.mView.getVisibility()), this);
+                            }
+                            this.mFragment.mState = 4;
+                            break;
+                        case 5:
+                            start();
+                            break;
+                        case 6:
+                            fragment.mState = 6;
+                            break;
+                        case 7:
+                            resume();
+                            break;
+                    }
+                }
+            }
+        } finally {
+            this.mMovingToState = false;
+        }
+    }
+
+    public void pause() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("movefrom RESUMED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        this.mFragment.performPause();
+        this.mDispatcher.dispatchOnFragmentPaused(this.mFragment, false);
+    }
+
+    public void restoreState(@NonNull ClassLoader classLoader) {
+        Bundle bundle = this.mFragment.mSavedFragmentState;
+        if (bundle == null) {
+            return;
+        }
+        bundle.setClassLoader(classLoader);
+        Fragment fragment = this.mFragment;
+        fragment.mSavedViewState = fragment.mSavedFragmentState.getSparseParcelableArray(VIEW_STATE_TAG);
+        Fragment fragment2 = this.mFragment;
+        fragment2.mSavedViewRegistryState = fragment2.mSavedFragmentState.getBundle(VIEW_REGISTRY_STATE_TAG);
+        Fragment fragment3 = this.mFragment;
+        fragment3.mTargetWho = fragment3.mSavedFragmentState.getString(TARGET_STATE_TAG);
+        Fragment fragment4 = this.mFragment;
+        if (fragment4.mTargetWho != null) {
+            fragment4.mTargetRequestCode = fragment4.mSavedFragmentState.getInt(TARGET_REQUEST_CODE_STATE_TAG, 0);
+        }
+        Fragment fragment5 = this.mFragment;
+        Boolean bool = fragment5.mSavedUserVisibleHint;
+        if (bool != null) {
+            fragment5.mUserVisibleHint = bool.booleanValue();
+            this.mFragment.mSavedUserVisibleHint = null;
+        } else {
+            fragment5.mUserVisibleHint = fragment5.mSavedFragmentState.getBoolean(USER_VISIBLE_HINT_TAG, true);
+        }
+        Fragment fragment6 = this.mFragment;
+        if (fragment6.mUserVisibleHint) {
+            return;
+        }
+        fragment6.mDeferStart = true;
+    }
+
+    public void resume() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("moveto RESUMED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        View focusedView = this.mFragment.getFocusedView();
+        if (focusedView != null && isFragmentViewChild(focusedView)) {
+            boolean requestFocus = focusedView.requestFocus();
+            if (FragmentManager.isLoggingEnabled(2)) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("requestFocus: Restoring focused view ");
+                sb.append(focusedView);
+                sb.append(" ");
+                sb.append(requestFocus ? "succeeded" : "failed");
+                sb.append(" on Fragment ");
+                sb.append(this.mFragment);
+                sb.append(" resulting in focused view ");
+                sb.append(this.mFragment.mView.findFocus());
+                sb.toString();
+            }
+        }
+        this.mFragment.setFocusedView(null);
+        this.mFragment.performResume();
+        this.mDispatcher.dispatchOnFragmentResumed(this.mFragment, false);
+        Fragment fragment = this.mFragment;
+        fragment.mSavedFragmentState = null;
+        fragment.mSavedViewState = null;
+        fragment.mSavedViewRegistryState = null;
+    }
+
+    @Nullable
+    public Fragment.SavedState saveInstanceState() {
+        Bundle saveBasicState;
+        if (this.mFragment.mState <= -1 || (saveBasicState = saveBasicState()) == null) {
+            return null;
+        }
+        return new Fragment.SavedState(saveBasicState);
+    }
+
+    @NonNull
+    public FragmentState saveState() {
+        FragmentState fragmentState = new FragmentState(this.mFragment);
+        Fragment fragment = this.mFragment;
+        if (fragment.mState <= -1 || fragmentState.mSavedFragmentState != null) {
+            fragmentState.mSavedFragmentState = fragment.mSavedFragmentState;
+        } else {
+            Bundle saveBasicState = saveBasicState();
+            fragmentState.mSavedFragmentState = saveBasicState;
+            if (this.mFragment.mTargetWho != null) {
+                if (saveBasicState == null) {
+                    fragmentState.mSavedFragmentState = new Bundle();
+                }
+                fragmentState.mSavedFragmentState.putString(TARGET_STATE_TAG, this.mFragment.mTargetWho);
+                int i2 = this.mFragment.mTargetRequestCode;
+                if (i2 != 0) {
+                    fragmentState.mSavedFragmentState.putInt(TARGET_REQUEST_CODE_STATE_TAG, i2);
+                }
+            }
+        }
+        return fragmentState;
+    }
+
+    public void saveViewState() {
+        if (this.mFragment.mView == null) {
+            return;
+        }
+        SparseArray<Parcelable> sparseArray = new SparseArray<>();
+        this.mFragment.mView.saveHierarchyState(sparseArray);
+        if (sparseArray.size() > 0) {
+            this.mFragment.mSavedViewState = sparseArray;
+        }
+        Bundle bundle = new Bundle();
+        this.mFragment.mViewLifecycleOwner.performSave(bundle);
+        if (bundle.isEmpty()) {
+            return;
+        }
+        this.mFragment.mSavedViewRegistryState = bundle;
+    }
+
+    public void setFragmentManagerState(int i2) {
+        this.mFragmentManagerState = i2;
+    }
+
+    public void start() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("moveto STARTED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        this.mFragment.performStart();
+        this.mDispatcher.dispatchOnFragmentStarted(this.mFragment, false);
+    }
+
+    public void stop() {
+        if (FragmentManager.isLoggingEnabled(3)) {
+            StringBuilder m586H = C1499a.m586H("movefrom STARTED: ");
+            m586H.append(this.mFragment);
+            m586H.toString();
+        }
+        this.mFragment.performStop();
+        this.mDispatcher.dispatchOnFragmentStopped(this.mFragment, false);
+    }
+
+    public FragmentStateManager(@NonNull FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher, @NonNull FragmentStore fragmentStore, @NonNull ClassLoader classLoader, @NonNull FragmentFactory fragmentFactory, @NonNull FragmentState fragmentState) {
+        this.mDispatcher = fragmentLifecycleCallbacksDispatcher;
+        this.mFragmentStore = fragmentStore;
+        Fragment instantiate = fragmentFactory.instantiate(classLoader, fragmentState.mClassName);
+        this.mFragment = instantiate;
+        Bundle bundle = fragmentState.mArguments;
+        if (bundle != null) {
+            bundle.setClassLoader(classLoader);
+        }
+        instantiate.setArguments(fragmentState.mArguments);
+        instantiate.mWho = fragmentState.mWho;
+        instantiate.mFromLayout = fragmentState.mFromLayout;
+        instantiate.mRestored = true;
+        instantiate.mFragmentId = fragmentState.mFragmentId;
+        instantiate.mContainerId = fragmentState.mContainerId;
+        instantiate.mTag = fragmentState.mTag;
+        instantiate.mRetainInstance = fragmentState.mRetainInstance;
+        instantiate.mRemoving = fragmentState.mRemoving;
+        instantiate.mDetached = fragmentState.mDetached;
+        instantiate.mHidden = fragmentState.mHidden;
+        instantiate.mMaxState = Lifecycle.State.values()[fragmentState.mMaxLifecycleState];
+        Bundle bundle2 = fragmentState.mSavedFragmentState;
+        if (bundle2 != null) {
+            instantiate.mSavedFragmentState = bundle2;
+        } else {
+            instantiate.mSavedFragmentState = new Bundle();
+        }
+        if (FragmentManager.isLoggingEnabled(2)) {
+            String str = "Instantiated fragment " + instantiate;
+        }
+    }
+
+    public FragmentStateManager(@NonNull FragmentLifecycleCallbacksDispatcher fragmentLifecycleCallbacksDispatcher, @NonNull FragmentStore fragmentStore, @NonNull Fragment fragment, @NonNull FragmentState fragmentState) {
+        this.mDispatcher = fragmentLifecycleCallbacksDispatcher;
+        this.mFragmentStore = fragmentStore;
+        this.mFragment = fragment;
+        fragment.mSavedViewState = null;
+        fragment.mSavedViewRegistryState = null;
+        fragment.mBackStackNesting = 0;
+        fragment.mInLayout = false;
+        fragment.mAdded = false;
+        Fragment fragment2 = fragment.mTarget;
+        fragment.mTargetWho = fragment2 != null ? fragment2.mWho : null;
+        fragment.mTarget = null;
+        Bundle bundle = fragmentState.mSavedFragmentState;
+        if (bundle != null) {
+            fragment.mSavedFragmentState = bundle;
+        } else {
+            fragment.mSavedFragmentState = new Bundle();
+        }
+    }
+}

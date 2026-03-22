@@ -8,6 +8,7 @@ mod strings;
 
 pub use analyzer::AndroidAnalyzer;
 pub use model::{
-    AndroidProfileReport, AndroidReverseReport, AndroidRiskScore, ApkIndexReport, DexIndexReport,
-    DexSensitiveHit, NativeIndexReport, NativeLibReport,
+    AndroidComponentStats, AndroidForensicsReport, AndroidProfileReport, AndroidReverseReport,
+    AndroidRiskScore, ApkIndexReport, DexIndexReport, DexSensitiveHit, NativeIndexReport,
+    NativeLibReport,
 };

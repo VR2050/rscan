@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <include layout="@layout/title_bar_layout"/>
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="@color/black30"
+        android:paddingLeft="20dp"
+        android:paddingRight="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="40dp">
+        <com.jbzd.media.movecartoons.view.text.ImageTextView
+            android:textSize="12sp"
+            android:textColor="@color/main_6dcefc"
+            android:gravity="center_vertical"
+            android:id="@+id/itv_status"
+            android:background="@drawable/bg_xiala"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="22dp"
+            android:text="全 部"
+            android:drawableRight="@drawable/icon_xiala"
+            android:drawablePadding="3.5dp"
+            app:drawable_height="9dp"
+            app:drawable_width="10dp"/>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1px"
+            android:layout_weight="1"/>
+        <com.jbzd.media.movecartoons.view.text.ImageTextView
+            android:textSize="12sp"
+            android:textColor="@color/main_7cceff"
+            android:gravity="center_vertical"
+            android:id="@+id/itv_long"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="只看长视频"
+            android:drawableLeft="@drawable/selector_check1"
+            android:drawablePadding="4dp"
+            app:drawable_height="15dp"
+            app:drawable_width="15dp"/>
+        <com.jbzd.media.movecartoons.view.text.ImageTextView
+            android:textSize="12sp"
+            android:textColor="@color/main_7cceff"
+            android:gravity="center_vertical"
+            android:id="@+id/itv_short"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:text="只看短视频"
+            android:drawableLeft="@drawable/selector_check1"
+            android:drawablePadding="4dp"
+            app:drawable_height="15dp"
+            app:drawable_width="15dp"/>
+        <com.jbzd.media.movecartoons.view.text.ImageTextView
+            android:textSize="12sp"
+            android:textColor="@color/main_7cceff"
+            android:gravity="center_vertical"
+            android:id="@+id/itv_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全 部"
+            android:drawableLeft="@drawable/selector_check1"
+            android:drawablePadding="4dp"
+            app:drawable_height="15dp"
+            app:drawable_width="15dp"/>
+    </LinearLayout>
+    <FrameLayout
+        android:id="@+id/frag_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>

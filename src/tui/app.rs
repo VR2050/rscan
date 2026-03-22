@@ -13,8 +13,24 @@ use crate::errors::RustpenError;
 
 pub fn run_tui(workspace: Option<PathBuf>, refresh_ms: Option<u64>) -> Result<(), RustpenError> {
     let root_ws = workspace.unwrap_or(std::env::current_dir()?);
-    let tick = Duration::from_millis(refresh_ms.unwrap_or(500).max(100));
+    let base_tick = Duration::from_millis(refresh_ms.unwrap_or(500).max(100));
+    let active_tick = Duration::from_millis(120);
     let mut state = AppState::new(root_ws)?;
+
+    if std::env::var("RSCAN_ZELLIJ_BOOTSTRAP").is_err() {
+        if crate::tui::zellij::is_enabled() {
+            match crate::tui::zellij::bootstrap_layout(&state.root_ws(), refresh_ms) {
+                Ok(crate::tui::zellij::BootstrapResult::Launched) => {
+                    return Ok(());
+                }
+                Ok(crate::tui::zellij::BootstrapResult::Continue) => {}
+                Err(e) => {
+                    // Fallback to in-process TUI if zellij bootstrap fails.
+                    eprintln!("[rscan] zellij bootstrap failed: {e}");
+                }
+            }
+        }
+    }
 
     if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
         return Err(RustpenError::Generic(
@@ -34,27 +50,51 @@ pub fn run_tui(workspace: Option<PathBuf>, refresh_ms: Option<u64>) -> Result<()
     let mut terminal = Terminal::new(backend).map_err(RustpenError::Io)?;
 
     let res = loop {
-        state.refresh_result_indices();
-        state.push_status_line();
+        state.poll_terminal_output()?;
+        state.poll_perf_refresh()?;
         state.poll_script_completion()?;
+        state.poll_task_refresh()?;
+        state.push_status_line();
+        state.refresh_render_caches()?;
+        state.advance_ui_tick();
         let footer_text = state.footer_text();
 
-        terminal
-            .draw(|f| {
-                let render_ctx = state.render_ctx(&footer_text);
-                draw_frame(f, &render_ctx);
-            })
-            .ok();
+        if state.should_draw_frame(&footer_text) {
+            terminal
+                .draw(|f| {
+                    let render_ctx = state.render_ctx(&footer_text);
+                    draw_frame(f, &render_ctx);
+                })
+                .ok();
+        }
 
+        let tick = if state.terminal_active() {
+            Duration::from_millis(16)
+        } else if state.has_live_activity() {
+            active_tick
+        } else {
+            base_tick
+        };
         if !event::poll(tick).map_err(RustpenError::Io)? {
             continue;
         }
-        if let Event::Key(key) = event::read().map_err(RustpenError::Io)? {
-            match state.handle_key(key)? {
+        match event::read().map_err(RustpenError::Io)? {
+            Event::Key(key) => match state.handle_key(key)? {
                 KeyDispatchAction::Quit => break Ok(()),
                 KeyDispatchAction::ContinueLoop => continue,
                 KeyDispatchAction::None => {}
-            }
+            },
+            Event::Paste(text) => match state.handle_paste(&text)? {
+                KeyDispatchAction::Quit => break Ok(()),
+                KeyDispatchAction::ContinueLoop => continue,
+                KeyDispatchAction::None => {}
+            },
+            Event::Mouse(mouse) => match state.handle_mouse(mouse)? {
+                KeyDispatchAction::Quit => break Ok(()),
+                KeyDispatchAction::ContinueLoop => continue,
+                KeyDispatchAction::None => {}
+            },
+            _ => {}
         }
     };
 

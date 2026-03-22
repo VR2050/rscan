@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/loading_frame"
+    android:focusable="true"
+    android:clickable="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <com.qunidayede.supportlibrary.widget.LoadingView
+            android:layout_gravity="center"
+            android:id="@+id/loading_view"
+            android:padding="10dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            app:loading_view_color="#ffe200"
+            app:loading_view_size="50dp"/>
+        <TextView
+            android:textColor="@android:color/darker_gray"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="加载中..."/>
+    </LinearLayout>
+</FrameLayout>

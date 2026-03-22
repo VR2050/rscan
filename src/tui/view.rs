@@ -92,31 +92,75 @@ pub(crate) fn build_mini_console_lines(
     result_selected: usize,
     script_output: &[String],
     mini_terminal_lines: &[String],
+    terminal_screen_lines: &[Line<'static>],
     status_line: &str,
+    zellij_managed: bool,
+    zellij_session: Option<&str>,
+    zellij_tabs: &[&str],
 ) -> Vec<Line<'static>> {
+    let terminal_label = if zellij_managed { "Zellij" } else { "Terminal" };
     let mut out = vec![line_s(&format!(
         "pane={} | tab={} | status={}",
         pane.label(),
         match tab {
             MiniConsoleTab::Output => "Output",
-            MiniConsoleTab::Terminal => "Terminal",
+            MiniConsoleTab::Terminal => terminal_label,
             MiniConsoleTab::Problems => "Problems",
         },
         status_line
     ))];
-    out.push(line_s(
-        "controls: v=toggle b=layout z=dock p=popup 0=reset [/]=tab j/k=scroll",
-    ));
+    let controls = if zellij_managed {
+        concat!(
+            "controls: v=toggle b=layout z=dock p=popup 0=reset [/]=tab ",
+            "g=ctrl-shell zrun=work zfocus=tab zlogs/zshell/zart j/k=scroll",
+        )
+    } else {
+        "controls: v=toggle b=layout z=dock p=popup 0=reset [/]=tab j/k=scroll"
+    };
+    out.push(line_s(controls));
     out.push(line_s("floating: Ctrl+Arrows=move Alt+Arrows=resize"));
     out.push(line_s(""));
 
     if tab == MiniConsoleTab::Terminal {
+        if zellij_managed {
+            out.push(line_s("zellij runtime:"));
+            if let Some(session) = zellij_session {
+                out.push(line_s(&format!("session={session}")));
+            }
+            out.push(line_s(&format!("managed tabs={}", zellij_tabs.join(" | "))));
+            out.push(line_s("g -> focus Control bottom shell pane"));
+            out.push(line_s(":cmd -> start structured background task"));
+            out.push(line_s(
+                "L/W/A in Tasks|Results -> logs / shell / artifact pane",
+            ));
+            out.push(line_s("zrun <cmd> -> open real terminal pane in Work tab"));
+            out.push(line_s(
+                "zfocus <tab> -> focus Control / Work / Inspect / Reverse",
+            ));
+            out.push(line_s("zlogs|zshell|zart <task_id> -> native task panes"));
+            out.push(line_s(
+                "tip: zellij Normal mode may swallow keys; Ctrl-g toggles Locked",
+            ));
+            out.push(line_s(""));
+            out.push(line_s("recent control log:"));
+            if mini_terminal_lines.is_empty() {
+                out.push(line_s("- <empty>"));
+            } else {
+                for line in mini_terminal_lines.iter().rev().take(12).rev() {
+                    out.push(line_s(line));
+                }
+            }
+            return out;
+        }
         out.push(line_s("integrated terminal stream:"));
-        if mini_terminal_lines.is_empty() {
+        out.push(line_s(
+            "press g to enter terminal input, Esc/Ctrl+g to exit",
+        ));
+        if terminal_screen_lines.is_empty() {
             out.push(line_s("- <empty>"));
         } else {
-            for line in mini_terminal_lines.iter().rev().take(12).rev() {
-                out.push(line_s(line));
+            for line in terminal_screen_lines {
+                out.push(line.clone());
             }
         }
         return out;
@@ -245,115 +289,6 @@ pub(crate) fn build_mini_console_lines(
     out
 }
 
-pub(crate) fn build_dashboard_lines(tasks: &[TaskView]) -> Vec<Line<'static>> {
-    use std::collections::BTreeMap;
-
-    let total = tasks.len();
-    let running = tasks
-        .iter()
-        .filter(|t| t.meta.status == TaskStatus::Running)
-        .count();
-    let failed = tasks
-        .iter()
-        .filter(|t| t.meta.status == TaskStatus::Failed)
-        .count();
-    let succeeded = tasks
-        .iter()
-        .filter(|t| t.meta.status == TaskStatus::Succeeded)
-        .count();
-
-    let mut kinds: BTreeMap<String, usize> = BTreeMap::new();
-    for t in tasks {
-        *kinds.entry(t.meta.kind.clone()).or_insert(0) += 1;
-    }
-
-    let mut out = vec![
-        line_s("rscan 统一终端界面（阶段1）"),
-        line_s("- 保留 CLI，不改变已有命令行为"),
-        line_s("- 多面板：Dashboard / Tasks / Launcher / Scripts / Results / Projects"),
-        line_s("- Projects 支持新建/删除/导入/切换"),
-        line_s(""),
-        line_s(&format!(
-            "Tasks: total={} running={} succeeded={} failed={}",
-            total, running, succeeded, failed
-        )),
-        line_s(""),
-        line_s("Kinds:"),
-    ];
-
-    if kinds.is_empty() {
-        out.push(line_s("- <none>"));
-    } else {
-        for (k, v) in kinds {
-            out.push(line_s(&format!("- {}: {}", k, v)));
-        }
-    }
-
-    out.push(line_s(""));
-    out.push(line_s("Recent tasks:"));
-    for t in tasks.iter().take(12) {
-        out.push(line_s(&format!(
-            "- {} [{}] {}",
-            t.meta.id, t.meta.kind, t.meta.status
-        )));
-    }
-
-    out
-}
-
-pub(crate) fn build_overview_lines(cur: &TaskView) -> Vec<Line<'static>> {
-    let meta = &cur.meta;
-    let mut lines = vec![
-        format!("id: {}", meta.id),
-        format!("kind: {}", meta.kind),
-        format!("status: {}", meta.status),
-        format!("created_at: {}", meta.created_at),
-        format!(
-            "started_at: {}",
-            meta.started_at
-                .map(|v| v.to_string())
-                .unwrap_or_else(|| "-".into())
-        ),
-        format!(
-            "ended_at: {}",
-            meta.ended_at
-                .map(|v| v.to_string())
-                .unwrap_or_else(|| "-".into())
-        ),
-        format!(
-            "progress: {}",
-            meta.progress
-                .map(|v| format!("{:.1}%", v))
-                .unwrap_or_else(|| "-".into())
-        ),
-        format!("tags: {}", meta.tags.join(",")),
-    ];
-    if let Some(note) = &meta.note {
-        lines.push(format!("note: {}", note));
-    }
-    if !meta.artifacts.is_empty() {
-        lines.push(format!(
-            "artifacts: {}",
-            meta.artifacts
-                .iter()
-                .map(|p| p.display().to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-    if !meta.logs.is_empty() {
-        lines.push(format!(
-            "logs: {}",
-            meta.logs
-                .iter()
-                .map(|p| p.display().to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-    lines.into_iter().map(|s| line_s(&s)).collect()
-}
-
 pub(crate) fn build_event_lines(task_dir: &PathBuf, limit: usize) -> Vec<Line<'static>> {
     let events = load_events(task_dir, limit);
     if events.is_empty() {
@@ -409,61 +344,6 @@ pub(crate) fn build_logs_lines(task_dir: &PathBuf, limit: usize) -> Vec<Line<'st
     } else {
         out.extend(stderr.into_iter().map(|s| line_s(&s)));
     }
-    out
-}
-
-pub(crate) fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
-    let mut out = vec![
-        line_s(&format!("task: {}", cur.meta.id)),
-        line_s(&format!("module: {}", cur.meta.kind)),
-        line_s(&format!("status: {}", cur.meta.status)),
-        line_s(&format!(
-            "progress: {}",
-            cur.meta
-                .progress
-                .map(|p| format!("{:.1}%", p))
-                .unwrap_or_else(|| "-".to_string())
-        )),
-        line_s(""),
-        line_s("recent events:"),
-    ];
-
-    let events = load_events(&cur.dir, 20);
-    if events.is_empty() {
-        out.push(line_s("- <no events>"));
-    } else {
-        for ev in events {
-            out.push(line_s(&format!(
-                "- [{}][{:?}] {}",
-                ev.level,
-                ev.kind,
-                ev.message.unwrap_or_default()
-            )));
-        }
-    }
-
-    out.push(line_s(""));
-    out.push(line_s("stdout tail:"));
-    let stdout = load_log_tail(&cur.dir, "stdout.log", 20);
-    if stdout.is_empty() {
-        out.push(line_s("- <empty>"));
-    } else {
-        for line in stdout {
-            out.push(line_s(&line));
-        }
-    }
-
-    out.push(line_s(""));
-    out.push(line_s("stderr tail:"));
-    let stderr = load_log_tail(&cur.dir, "stderr.log", 20);
-    if stderr.is_empty() {
-        out.push(line_s("- <empty>"));
-    } else {
-        for line in stderr {
-            out.push(line_s(&line));
-        }
-    }
-
     out
 }
 

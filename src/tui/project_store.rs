@@ -23,6 +23,10 @@ fn project_registry_path(root_ws: &PathBuf) -> PathBuf {
 
 pub(crate) fn ensure_project_layout(project_dir: &PathBuf) -> Result<(), RustpenError> {
     fs::create_dir_all(project_dir).map_err(RustpenError::Io)?;
+    fs::create_dir_all(project_dir.join("analysis")).map_err(RustpenError::Io)?;
+    fs::create_dir_all(project_dir.join("binaries")).map_err(RustpenError::Io)?;
+    fs::create_dir_all(project_dir.join("jobs")).map_err(RustpenError::Io)?;
+    fs::create_dir_all(project_dir.join("reverse_out")).map_err(RustpenError::Io)?;
     fs::create_dir_all(project_dir.join("tasks")).map_err(RustpenError::Io)?;
     fs::create_dir_all(project_dir.join("scripts")).map_err(RustpenError::Io)?;
     fs::create_dir_all(project_dir.join("vuln_templates")).map_err(RustpenError::Io)?;
@@ -142,14 +146,43 @@ fn init_project_template(
     template: ProjectTemplate,
 ) -> Result<(), RustpenError> {
     let readme = match template {
-        ProjectTemplate::Minimal => {
-            "# rscan Project\n\nTemplate: minimal\n\n- tasks/\n- scripts/\n- vuln_templates/\n"
-        }
-        ProjectTemplate::Recon => {
-            "# rscan Project\n\nTemplate: recon\n\n建议流程:\n1. host quick/tcp\n2. web dir/fuzz/dns\n3. vuln scan\n"
-        }
+        ProjectTemplate::Minimal => concat!(
+            "# rscan Project\n\n",
+            "Template: minimal\n\n",
+            "- tasks/\n",
+            "- scripts/\n",
+            "- vuln_templates/\n",
+            "- analysis/\n",
+            "- binaries/\n",
+        ),
+        ProjectTemplate::Recon => concat!(
+            "# rscan Project\n\n",
+            "Template: recon\n\n",
+            "建议流程:\n",
+            "1. host quick/tcp\n",
+            "2. web dir/fuzz/dns\n",
+            "3. vuln scan\n\n",
+            "目录:\n",
+            "- tasks/\n",
+            "- scripts/\n",
+            "- vuln_templates/\n",
+            "- analysis/\n",
+            "- binaries/\n",
+        ),
         ProjectTemplate::Reverse => {
-            "# rscan Project\n\nTemplate: reverse\n\n建议流程:\n1. reverse analyze\n2. reverse decompile-plan\n3. reverse jobs/console\n"
+            concat!(
+                "# rscan Project\n\n",
+                "Template: reverse\n\n",
+                "建议流程:\n",
+                "1. 把样本放进 binaries/，或在 Reverse picker 中选择任意二进制\n",
+                "2. picker 会为样本绑定独立 reverse project；viewer 默认不再自动分析\n",
+                "3. 在 viewer 或 surface 中手动发起 full/index/analyze；Tasks/Results 只跟踪样本级 reverse jobs\n\n",
+                "目录:\n",
+                "- binaries/      放 ELF / PE / APK / DEX / SO 等目标\n",
+                "- jobs/          reverse job metadata\n",
+                "- reverse_out/   decompile 产物\n",
+                "- analysis/      analyze 与 workbench 辅助输出\n",
+            )
         }
     };
     write_if_missing(&project_path.join("README.md"), readme)?;
@@ -168,13 +201,32 @@ fn init_project_template(
             )?;
             write_if_missing(
                 &project_path.join("vuln_templates").join("basic_http.yaml"),
-                "id: project-basic-http\ninfo:\n  name: Project Basic HTTP\n  severity: info\nhttp:\n  - method: GET\n    path: ['/', '/robots.txt']\n    matchers:\n      - type: status\n        status: [200,301,302,401,403]\n",
+                concat!(
+                    "id: project-basic-http\n",
+                    "info:\n",
+                    "  name: Project Basic HTTP\n",
+                    "  severity: info\n",
+                    "http:\n",
+                    "  - method: GET\n",
+                    "    path: ['/', '/robots.txt']\n",
+                    "    matchers:\n",
+                    "      - type: status\n",
+                    "        status: [200,301,302,401,403]\n",
+                ),
             )?;
         }
         ProjectTemplate::Reverse => {
             write_if_missing(
                 &project_path.join("scripts").join("reverse_notes.rs"),
                 "fn main() {\n    println!(\"reverse template project ready\");\n}\n",
+            )?;
+            write_if_missing(
+                &project_path.join("binaries").join("README.txt"),
+                concat!(
+                    "Drop reverse targets here.\n",
+                    "Examples: sample.bin, libc.so, app.apk, classes.dex\n",
+                    "Reverse workbench will prioritize this directory.\n",
+                ),
             )?;
         }
     }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:id="@+id/rg_canvas"
+    android:background="@android:color/transparent"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:layout_width="0dp"
+    android:layout_height="26dp"
+    android:layout_weight="1">
+    <com.jbzd.media.movecartoons.view.text.MyRadioButton
+        android:textSize="14sp"
+        android:textColor="@drawable/canvas_text_selector"
+        android:gravity="center"
+        android:id="@+id/rad_canvas_long"
+        android:background="@drawable/canvas_bg_selector"
+        android:layout_width="65dp"
+        android:layout_height="match_parent"
+        android:button="@null"
+        android:text="@string/canvas_long_video"/>
+    <com.jbzd.media.movecartoons.view.text.MyRadioButton
+        android:textSize="14sp"
+        android:textColor="@drawable/canvas_text_selector"
+        android:gravity="center"
+        android:id="@+id/rad_canvas_short"
+        android:background="@drawable/canvas_bg_selector"
+        android:layout_width="65dp"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="10dp"
+        android:button="@null"
+        android:text="@string/canvas_short_video"/>
+    <com.jbzd.media.movecartoons.view.text.MyRadioButton
+        android:textSize="14sp"
+        android:textColor="@drawable/canvas_text_selector"
+        android:gravity="center"
+        android:id="@+id/rad_canvas_group"
+        android:background="@drawable/canvas_bg_selector"
+        android:layout_width="65dp"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="10dp"
+        android:button="@null"
+        android:text="@string/canvas_group"/>
+</RadioGroup>

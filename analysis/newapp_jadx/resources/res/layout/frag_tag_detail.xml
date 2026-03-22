@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:id="@+id/ll_mineTop"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="18dp"
+    android:layout_marginBottom="20dp"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent">
+    <com.jbzd.media.movecartoons.view.image.CircleImageView
+        android:id="@+id/civ_head"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_place_holder_circle_51"
+        android:layout_marginStart="@dimen/fab_margin"
+        app:border_color="@color/white"
+        app:border_color_inside="@color/white"
+        app:border_width="0.5dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        app:layout_constraintBottom_toBottomOf="@+id/civ_head"
+        app:layout_constraintStart_toEndOf="@+id/civ_head"
+        app:layout_constraintTop_toTopOf="@+id/civ_head">
+        <TextView
+            android:textSize="16sp"
+            android:textColor="?attr/my_txt_color"
+            android:id="@+id/tv_postdetail_nickname"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="用户昵称"/>
+        <TextView
+            android:textSize="@dimen/textSizeSmall"
+            android:textColor="@color/white70"
+            android:id="@+id/tv_desc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="怎舍得让她孤单寂寞"/>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

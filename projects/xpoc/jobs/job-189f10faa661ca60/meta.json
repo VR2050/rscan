@@ -1,0 +1,33 @@
+{
+  "id": "job-189f10faa661ca60",
+  "kind": "decompile",
+  "backend": "ghidra",
+  "mode": "index",
+  "function": null,
+  "target": "/home/vr2050/RUST/rscan_codex/projects/xpoc/binaries/xpoc",
+  "workspace": "/home/vr2050/RUST/rscan_codex/projects/xpoc",
+  "status": "Running",
+  "created_at": 1774155446,
+  "started_at": 1774155446,
+  "ended_at": null,
+  "exit_code": null,
+  "program": "/home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/run-headless.sh",
+  "args": [
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/reverse_out/ghidra_cache",
+    "rscan_7ca087072c502dedc93b8959aefab351b9366006d875cebdceef07bfad9697d8",
+    "-import",
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/binaries/xpoc",
+    "-scriptPath",
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/reverse_out/job-189f10faa661ca60",
+    "-postScript",
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/reverse_out/job-189f10faa661ca60/ghidra_export_index.java",
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/reverse_out/job-189f10faa661ca60/index.jsonl"
+  ],
+  "note": "Headless Ghidra decompile pipeline (supports project reuse/cache).; adaptive_ghidra_mode: full->index (file_size=82296160 bytes >= threshold=26214400 bytes)",
+  "artifacts": [
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/jobs/job-189f10faa661ca60/stdout.log",
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/jobs/job-189f10faa661ca60/stderr.log",
+    "/home/vr2050/RUST/rscan_codex/projects/xpoc/reverse_out/job-189f10faa661ca60/index.jsonl"
+  ],
+  "error": null
+}

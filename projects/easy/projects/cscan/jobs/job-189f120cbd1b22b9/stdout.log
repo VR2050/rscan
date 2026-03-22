@@ -1,0 +1,68 @@
+INFO  Using log config file: jar:file:/home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/vr2050/.config/ghidra/ghidra_12.1_DEV/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/vr2050/.config/ghidra/ghidra_12.1_DEV/preferences (Preferences)  
+INFO  Loading previous preferences: /home/vr2050/.config/ghidra/ghidra_12.0.2_DEV/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (359 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1151 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 9 extension points (4 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/job-189f120cbd1b22b9
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/Base/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/BytePatterns/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/ghidra_cache/rscan_282305a582cdb8a89ebd9a1924bddb498bf1305e64535574f65024b20d411be3 (HeadlessAnalyzer)  
+WARN  Tool supported content class not found: ghidra.feature.vt.api.main.VTSession (GhidraToolTemplate)  
+INFO  Opening project: /home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/ghidra_cache/rscan_282305a582cdb8a89ebd9a1924bddb498bf1305e64535574f65024b20d411be3 (HeadlessProject)  
+INFO  REPORT: Processing project file: /cscan (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: /cscan (HeadlessAnalyzer)  
+INFO  DWARF external debug information found: ExternalDebugInfo [filename=null, crc=0, hash=4485007e1df54173663f148d5840c963a7e868ee, objectType=DEBUGINFO, extra=null] (ExternalDebugFileSectionProvider)  
+INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)  
+INFO  Packed database cache: /home/vr2050/.cache/ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: generic_clib_64 (ApplyDataArchiveAnalyzer)  
+INFO  Resolving External Symbols of [/cscan] - 70 unresolved symbols, no external libraries configured - skipping (ExternalSymbolResolverAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.343 secs
+    Apply Data Archives                        0.161 secs
+    Call Convention ID                         0.002 secs
+    Call-Fixup Installer                       0.003 secs
+    Create Address Tables                      0.052 secs
+    Create Function                            0.000 secs
+    DWARF                                      0.008 secs
+    Data Reference                             0.012 secs
+    Decompiler Switch Analysis                 1.011 secs
+    Demangler GNU                              0.025 secs
+    Disassemble Entry Points                   0.006 secs
+    ELF Scalar Operand References              0.077 secs
+    Embedded Media                             0.020 secs
+    External Entry References                  0.000 secs
+    External Symbol Resolver                   0.003 secs
+    Function Start Pre Search                  0.011 secs
+    Function Start Search                      0.037 secs
+    Function Start Search After Code           0.003 secs
+    Function Start Search After Data           0.003 secs
+    GCC Exception Handlers                     0.179 secs
+    Non-Returning Functions - Discovered       0.029 secs
+    Non-Returning Functions - Known            0.012 secs
+    Reference                                  0.024 secs
+    Shared Return Calls                        0.022 secs
+    Stack                                      0.071 secs
+    Subroutine References                      0.024 secs
+    x86 Constant Reference Analyzer            0.342 secs
+-----------------------------------------------------
+     Total Time   2 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: /cscan (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: /home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/job-189f120cbd1b22b9/ghidra_export_index.java '/home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/job-189f120cbd1b22b9/index.jsonl'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/job-189f120cbd1b22b9/ghidra_export_index.java (HeadlessAnalyzer)  
+INFO  ghidra_export_index.java> [rscan] ghidra index exported: /home/vr2050/RUST/rscan_codex/projects/easy/projects/cscan/reverse_out/job-189f120cbd1b22b9/index.jsonl (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: /cscan (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: /cscan (HeadlessAnalyzer)  
+INFO  REPORT: Save succeeded for processed file: /cscan (HeadlessAnalyzer)  

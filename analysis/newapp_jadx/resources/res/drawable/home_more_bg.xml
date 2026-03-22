@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:startColor="?attr/my_home_more_bg1"
+        android:endColor="?attr/my_home_more_bg2"
+        android:angle="0"/>
+</shape>

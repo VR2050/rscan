@@ -29,15 +29,18 @@ goblin = "0.8.2"
 sha2 = "0.10.9"
 hex = "0.4.3"
 zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
+apk-info = "1.0.11"
 serde_yaml = "0.9.34"
 libc = "0.2.171"
 ratatui = "0.26.3"
 crossterm = "0.27.0"
+alacritty_terminal = "0.25.1"
 tantivy = "0.22.0"
 iced-x86 = "1.21.0"
 capstone = { version = "0.14", default-features = false, features = ["full", "support_all_archs"] }
 symbolic-demangle = "12.8.0"
 addr2line = "0.21.0"
+arboard = "3.4.1"
 [[bin]]
 name="bypass"
 path="./src/cores/host/bypass.rs"

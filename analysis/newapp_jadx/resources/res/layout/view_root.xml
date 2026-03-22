@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_root"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <FrameLayout
+        android:id="@+id/layout_body"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <ViewStub
+            android:id="@+id/loading_view_stub"
+            android:layout="@layout/layout_loading"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </FrameLayout>
+    <ViewStub
+        android:id="@+id/title_bar_view_stub"
+        android:layout="@layout/title_bar_layout"
+        android:inflatedId="@+id/title_bar_view_stub"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"/>
+</FrameLayout>

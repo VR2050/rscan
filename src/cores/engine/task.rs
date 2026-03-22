@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -69,6 +69,23 @@ pub struct TaskMeta {
     pub extra: Option<Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TaskRuntimeBinding {
+    pub backend: String,
+    #[serde(default)]
+    pub session: Option<String>,
+    #[serde(default)]
+    pub tab: Option<String>,
+    #[serde(default)]
+    pub pane_name: Option<String>,
+    #[serde(default)]
+    pub role: Option<String>,
+    #[serde(default)]
+    pub cwd: Option<PathBuf>,
+    #[serde(default)]
+    pub command: Option<String>,
+}
+
 /// 任务事件 JSONL：`workspace/tasks/<id>/events.jsonl`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskEvent {
@@ -127,6 +144,37 @@ pub fn write_task_meta(dir: &Path, meta: &TaskMeta) -> Result<(), RustpenError> 
         serde_json::to_string_pretty(meta).map_err(|e| RustpenError::ParseError(e.to_string()))?;
     std::fs::write(path, text)?;
     Ok(())
+}
+
+pub fn load_task_meta(dir: &Path) -> Result<TaskMeta, RustpenError> {
+    let path = dir.join("meta.json");
+    let text = std::fs::read_to_string(path)?;
+    serde_json::from_str(&text).map_err(|e| RustpenError::ParseError(e.to_string()))
+}
+
+pub fn task_runtime_binding_from_extra(extra: &Option<Value>) -> Option<TaskRuntimeBinding> {
+    let obj = extra.as_ref()?.as_object()?;
+    let runtime = obj.get("runtime")?.clone();
+    serde_json::from_value(runtime).ok()
+}
+
+pub fn attach_task_runtime(meta: &mut TaskMeta, binding: TaskRuntimeBinding) {
+    let mut obj = match meta.extra.take() {
+        Some(Value::Object(map)) => map,
+        _ => Map::new(),
+    };
+    let runtime = serde_json::to_value(binding).unwrap_or(Value::Null);
+    obj.insert("runtime".to_string(), runtime);
+    meta.extra = Some(Value::Object(obj));
+}
+
+pub fn update_task_runtime_binding(
+    dir: &Path,
+    binding: TaskRuntimeBinding,
+) -> Result<(), RustpenError> {
+    let mut meta = load_task_meta(dir)?;
+    attach_task_runtime(&mut meta, binding);
+    write_task_meta(dir, &meta)
 }
 
 /// 追加事件到 events.jsonl。

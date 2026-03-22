@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_gravity="center"
+    android:background="@color/transparent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:id="@+id/ll_card"
+            android:background="@drawable/border_normal_shadow2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="44dp"
+            android:layout_marginRight="44dp"
+            android:layout_marginHorizontal="44dp">
+            <TextView
+                android:textSize="15sp"
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:id="@+id/tv_system"
+                android:layout_width="match_parent"
+                android:layout_height="65dp"
+                android:text="系统头像"/>
+            <View
+                android:background="#7fbcfc"
+                android:layout_width="match_parent"
+                android:layout_height="1px"/>
+            <TextView
+                android:textSize="15sp"
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:id="@+id/tv_local"
+                android:layout_width="match_parent"
+                android:layout_height="65dp"
+                android:text="本地上传"/>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

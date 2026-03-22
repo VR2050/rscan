@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center"
+    android:layout_gravity="center"
+    android:orientation="vertical"
+    android:paddingBottom="100dp"
+    style="@style/empty_view_bg">
+    <ImageView
+        android:src="@drawable/ic_offline_icon"
+        style="@style/error_img"/>
+    <TextView
+        android:textSize="12sp"
+        android:textColor="@color/main_0092fd"
+        android:gravity="center"
+        android:id="@+id/txt_tips"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/empty_network_error"/>
+    <com.jbzd.media.movecartoons.view.ProgressButton
+        android:id="@+id/btn_retry"
+        android:layout_width="112dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="24dp"
+        app:pb_background="@drawable/common_btn_bg"
+        app:pb_text="重新加载"
+        app:pb_textColor="@color/white"
+        app:pb_textSize="14"
+        app:round="20dp"/>
+</LinearLayout>

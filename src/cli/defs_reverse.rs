@@ -121,6 +121,36 @@ pub enum ReverseActions {
         #[arg(short = 'f', long)]
         out: Option<PathBuf>,
     },
+    /// Native reverse picker for Reverse tab (zellij 内默认直接拉起 filepicker)
+    Picker {
+        #[arg(short = 'w', long)]
+        workspace: Option<PathBuf>,
+        #[arg(short = 'p', long)]
+        project: Option<PathBuf>,
+    },
+    /// Full reverse viewer surface for zellij Reverse tab
+    Surface {
+        #[arg(short = 'w', long)]
+        workspace: Option<PathBuf>,
+        #[arg(short = 'p', long)]
+        project: Option<PathBuf>,
+    },
+    /// Reverse auxiliary deck for zellij Reverse tab
+    Deck {
+        #[arg(short = 'w', long)]
+        workspace: Option<PathBuf>,
+        #[arg(short = 'p', long)]
+        project: Option<PathBuf>,
+    },
+    /// Legacy reverse workbench launcher for zellij Reverse tab
+    Workbench {
+        #[arg(short = 'w', long)]
+        workspace: Option<PathBuf>,
+        #[arg(short = 'p', long)]
+        project: Option<PathBuf>,
+        #[arg(short = 'i', long, alias = "file")]
+        input: Option<PathBuf>,
+    },
     /// List reverse decompile jobs
     Jobs {
         #[arg(short = 'w', long)]

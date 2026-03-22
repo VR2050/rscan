@@ -120,7 +120,7 @@ rscan reverse decompile-run --input ./easy --engine ghidra --mode full --workspa
 
 **TUI 快捷键**
 1. `j/k` 或 `↑/↓`：移动
-2. `h/l` 或 `←/→`：切换焦点（Jobs/Functions/Right/Strings）
+2. `h/l` 或 `←/→`：切换焦点（Functions/Right/Strings）
 3. `b` 或 `Backspace`：返回左侧
 4. `Tab`：循环切换焦点
 5. `Enter`：跳转/查看
@@ -142,12 +142,16 @@ rscan reverse decompile-run --input ./easy --engine ghidra --mode full --workspa
 21. `d`：触发反编译（提示输入）。示例：
     `full`
     `index`
-    `function main`
-    `main noasm`
+    `fn=main`
+    `full noasm`
     `function . only-named`
 
+注意：reverse TUI 现在按样本管理 primary jobs，不再把单函数 decompile 暴露成独立 job。若在 TUI 中输入 `fn=main` / `function main`，会自动折叠为当前样本的 `full` job；CLI `reverse decompile-run --mode function --function <name>` 仍然保留，适合脚本化精确导出。
+注意：viewer 启动后不再自动 `index`。先在 picker 里选样本并绑定 project，再由你手动按 `d` 输入 `full` / `index`，或在 `surface` 中按 `f` / `i`。
+注意：`RSCAN_GHIDRA_SLIM` 现在默认关闭；显式要求 `full` 时会尽量保持 true full，不再因为默认 slim 策略悄悄降级成 `index`。
+
 **Strings 窗口**
-右侧新增 `Strings` 窗口，显示二进制字符串列表，支持 `S` 或 `:strings <kw>` 搜索。
+右侧 `Strings` tab 显示当前函数相关字符串；`S` 会打开全局字符串搜索，`W` 可开关懒加载的全局字符串抽屉。
 
 注意：TUI 需要 TTY，非 TTY 场景会自动回退到交互控制台。
 

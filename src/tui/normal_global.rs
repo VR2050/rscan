@@ -3,11 +3,14 @@ use std::path::PathBuf;
 use crossterm::event::{KeyCode, KeyModifiers};
 
 use super::models::{
-    InputMode, MainPane, MiniConsoleLayout, MiniConsoleTab, ProjectEntry, StatusFilter, TaskView,
+    InputMode, MainLayout, MainPane, MiniConsoleLayout, MiniConsoleTab, ProjectEntry, StatusFilter,
+    TaskView,
 };
 use super::project_store::load_projects;
 use super::script_runtime::{load_script_files, read_script_text};
 use super::task_store::{apply_filter, load_tasks};
+use super::terminal::start_terminal_session;
+use super::zellij;
 use crate::errors::RustpenError;
 
 pub(crate) enum GlobalNormalAction {
@@ -20,9 +23,18 @@ pub(crate) struct GlobalNormalCtx<'a> {
     pub(crate) pane: &'a mut MainPane,
     pub(crate) detail_scroll: &'a mut u16,
     pub(crate) effect_scroll: &'a mut u16,
+    pub(crate) main_layout: &'a mut MainLayout,
 
     pub(crate) input_mode: &'a mut InputMode,
     pub(crate) cmd_buffer: &'a mut String,
+    pub(crate) cmd_cursor: &'a mut usize,
+    pub(crate) cmd_undo_stack: &'a mut Vec<(String, usize)>,
+    pub(crate) cmd_redo_stack: &'a mut Vec<(String, usize)>,
+    pub(crate) cmd_history_idx: &'a mut Option<usize>,
+    pub(crate) cmd_history_scratch: &'a mut Option<String>,
+    pub(crate) cmd_completion: &'a mut Vec<String>,
+    pub(crate) cmd_completion_idx: &'a mut Option<usize>,
+    pub(crate) cmd_completion_seed: &'a mut String,
     pub(crate) status_line: &'a mut String,
 
     pub(crate) mini_console_visible: &'a mut bool,
@@ -35,6 +47,7 @@ pub(crate) struct GlobalNormalCtx<'a> {
     pub(crate) mini_float_h_pct: &'a mut u16,
     pub(crate) mini_console_tab: &'a mut MiniConsoleTab,
     pub(crate) mini_console_scroll: &'a mut u16,
+    pub(crate) terminal_session: &'a mut Option<super::terminal::TerminalSession>,
 
     pub(crate) root_ws: &'a PathBuf,
     pub(crate) current_project: &'a PathBuf,
@@ -89,14 +102,49 @@ pub(crate) fn handle_global_normal_key(
             *ctx.pane = MainPane::Projects;
             return Ok(GlobalNormalAction::Handled);
         }
+        KeyCode::Char('l') => {
+            *ctx.main_layout = ctx.main_layout.next();
+            *ctx.status_line = format!("main layout: {}", ctx.main_layout.label());
+            return Ok(GlobalNormalAction::Handled);
+        }
         KeyCode::Char('[') if *ctx.mini_console_visible => {
             *ctx.mini_console_tab = ctx.mini_console_tab.prev();
             *ctx.mini_console_scroll = 0;
+            if *ctx.mini_console_tab == MiniConsoleTab::Terminal {
+                if zellij::is_managed_runtime() {
+                    *ctx.input_mode = InputMode::Normal;
+                    *ctx.status_line = format!(
+                        "zellij runtime: session={} | g 聚焦 Control 下方 shell",
+                        zellij::session_name().unwrap_or_else(|| "unknown".to_string())
+                    );
+                } else {
+                    *ctx.input_mode = InputMode::TerminalInput;
+                    *ctx.status_line = "terminal input: on (Esc/Ctrl+g exit)".to_string();
+                }
+            } else if matches!(*ctx.input_mode, InputMode::TerminalInput) {
+                *ctx.input_mode = InputMode::Normal;
+                *ctx.status_line = "terminal input: off".to_string();
+            }
             return Ok(GlobalNormalAction::Handled);
         }
         KeyCode::Char(']') if *ctx.mini_console_visible => {
             *ctx.mini_console_tab = ctx.mini_console_tab.next();
             *ctx.mini_console_scroll = 0;
+            if *ctx.mini_console_tab == MiniConsoleTab::Terminal {
+                if zellij::is_managed_runtime() {
+                    *ctx.input_mode = InputMode::Normal;
+                    *ctx.status_line = format!(
+                        "zellij runtime: session={} | g 聚焦 Control 下方 shell",
+                        zellij::session_name().unwrap_or_else(|| "unknown".to_string())
+                    );
+                } else {
+                    *ctx.input_mode = InputMode::TerminalInput;
+                    *ctx.status_line = "terminal input: on (Esc/Ctrl+g exit)".to_string();
+                }
+            } else if matches!(*ctx.input_mode, InputMode::TerminalInput) {
+                *ctx.input_mode = InputMode::Normal;
+                *ctx.status_line = "terminal input: off".to_string();
+            }
             return Ok(GlobalNormalAction::Handled);
         }
         KeyCode::Char('K') | KeyCode::Char('k') if *ctx.mini_console_visible => {
@@ -114,6 +162,29 @@ pub(crate) fn handle_global_normal_key(
             } else {
                 "mini console: off".to_string()
             };
+            if !*ctx.mini_console_visible && matches!(*ctx.input_mode, InputMode::TerminalInput) {
+                *ctx.input_mode = InputMode::Normal;
+            }
+            return Ok(GlobalNormalAction::Handled);
+        }
+        KeyCode::Char('g') | KeyCode::Char('G') => {
+            if zellij::is_managed_runtime() {
+                *ctx.input_mode = InputMode::Normal;
+                *ctx.status_line = match zellij::focus_control_shell_pane(ctx.current_project) {
+                    Ok(msg) => format!("{msg} | shell 已就位"),
+                    Err(e) => format!("zellij Control shell 聚焦失败: {e}"),
+                };
+                return Ok(GlobalNormalAction::Handled);
+            }
+            if !*ctx.mini_console_visible {
+                *ctx.mini_console_visible = true;
+            }
+            *ctx.mini_console_tab = MiniConsoleTab::Terminal;
+            if ctx.terminal_session.is_none() {
+                *ctx.terminal_session = Some(start_terminal_session(ctx.current_project)?);
+            }
+            *ctx.input_mode = InputMode::TerminalInput;
+            *ctx.status_line = "terminal input: on (Esc/Ctrl+g exit)".to_string();
             return Ok(GlobalNormalAction::Handled);
         }
         KeyCode::Char('b') => {
@@ -268,6 +339,14 @@ pub(crate) fn handle_global_normal_key(
         }
         KeyCode::Char(':') => {
             ctx.cmd_buffer.clear();
+            *ctx.cmd_cursor = 0;
+            ctx.cmd_undo_stack.clear();
+            ctx.cmd_redo_stack.clear();
+            *ctx.cmd_history_idx = None;
+            ctx.cmd_history_scratch.take();
+            ctx.cmd_completion.clear();
+            *ctx.cmd_completion_idx = None;
+            ctx.cmd_completion_seed.clear();
             *ctx.input_mode = InputMode::CommandInput;
             return Ok(GlobalNormalAction::Handled);
         }
@@ -275,7 +354,7 @@ pub(crate) fn handle_global_normal_key(
             *ctx.projects = load_projects(ctx.root_ws)?;
             *ctx.project_selected =
                 (*ctx.project_selected).min(ctx.projects.len().saturating_sub(1));
-            *ctx.all_tasks = load_tasks(ctx.current_project.join("tasks"))?;
+            *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
             *ctx.tasks = apply_filter(ctx.all_tasks, ctx.filter);
             *ctx.scripts = load_script_files(ctx.scripts_dir)?;
             *ctx.task_selected = (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));

@@ -1,0 +1,25 @@
+layout {
+    cwd "/home/vr2050/RUST/rscan_codex/projects/default"
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+    tab name="Reverse" focus=true split_direction="horizontal" {
+        pane name="reverse-picker" size="22%" command="/usr/bin/zsh" {
+            args "-lc" "'/home/vr2050/RUST/rscan_codex/target/debug/rscan' reverse picker --workspace '/home/vr2050/RUST/rscan_codex/projects/default'"
+        }
+        pane split_direction="vertical" {
+            pane name="reverse-surface" size="72%" command="/usr/bin/zsh" {
+                args "-lc" "'/home/vr2050/RUST/rscan_codex/target/debug/rscan' reverse surface --workspace '/home/vr2050/RUST/rscan_codex/projects/default'"
+            }
+            pane name="reverse-deck" size="28%" command="/usr/bin/zsh" {
+                args "-lc" "'/home/vr2050/RUST/rscan_codex/target/debug/rscan' reverse deck --workspace '/home/vr2050/RUST/rscan_codex/projects/default'"
+            }
+        }
+    }
+}

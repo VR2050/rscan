@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
 
 use super::models::{InputMode, ProjectEntry, ProjectTemplate, StatusFilter, TaskView};
 use crate::errors::RustpenError;
@@ -35,6 +35,15 @@ pub(crate) struct NonNormalInputCtx<'a> {
     pub(crate) status_line: &'a mut String,
     pub(crate) note_buffer: &'a mut String,
     pub(crate) cmd_buffer: &'a mut String,
+    pub(crate) cmd_cursor: &'a mut usize,
+    pub(crate) cmd_undo_stack: &'a mut Vec<(String, usize)>,
+    pub(crate) cmd_redo_stack: &'a mut Vec<(String, usize)>,
+    pub(crate) cmd_history: &'a mut Vec<String>,
+    pub(crate) cmd_history_idx: &'a mut Option<usize>,
+    pub(crate) cmd_history_scratch: &'a mut Option<String>,
+    pub(crate) cmd_completion: &'a mut Vec<String>,
+    pub(crate) cmd_completion_idx: &'a mut Option<usize>,
+    pub(crate) cmd_completion_seed: &'a mut String,
     pub(crate) script_buffer: &'a mut String,
     pub(crate) script_dirty: &'a mut bool,
     pub(crate) script_new_buffer: &'a mut String,
@@ -47,21 +56,32 @@ pub(crate) struct NonNormalInputCtx<'a> {
 }
 
 pub(crate) fn handle_non_normal_input(
-    key: KeyCode,
+    key: KeyEvent,
     ctx: &mut NonNormalInputCtx<'_>,
 ) -> Result<(), RustpenError> {
     match *ctx.input_mode {
         InputMode::CommandInput => command::handle_command_input(key, ctx)?,
-        InputMode::NoteInput => note::handle_note_input(key, ctx),
-        InputMode::ScriptEdit => script::handle_script_edit_input(key, ctx),
-        InputMode::ScriptNewInput => script::handle_script_new_input(key, ctx)?,
-        InputMode::ProjectNewInput => project::handle_project_new_input(key, ctx)?,
-        InputMode::ProjectImportInput => project::handle_project_import_input(key, ctx)?,
-        InputMode::ProjectCopyInput => project::handle_project_copy_input(key, ctx)?,
-        InputMode::ProjectRenameInput => project::handle_project_rename_input(key, ctx)?,
-        InputMode::ResultSearchInput => results::handle_result_search_input(key, ctx),
+        InputMode::NoteInput => note::handle_note_input(key.code, ctx),
+        InputMode::ScriptEdit => script::handle_script_edit_input(key.code, ctx),
+        InputMode::ScriptNewInput => script::handle_script_new_input(key.code, ctx)?,
+        InputMode::ProjectNewInput => project::handle_project_new_input(key.code, ctx)?,
+        InputMode::ProjectImportInput => project::handle_project_import_input(key.code, ctx)?,
+        InputMode::ProjectCopyInput => project::handle_project_copy_input(key.code, ctx)?,
+        InputMode::ProjectRenameInput => project::handle_project_rename_input(key.code, ctx)?,
+        InputMode::ResultSearchInput => results::handle_result_search_input(key.code, ctx),
+        InputMode::TerminalInput => {}
         InputMode::Normal => {}
     }
 
+    Ok(())
+}
+
+pub(crate) fn handle_non_normal_paste(
+    text: &str,
+    ctx: &mut NonNormalInputCtx<'_>,
+) -> Result<(), RustpenError> {
+    if matches!(*ctx.input_mode, InputMode::CommandInput) {
+        command::handle_command_paste(text, ctx);
+    }
     Ok(())
 }

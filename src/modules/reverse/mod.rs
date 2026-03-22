@@ -24,9 +24,10 @@ pub use ir::{
 };
 pub use jobs::{
     DecompileBatchReport, DecompileRunReport, JobPrunePolicy, ReverseJobHealth, ReverseJobMeta,
-    ReverseJobStatus, clear_jobs, inspect_job_health, inspect_jobs_health, list_jobs,
-    load_job_by_id, load_job_logs, load_job_pseudocode_rows, prune_jobs, prune_jobs_keep_recent,
-    run_decompile_batch, run_decompile_job,
+    ReverseJobStatus, clear_jobs, inspect_job_health, inspect_jobs_health, is_primary_reverse_job,
+    list_jobs, list_primary_jobs, list_primary_sample_jobs, load_job_by_id, load_job_logs,
+    load_job_pseudocode_rows, prune_jobs, prune_jobs_keep_recent, run_decompile_batch,
+    run_decompile_job,
 };
 pub use malware::{MalwareAnalyzer, MalwareTriageReport, ShellIndicator};
 pub use model::{

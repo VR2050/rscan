@@ -1,0 +1,138 @@
+INFO  Using log config file: jar:file:/home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/vr2050/.config/ghidra/ghidra_12.1_DEV/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/vr2050/.config/ghidra/ghidra_12.1_DEV/preferences (Preferences)  
+INFO  Loading previous preferences: /home/vr2050/.config/ghidra/ghidra_12.0.2_DEV/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (317 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1002 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 9 extension points (4 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/job-189f17601a8e1e39
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/Base/ghidra_scripts
+    /home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/Ghidra/Features/BytePatterns/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/ghidra_cache/rscan_d03fe3299fe9db115399bcda8eaee82dd16882e572692fd92c40422a21c567a0 (HeadlessAnalyzer)  
+WARN  Tool supported content class not found: ghidra.feature.vt.api.main.VTSession (GhidraToolTemplate)  
+INFO  Opening project: /home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/ghidra_cache/rscan_d03fe3299fe9db115399bcda8eaee82dd16882e572692fd92c40422a21c567a0 (HeadlessProject)  
+INFO  REPORT: Processing project file: /cscan (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: /cscan (HeadlessAnalyzer)  
+INFO  DWARF external debug information found: ExternalDebugInfo [filename=null, crc=0, hash=4485007e1df54173663f148d5840c963a7e868ee, objectType=DEBUGINFO, extra=null] (ExternalDebugFileSectionProvider)  
+INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)  
+INFO  Packed database cache: /home/vr2050/.cache/ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: generic_clib_64 (ApplyDataArchiveAnalyzer)  
+INFO  Resolving External Symbols of [/cscan] - 70 unresolved symbols, no external libraries configured - skipping (ExternalSymbolResolverAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.237 secs
+    Apply Data Archives                        0.105 secs
+    Call Convention ID                         0.001 secs
+    Call-Fixup Installer                       0.003 secs
+    Create Address Tables                      0.043 secs
+    Create Function                            0.000 secs
+    DWARF                                      0.007 secs
+    Data Reference                             0.011 secs
+    Decompiler Switch Analysis                 0.996 secs
+    Demangler GNU                              0.020 secs
+    Disassemble Entry Points                   0.006 secs
+    ELF Scalar Operand References              0.042 secs
+    Embedded Media                             0.007 secs
+    External Entry References                  0.000 secs
+    External Symbol Resolver                   0.003 secs
+    Function Start Pre Search                  0.008 secs
+    Function Start Search                      0.031 secs
+    Function Start Search After Code           0.003 secs
+    Function Start Search After Data           0.003 secs
+    GCC Exception Handlers                     0.135 secs
+    Non-Returning Functions - Discovered       0.030 secs
+    Non-Returning Functions - Known            0.010 secs
+    Reference                                  0.021 secs
+    Shared Return Calls                        0.022 secs
+    Stack                                      0.054 secs
+    Subroutine References                      0.019 secs
+    x86 Constant Reference Analyzer            0.244 secs
+-----------------------------------------------------
+     Total Time   2 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: /cscan (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: /home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/job-189f17601a8e1e39/ghidra_export_pseudocode.java '/home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/job-189f17601a8e1e39/pseudocode.jsonl'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/job-189f17601a8e1e39/ghidra_export_pseudocode.java (HeadlessAnalyzer)  
+WARN  Decompiling 00616000, pcode error at 00616000: Unable to disassemble EXTERNAL block location: 00616000 (DecompileCallback)  
+WARN  Decompiling 00616008, pcode error at 00616008: Unable to disassemble EXTERNAL block location: 00616008 (DecompileCallback)  
+WARN  Decompiling 00616010, pcode error at 00616010: Unable to disassemble EXTERNAL block location: 00616010 (DecompileCallback)  
+WARN  Decompiling 00616018, pcode error at 00616018: Unable to disassemble EXTERNAL block location: 00616018 (DecompileCallback)  
+WARN  Decompiling 00616020, pcode error at 00616020: Unable to disassemble EXTERNAL block location: 00616020 (DecompileCallback)  
+WARN  Decompiling 00616028, pcode error at 00616028: Unable to disassemble EXTERNAL block location: 00616028 (DecompileCallback)  
+WARN  Decompiling 00616030, pcode error at 00616030: Unable to disassemble EXTERNAL block location: 00616030 (DecompileCallback)  
+WARN  Decompiling 00616038, pcode error at 00616038: Unable to disassemble EXTERNAL block location: 00616038 (DecompileCallback)  
+WARN  Decompiling 00616040, pcode error at 00616040: Unable to disassemble EXTERNAL block location: 00616040 (DecompileCallback)  
+WARN  Decompiling 00616050, pcode error at 00616050: Unable to disassemble EXTERNAL block location: 00616050 (DecompileCallback)  
+WARN  Decompiling 00616058, pcode error at 00616058: Unable to disassemble EXTERNAL block location: 00616058 (DecompileCallback)  
+WARN  Decompiling 00616060, pcode error at 00616060: Unable to disassemble EXTERNAL block location: 00616060 (DecompileCallback)  
+WARN  Decompiling 00616068, pcode error at 00616068: Unable to disassemble EXTERNAL block location: 00616068 (DecompileCallback)  
+WARN  Decompiling 00616070, pcode error at 00616070: Unable to disassemble EXTERNAL block location: 00616070 (DecompileCallback)  
+WARN  Decompiling 00616078, pcode error at 00616078: Unable to disassemble EXTERNAL block location: 00616078 (DecompileCallback)  
+WARN  Decompiling 00616080, pcode error at 00616080: Unable to disassemble EXTERNAL block location: 00616080 (DecompileCallback)  
+WARN  Decompiling 00616088, pcode error at 00616088: Unable to disassemble EXTERNAL block location: 00616088 (DecompileCallback)  
+WARN  Decompiling 00616090, pcode error at 00616090: Unable to disassemble EXTERNAL block location: 00616090 (DecompileCallback)  
+WARN  Decompiling 00616098, pcode error at 00616098: Unable to disassemble EXTERNAL block location: 00616098 (DecompileCallback)  
+WARN  Decompiling 006160a0, pcode error at 006160a0: Unable to disassemble EXTERNAL block location: 006160a0 (DecompileCallback)  
+WARN  Decompiling 006160a8, pcode error at 006160a8: Unable to disassemble EXTERNAL block location: 006160a8 (DecompileCallback)  
+WARN  Decompiling 006160b0, pcode error at 006160b0: Unable to disassemble EXTERNAL block location: 006160b0 (DecompileCallback)  
+WARN  Decompiling 006160b8, pcode error at 006160b8: Unable to disassemble EXTERNAL block location: 006160b8 (DecompileCallback)  
+WARN  Decompiling 006160c0, pcode error at 006160c0: Unable to disassemble EXTERNAL block location: 006160c0 (DecompileCallback)  
+WARN  Decompiling 006160c8, pcode error at 006160c8: Unable to disassemble EXTERNAL block location: 006160c8 (DecompileCallback)  
+WARN  Decompiling 006160d0, pcode error at 006160d0: Unable to disassemble EXTERNAL block location: 006160d0 (DecompileCallback)  
+WARN  Decompiling 006160d8, pcode error at 006160d8: Unable to disassemble EXTERNAL block location: 006160d8 (DecompileCallback)  
+WARN  Decompiling 006160e0, pcode error at 006160e0: Unable to disassemble EXTERNAL block location: 006160e0 (DecompileCallback)  
+WARN  Decompiling 006160e8, pcode error at 006160e8: Unable to disassemble EXTERNAL block location: 006160e8 (DecompileCallback)  
+WARN  Decompiling 006160f0, pcode error at 006160f0: Unable to disassemble EXTERNAL block location: 006160f0 (DecompileCallback)  
+WARN  Decompiling 006160f8, pcode error at 006160f8: Unable to disassemble EXTERNAL block location: 006160f8 (DecompileCallback)  
+WARN  Decompiling 00616100, pcode error at 00616100: Unable to disassemble EXTERNAL block location: 00616100 (DecompileCallback)  
+WARN  Decompiling 00616108, pcode error at 00616108: Unable to disassemble EXTERNAL block location: 00616108 (DecompileCallback)  
+WARN  Decompiling 00616110, pcode error at 00616110: Unable to disassemble EXTERNAL block location: 00616110 (DecompileCallback)  
+WARN  Decompiling 00616118, pcode error at 00616118: Unable to disassemble EXTERNAL block location: 00616118 (DecompileCallback)  
+WARN  Decompiling 00616120, pcode error at 00616120: Unable to disassemble EXTERNAL block location: 00616120 (DecompileCallback)  
+WARN  Decompiling 00616128, pcode error at 00616128: Unable to disassemble EXTERNAL block location: 00616128 (DecompileCallback)  
+WARN  Decompiling 00616130, pcode error at 00616130: Unable to disassemble EXTERNAL block location: 00616130 (DecompileCallback)  
+WARN  Decompiling 00616138, pcode error at 00616138: Unable to disassemble EXTERNAL block location: 00616138 (DecompileCallback)  
+WARN  Decompiling 00616140, pcode error at 00616140: Unable to disassemble EXTERNAL block location: 00616140 (DecompileCallback)  
+WARN  Decompiling 00616148, pcode error at 00616148: Unable to disassemble EXTERNAL block location: 00616148 (DecompileCallback)  
+WARN  Decompiling 00616150, pcode error at 00616150: Unable to disassemble EXTERNAL block location: 00616150 (DecompileCallback)  
+WARN  Decompiling 00616158, pcode error at 00616158: Unable to disassemble EXTERNAL block location: 00616158 (DecompileCallback)  
+WARN  Decompiling 00616160, pcode error at 00616160: Unable to disassemble EXTERNAL block location: 00616160 (DecompileCallback)  
+WARN  Decompiling 00616168, pcode error at 00616168: Unable to disassemble EXTERNAL block location: 00616168 (DecompileCallback)  
+WARN  Decompiling 00616170, pcode error at 00616170: Unable to disassemble EXTERNAL block location: 00616170 (DecompileCallback)  
+WARN  Decompiling 00616178, pcode error at 00616178: Unable to disassemble EXTERNAL block location: 00616178 (DecompileCallback)  
+WARN  Decompiling 00616180, pcode error at 00616180: Unable to disassemble EXTERNAL block location: 00616180 (DecompileCallback)  
+WARN  Decompiling 00616188, pcode error at 00616188: Unable to disassemble EXTERNAL block location: 00616188 (DecompileCallback)  
+WARN  Decompiling 00616190, pcode error at 00616190: Unable to disassemble EXTERNAL block location: 00616190 (DecompileCallback)  
+WARN  Decompiling 00616198, pcode error at 00616198: Unable to disassemble EXTERNAL block location: 00616198 (DecompileCallback)  
+WARN  Decompiling 006161a0, pcode error at 006161a0: Unable to disassemble EXTERNAL block location: 006161a0 (DecompileCallback)  
+WARN  Decompiling 006161a8, pcode error at 006161a8: Unable to disassemble EXTERNAL block location: 006161a8 (DecompileCallback)  
+WARN  Decompiling 006161b0, pcode error at 006161b0: Unable to disassemble EXTERNAL block location: 006161b0 (DecompileCallback)  
+WARN  Decompiling 006161b8, pcode error at 006161b8: Unable to disassemble EXTERNAL block location: 006161b8 (DecompileCallback)  
+WARN  Decompiling 006161c0, pcode error at 006161c0: Unable to disassemble EXTERNAL block location: 006161c0 (DecompileCallback)  
+WARN  Decompiling 006161c8, pcode error at 006161c8: Unable to disassemble EXTERNAL block location: 006161c8 (DecompileCallback)  
+WARN  Decompiling 006161d0, pcode error at 006161d0: Unable to disassemble EXTERNAL block location: 006161d0 (DecompileCallback)  
+WARN  Decompiling 006161d8, pcode error at 006161d8: Unable to disassemble EXTERNAL block location: 006161d8 (DecompileCallback)  
+WARN  Decompiling 006161e0, pcode error at 006161e0: Unable to disassemble EXTERNAL block location: 006161e0 (DecompileCallback)  
+WARN  Decompiling 006161e8, pcode error at 006161e8: Unable to disassemble EXTERNAL block location: 006161e8 (DecompileCallback)  
+WARN  Decompiling 006161f0, pcode error at 006161f0: Unable to disassemble EXTERNAL block location: 006161f0 (DecompileCallback)  
+WARN  Decompiling 00616200, pcode error at 00616200: Unable to disassemble EXTERNAL block location: 00616200 (DecompileCallback)  
+WARN  Decompiling 00616208, pcode error at 00616208: Unable to disassemble EXTERNAL block location: 00616208 (DecompileCallback)  
+WARN  Decompiling 00616210, pcode error at 00616210: Unable to disassemble EXTERNAL block location: 00616210 (DecompileCallback)  
+WARN  Decompiling 00616218, pcode error at 00616218: Unable to disassemble EXTERNAL block location: 00616218 (DecompileCallback)  
+WARN  Decompiling 00616220, pcode error at 00616220: Unable to disassemble EXTERNAL block location: 00616220 (DecompileCallback)  
+WARN  Decompiling 00616230, pcode error at 00616230: Unable to disassemble EXTERNAL block location: 00616230 (DecompileCallback)  
+WARN  Decompiling 00616238, pcode error at 00616238: Unable to disassemble EXTERNAL block location: 00616238 (DecompileCallback)  
+WARN  Decompiling 00616240, pcode error at 00616240: Unable to disassemble EXTERNAL block location: 00616240 (DecompileCallback)  
+INFO  ghidra_export_pseudocode.java> [rscan] ghidra pseudocode exported: /home/vr2050/RUST/rscan_codex/projects/cscan/reverse_out/job-189f17601a8e1e39/pseudocode.jsonl (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: /cscan (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: /cscan (HeadlessAnalyzer)  
+INFO  REPORT: Save succeeded for processed file: /cscan (HeadlessAnalyzer)  

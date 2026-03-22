@@ -95,6 +95,15 @@ where
                 Some(refresh_ms),
             );
         }
+        Commands::Pane { workspace, kind } => {
+            let workspace = workspace.or(cli.task_workspace.clone());
+            return match kind {
+                NativePaneKind::Work => crate::tui::native_hubs::run_work_hub_entry(workspace),
+                NativePaneKind::Inspect => {
+                    crate::tui::native_hubs::run_inspect_hub_entry(workspace)
+                }
+            };
+        }
         Commands::Web { action } => {
             web_router::handle_web_command(&cli, action).await?;
         }

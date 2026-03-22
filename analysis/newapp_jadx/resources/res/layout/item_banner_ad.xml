@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="103dp"
+    android:layout_height="wrap_content">
+    <ImageView
+        android:id="@+id/iv_ad"
+        android:layout_width="103dp"
+        android:layout_height="123dp"
+        android:scaleType="centerCrop"/>
+    <TextView
+        android:textSize="12sp"
+        android:textColor="@color/black"
+        android:ellipsize="end"
+        android:id="@+id/tv_ad_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:maxLines="1"/>
+    <com.noober.background.view.BLTextView
+        android:textSize="10sp"
+        android:textColor="@color/white"
+        android:gravity="center"
+        android:id="@+id/tvAd"
+        android:layout_width="24dp"
+        android:layout_height="16dp"
+        android:layout_marginTop="3dp"
+        android:text="广告"
+        app:bl_corners_radius="2.5dp"
+        app:bl_solid_color="@color/color_656565"/>
+</LinearLayout>

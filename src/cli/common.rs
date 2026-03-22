@@ -347,7 +347,7 @@ pub(super) fn init_task_ctx(
     let id = cli.task_id.clone().unwrap_or_else(|| new_task_id());
     let dir = ensure_task_dir(&workspace, &id)?;
     let now = now_epoch_secs();
-    let meta = TaskMeta {
+    let mut meta = TaskMeta {
         id: id.clone(),
         kind: kind.to_string(),
         tags,
@@ -361,6 +361,24 @@ pub(super) fn init_task_ctx(
         logs: vec![dir.join("stdout.log"), dir.join("stderr.log")],
         extra: None,
     };
+    crate::cores::engine::task::attach_task_runtime(
+        &mut meta,
+        crate::cores::engine::task::TaskRuntimeBinding {
+            backend: if std::env::var("ZELLIJ").is_ok()
+                || std::env::var("ZELLIJ_SESSION_NAME").is_ok()
+            {
+                "zellij-task-engine".to_string()
+            } else {
+                "task-engine".to_string()
+            },
+            session: std::env::var("ZELLIJ_SESSION_NAME").ok(),
+            tab: std::env::var("RSCAN_ZELLIJ_ACTIVE_TAB").ok(),
+            pane_name: Some("rscan-control".to_string()),
+            role: Some("task-engine".to_string()),
+            cwd: Some(workspace.clone()),
+            command: None,
+        },
+    );
     write_task_meta(&dir, &meta)?;
     let writer = TaskEventWriter::new(dir.clone());
     let _ = writer.log("info", "task started");

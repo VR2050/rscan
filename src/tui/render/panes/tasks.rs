@@ -1,50 +1,21 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState};
+use ratatui::widgets::{Block, Borders, List, Paragraph, Row, Table, TableState};
 
-use super::RenderCtx;
-use crate::cores::engine::task::TaskStatus;
-use crate::tui::models::TaskTab;
-use crate::tui::view::{
-    build_event_lines, build_logs_lines, build_notes_lines, build_overview_lines,
-};
+use super::{RenderCtx, pane_border_style};
+use crate::tui::models::MainPane;
 
 pub(super) fn draw_tasks(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
+    if is_compact(area) {
+        draw_tasks_compact(f, area, ctx);
+        return;
+    }
     let body = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(45), Constraint::Percentage(55)].as_ref())
         .split(area);
 
-    let table_rows: Vec<Row> = if ctx.tasks.is_empty() {
-        vec![Row::new(vec!["无任务，使用 --task-workspace 生成任务"])]
-    } else {
-        ctx.tasks
-            .iter()
-            .map(|t| {
-                let status_style = match t.meta.status {
-                    TaskStatus::Succeeded => Style::default().fg(Color::Green),
-                    TaskStatus::Failed => Style::default().fg(Color::Red),
-                    TaskStatus::Running => Style::default().fg(Color::Yellow),
-                    _ => Style::default(),
-                };
-                Row::new(vec![
-                    Cell::from(t.meta.id.clone()).style(Style::default().fg(Color::Cyan)),
-                    Cell::from(t.meta.kind.clone()).style(Style::default().fg(Color::Magenta)),
-                    Cell::from(t.meta.status.to_string()).style(status_style),
-                    Cell::from(
-                        t.meta
-                            .progress
-                            .map(|v| format!("{:.1}%", v))
-                            .unwrap_or_else(|| "-".into()),
-                    ),
-                    Cell::from(t.meta.created_at.to_string()),
-                    Cell::from(t.meta.note.as_ref().map(|n| n.as_str()).unwrap_or("")),
-                ])
-            })
-            .collect()
-    };
     let mut table_state = TableState::default();
     table_state.select(if ctx.tasks.is_empty() {
         None
@@ -59,9 +30,19 @@ pub(super) fn draw_tasks(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         Constraint::Length(12),
         Constraint::Min(10),
     ];
-    let table = Table::new(table_rows, &widths)
+    let tasks_title = if ctx.zellij_managed {
+        "Tasks [s=filter t=tab n=note L=logs W=shell A=artifacts]"
+    } else {
+        "Tasks"
+    };
+    let table = Table::new(ctx.task_table_rows.to_vec(), &widths)
         .header(Row::new(vec!["ID", "模块", "状态", "进度", "创建", "备注"]).bottom_margin(0))
-        .block(Block::default().borders(Borders::ALL).title("Tasks"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(pane_border_style(ctx, MainPane::Tasks))
+                .title(tasks_title),
+        )
         .highlight_style(
             Style::default()
                 .fg(Color::Yellow)
@@ -69,17 +50,43 @@ pub(super) fn draw_tasks(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         );
     f.render_stateful_widget(table, body[0], &mut table_state);
 
-    let detail_lines: Vec<Line> = ctx
-        .tasks
-        .get(ctx.task_selected)
-        .map(|cur| match ctx.task_tab {
-            TaskTab::Overview => build_overview_lines(cur),
-            TaskTab::Events => build_event_lines(&cur.dir, 120),
-            TaskTab::Logs => build_logs_lines(&cur.dir, 80),
-            TaskTab::Notes => build_notes_lines(cur, ctx.note_buffer, ctx.input_mode),
-        })
-        .unwrap_or_else(|| vec![Line::from(Span::raw("无详情"))]);
-    let detail_widget =
-        Paragraph::new(detail_lines).block(Block::default().borders(Borders::ALL).title("Detail"));
+    let detail_widget = Paragraph::new(ctx.task_detail_lines.to_vec()).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(pane_border_style(ctx, MainPane::Tasks))
+            .title(if ctx.zellij_managed {
+                "Detail / Native Runtime"
+            } else {
+                "Detail"
+            }),
+    );
     f.render_widget(detail_widget.scroll((ctx.detail_scroll, 0)), body[1]);
+}
+
+fn is_compact(area: Rect) -> bool {
+    area.width < 70 || area.height < 10
+}
+
+fn draw_tasks_compact(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
+    let mut state = ratatui::widgets::ListState::default();
+    state.select(if ctx.tasks.is_empty() {
+        None
+    } else {
+        Some(ctx.task_selected.min(ctx.tasks.len().saturating_sub(1)))
+    });
+    let list = List::new(ctx.task_compact_items.to_vec())
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(pane_border_style(ctx, MainPane::Tasks))
+                .title("Tasks (compact)"),
+        )
+        .highlight_style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ");
+    f.render_stateful_widget(list, area, &mut state);
 }

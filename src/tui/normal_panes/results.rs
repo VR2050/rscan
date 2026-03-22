@@ -3,6 +3,9 @@ use crossterm::event::KeyCode;
 use super::{PaneNormalAction, PaneNormalCtx};
 use crate::errors::RustpenError;
 use crate::tui::models::{InputMode, MainPane, TaskTab};
+use crate::tui::task_actions::{
+    open_task_artifacts_in_runtime, open_task_logs_in_runtime, open_task_shell_in_runtime,
+};
 
 pub(super) fn handle_results_key(
     key: KeyCode,
@@ -54,6 +57,36 @@ pub(super) fn handle_results_key(
             ctx.result_query.clear();
             *ctx.result_selected = 0;
             *ctx.effect_scroll = 0;
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('L') => {
+            if let Some(idx) = ctx.result_indices.get(*ctx.result_selected)
+                && let Some(task) = ctx.all_tasks.get(*idx)
+            {
+                *ctx.status_line = open_task_logs_in_runtime(task);
+            } else {
+                *ctx.status_line = "当前没有可打开日志的结果任务".to_string();
+            }
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('W') => {
+            if let Some(idx) = ctx.result_indices.get(*ctx.result_selected)
+                && let Some(task) = ctx.all_tasks.get(*idx)
+            {
+                *ctx.status_line = open_task_shell_in_runtime(task);
+            } else {
+                *ctx.status_line = "当前没有可打开 shell 的结果任务".to_string();
+            }
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('A') => {
+            if let Some(idx) = ctx.result_indices.get(*ctx.result_selected)
+                && let Some(task) = ctx.all_tasks.get(*idx)
+            {
+                *ctx.status_line = open_task_artifacts_in_runtime(task);
+            } else {
+                *ctx.status_line = "当前没有可检查产物的结果任务".to_string();
+            }
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::Enter => {

@@ -12,6 +12,7 @@ pub struct AndroidReverseReport {
     pub profile: AndroidProfileReport,
     pub dex: DexIndexReport,
     pub native: NativeIndexReport,
+    pub forensics: AndroidForensicsReport,
     pub score: AndroidRiskScore,
 }
 
@@ -69,4 +70,34 @@ pub struct AndroidRiskScore {
     pub total: u8,
     pub breakdown: BTreeMap<String, u8>,
     pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AndroidForensicsReport {
+    pub manifest_parser: String,
+    pub main_activity: Option<String>,
+    pub version_name: Option<String>,
+    pub version_code: Option<String>,
+    pub min_sdk: Option<String>,
+    pub target_sdk: u32,
+    pub compile_sdk: Option<String>,
+    pub application_debuggable: Option<bool>,
+    pub application_allow_backup: Option<bool>,
+    pub signature_count: usize,
+    pub native_abis: Vec<String>,
+    pub component_stats: AndroidComponentStats,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AndroidComponentStats {
+    pub activities: usize,
+    pub activity_aliases: usize,
+    pub services: usize,
+    pub receivers: usize,
+    pub providers: usize,
+    pub exported_activities: usize,
+    pub exported_activity_aliases: usize,
+    pub exported_services: usize,
+    pub exported_receivers: usize,
+    pub exported_providers: usize,
 }

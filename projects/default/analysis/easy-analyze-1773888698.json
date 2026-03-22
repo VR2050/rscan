@@ -1,0 +1,83 @@
+{
+  "path": "/home/vr2050/RUST/rscan_codex/projects/default/binaries/easy",
+  "format": "Elf",
+  "architecture": "62",
+  "entry_point": 4256,
+  "file_size": 17968,
+  "hashes": {
+    "sha256": "f4ee3a1e3c7ce569bc8c20804ab3446c80906c27b04c78dae465905a6413c53c"
+  },
+  "sections": [
+    "",
+    ".interp",
+    ".note.gnu.property",
+    ".note.gnu.build-id",
+    ".note.ABI-tag",
+    ".gnu.hash",
+    ".dynsym",
+    ".dynstr",
+    ".gnu.version",
+    ".gnu.version_r",
+    ".rela.dyn",
+    ".rela.plt",
+    ".init",
+    ".plt",
+    ".plt.got",
+    ".text",
+    ".fini",
+    ".rodata",
+    ".eh_frame_hdr",
+    ".eh_frame",
+    ".init_array",
+    ".fini_array",
+    ".dynamic",
+    ".got",
+    ".got.plt",
+    ".data",
+    ".bss",
+    ".comment",
+    ".debug_aranges",
+    ".debug_info",
+    ".debug_abbrev",
+    ".debug_line",
+    ".debug_str",
+    ".debug_line_str",
+    ".symtab",
+    ".strtab",
+    ".shstrtab"
+  ],
+  "imports": [
+    "__libc_start_main",
+    "_ITM_deregisterTMCloneTable",
+    "puts",
+    "strlen",
+    "system",
+    "printf",
+    "strcmp",
+    "__gmon_start__",
+    "__isoc99_scanf",
+    "_ITM_registerTMCloneTable",
+    "__cxa_finalize"
+  ],
+  "hardening": {
+    "nx": true,
+    "pie_or_aslr": true,
+    "relro": true,
+    "stack_canary": false
+  },
+  "security": {
+    "anti_debug_indicators": [],
+    "dynamic_indicators": [],
+    "packer_indicators": [],
+    "packer_family_hints": [],
+    "packer_confidence": 0,
+    "obfuscation_indicators": [],
+    "shell_loader_indicators": [],
+    "suspicious_imports": [
+      "system"
+    ],
+    "suspicious_strings": [],
+    "entropy": 2.091603850287932,
+    "malware_score": 5
+  }
+}

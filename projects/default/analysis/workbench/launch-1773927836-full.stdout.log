@@ -1,0 +1,30 @@
+[2m2026-03-19T13:43:56.841519Z[0m [32m INFO[0m [2mrscan::cli::app[0m[2m:[0m Starting rscan, log_level=info
+{
+  "job": {
+    "id": "job-189e41f80c206475",
+    "kind": "decompile",
+    "backend": "rust-asm",
+    "mode": "full",
+    "function": null,
+    "target": "/home/vr2050/RUST/rscan_codex/projects/default/binaries/easy",
+    "workspace": "/home/vr2050/RUST/rscan_codex/projects/default",
+    "status": "Succeeded",
+    "created_at": 1773927836,
+    "started_at": 1773927836,
+    "ended_at": 1773927836,
+    "exit_code": 0,
+    "program": "rust-asm",
+    "args": [],
+    "note": "rust asm-only backend (no pseudocode)",
+    "artifacts": [
+      "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41f80c206475/asm_full.jsonl",
+      "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41f80c206475/calls.jsonl",
+      "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41f80c206475/xrefs.jsonl",
+      "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e41f80c206475/stdout.log",
+      "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e41f80c206475/stderr.log"
+    ],
+    "error": null
+  },
+  "stdout_log": "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e41f80c206475/stdout.log",
+  "stderr_log": "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e41f80c206475/stderr.log"
+}

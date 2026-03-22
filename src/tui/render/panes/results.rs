@@ -1,28 +1,21 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph};
+use ratatui::widgets::{Block, Borders, List, ListState, Paragraph};
 
-use super::RenderCtx;
-use crate::tui::view::{build_effect_lines, line_s};
+use super::{RenderCtx, pane_border_style};
+use crate::tui::models::MainPane;
 
 pub(super) fn draw_results(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
+    if is_compact(area) {
+        draw_results_compact(f, area, ctx);
+        return;
+    }
     let body = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(38), Constraint::Percentage(62)].as_ref())
         .split(area);
 
-    let items = if ctx.result_indices.is_empty() {
-        vec![ListItem::new("<empty>")]
-    } else {
-        ctx.result_indices
-            .iter()
-            .map(|&idx| {
-                let t = &ctx.all_tasks[idx];
-                ListItem::new(format!("[{}] {} {}", t.meta.status, t.meta.kind, t.meta.id))
-            })
-            .collect::<Vec<_>>()
-    };
     let mut state = ListState::default();
     state.select(if ctx.result_indices.is_empty() {
         None
@@ -32,11 +25,17 @@ pub(super) fn draw_results(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
                 .min(ctx.result_indices.len().saturating_sub(1)),
         )
     });
-    let list = List::new(items)
+    let list_title = if ctx.zellij_managed {
+        "Execution Tasks [f=kind o=order /=search L=logs W=shell A=artifacts]"
+    } else {
+        "Execution Tasks"
+    };
+    let list = List::new(ctx.result_list_items.to_vec())
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Execution Tasks"),
+                .border_style(pane_border_style(ctx, MainPane::Results))
+                .title(list_title),
         )
         .highlight_style(
             Style::default()
@@ -47,39 +46,46 @@ pub(super) fn draw_results(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(list, body[0], &mut state);
 
-    let lines = ctx
-        .result_indices
-        .get(ctx.result_selected)
-        .and_then(|idx| ctx.all_tasks.get(*idx))
-        .map(|cur| {
-            let mut lines = build_effect_lines(cur);
-            lines.push(line_s(""));
-            lines.push(line_s(&format!(
-                "view: filter={} sort={}",
-                ctx.result_kind_filter.label(),
-                if ctx.result_failed_first {
-                    "failed-first"
-                } else {
-                    "created-desc"
-                }
-            )));
-            lines.push(line_s("快捷键: f=模块过滤  o=失败优先排序"));
-            lines.push(line_s(&format!(
-                "query: {}",
-                if ctx.result_query.is_empty() {
-                    "<none>"
-                } else {
-                    ctx.result_query
-                }
-            )));
-            lines.push(line_s("快捷键: /=搜索  x=清空搜索"));
-            lines
-        })
-        .unwrap_or_else(|| vec![line_s("无执行效果数据")]);
-    let detail = Paragraph::new(lines).block(
+    let detail = Paragraph::new(ctx.result_detail_lines.to_vec()).block(
         Block::default()
             .borders(Borders::ALL)
-            .title("Module Execution Effect"),
+            .border_style(pane_border_style(ctx, MainPane::Results))
+            .title(if ctx.zellij_managed {
+                "Module Execution Effect / Native Ops"
+            } else {
+                "Module Execution Effect"
+            }),
     );
     f.render_widget(detail.scroll((ctx.effect_scroll, 0)), body[1]);
+}
+
+fn is_compact(area: Rect) -> bool {
+    area.width < 70 || area.height < 10
+}
+
+fn draw_results_compact(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
+    let mut state = ListState::default();
+    state.select(if ctx.result_indices.is_empty() {
+        None
+    } else {
+        Some(
+            ctx.result_selected
+                .min(ctx.result_indices.len().saturating_sub(1)),
+        )
+    });
+    let list = List::new(ctx.result_list_items.to_vec())
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(pane_border_style(ctx, MainPane::Results))
+                .title("Results (compact)"),
+        )
+        .highlight_style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ");
+    f.render_stateful_widget(list, area, &mut state);
 }

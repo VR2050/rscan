@@ -118,6 +118,22 @@ pub(super) async fn handle_reverse_command(
             )
             .await?;
         }
+        ReverseActions::Picker { workspace, project } => {
+            reverse_misc::handle_picker(workspace, project)?;
+        }
+        ReverseActions::Surface { workspace, project } => {
+            reverse_misc::handle_surface(workspace, project)?;
+        }
+        ReverseActions::Deck { workspace, project } => {
+            reverse_misc::handle_deck(workspace, project)?;
+        }
+        ReverseActions::Workbench {
+            workspace,
+            project,
+            input,
+        } => {
+            reverse_misc::handle_workbench(workspace, project, input)?;
+        }
         ReverseActions::Jobs {
             workspace,
             output,

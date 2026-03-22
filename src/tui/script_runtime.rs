@@ -235,7 +235,7 @@ pub(crate) fn start_script_task(
     let task_id = new_task_id();
     let dir = ensure_task_dir(workspace, &task_id)?;
     let now = now_epoch_secs();
-    let meta = TaskMeta {
+    let mut meta = TaskMeta {
         id: task_id,
         kind: "script".to_string(),
         tags: vec![script_file.display().to_string()],
@@ -249,6 +249,24 @@ pub(crate) fn start_script_task(
         logs: Vec::new(),
         extra: None,
     };
+    crate::cores::engine::task::attach_task_runtime(
+        &mut meta,
+        crate::cores::engine::task::TaskRuntimeBinding {
+            backend: if std::env::var("ZELLIJ").is_ok()
+                || std::env::var("ZELLIJ_SESSION_NAME").is_ok()
+            {
+                "zellij-script-runner".to_string()
+            } else {
+                "script-runner".to_string()
+            },
+            session: std::env::var("ZELLIJ_SESSION_NAME").ok(),
+            tab: std::env::var("RSCAN_ZELLIJ_ACTIVE_TAB").ok(),
+            pane_name: Some("rscan-control".to_string()),
+            role: Some("script-runner".to_string()),
+            cwd: Some(workspace.clone()),
+            command: Some(script_file.display().to_string()),
+        },
+    );
     write_task_meta(&dir, &meta)?;
     let _ = append_task_event(
         &dir,

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:height="32dp"
+    android:width="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:fillColor="@drawable/_icon_pay_alipay__0_res_0x7f08000f"
+        android:pathData="M16,0c8.837,0 16,7.163 16,16s-7.163,16 -16,16S0,24.837 0,16 7.163,0 16,0z"
+        android:fillType="nonZero"/>
+    <group>
+        <clip-path android:pathData="M16,0c8.837,0 16,7.163 16,16s-7.163,16 -16,16S0,24.837 0,16 7.163,0 16,0z"/>
+        <path
+            android:fillColor="#fff"
+            android:pathData="M17.303,6.858v2.953h5.993v0.987h-5.993v1.768h4.893c-0.467,1.925 -1.178,3.697 -2.07,5.254 1.485,0.539 2.817,1.05 3.81,1.382C27.118,20.273 31.043,21.786 32,22v4c-1.047,-0.44 -10.396,-4.508 -13.4,-5.959 -2.185,2.7 -5.007,4.34 -7.935,4.34 -4.954,0 -6.636,-4.35 -4.289,-7.214 0.51,-0.626 1.382,-1.22 2.732,-1.554 2.111,-0.522 5.471,0.324 8.622,1.367 0.587,-1.09 1.056,-2.24 1.4,-3.429L9.422,13.551v-0.99h5.003v-1.767h-6.06v-0.986h6.064L14.429,7.283s0,-0.425 0.43,-0.425h2.444zM16.093,18.447c-2.429,-1.175 -4.486,-2.014 -6.709,-1.796 -0.6,0.06 -1.729,0.325 -2.347,0.863 -1.847,1.597 -0.74,4.517 3,4.517 2.177,0 4.352,-1.379 6.056,-3.584z"
+            android:fillType="nonZero"/>
+    </group>
+</vector>

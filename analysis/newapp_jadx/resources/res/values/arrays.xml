@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="chanel_switch">
+        <item>普通路线</item>
+        <item>备用路线</item>
+        <item>VIP高速专线</item>
+    </array>
+    <array name="history_tab_title">
+        <item>漫画</item>
+        <item>视频</item>
+        <item>小说</item>
+    </array>
+    <array name="mybought_tab_title">
+        <item>漫画</item>
+        <item>视频</item>
+        <item>小说</item>
+        <item>帖子</item>
+        <item>AI定制</item>
+    </array>
+    <array name="purchase_tab_title">
+        <item>漫画</item>
+        <item>视频</item>
+        <item>小说</item>
+        <item>帖子</item>
+    </array>
+    <array name="vip_type">
+        <item>基础会员卡</item>
+        <item>高级会员卡</item>
+    </array>
+</resources>

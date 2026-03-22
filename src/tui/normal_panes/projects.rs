@@ -9,6 +9,7 @@ use crate::tui::project_store::{
     delete_local_project, ensure_project_layout, export_project_snapshot, load_projects,
     project_name_from_path, remove_imported_project,
 };
+use crate::tui::reverse_workbench_support::write_active_project_hint;
 use crate::tui::script_runtime::{load_script_files, read_script_text};
 use crate::tui::task_store::{apply_filter, load_tasks};
 
@@ -102,7 +103,7 @@ pub(super) fn handle_projects_key(
                 ensure_project_layout(ctx.current_project)?;
                 *ctx.scripts_dir = ctx.current_project.join("scripts");
                 let _ = fs::create_dir_all(&*ctx.scripts_dir);
-                *ctx.all_tasks = load_tasks(ctx.current_project.join("tasks"))?;
+                *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
                 *ctx.tasks = apply_filter(ctx.all_tasks, *ctx.filter);
                 *ctx.scripts = load_script_files(ctx.scripts_dir)?;
                 *ctx.task_selected = (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
@@ -117,6 +118,7 @@ pub(super) fn handle_projects_key(
                         ctx.script_buffer.clear();
                     }
                 }
+                let _ = write_active_project_hint(ctx.root_ws, ctx.current_project);
                 *ctx.status_line = format!("已切换项目: {}", ctx.current_project.display());
             }
             Ok(PaneNormalAction::Handled)

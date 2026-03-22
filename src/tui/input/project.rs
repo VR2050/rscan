@@ -10,6 +10,7 @@ use crate::tui::project_store::{
     copy_project_to_local, create_local_project, import_project, load_projects,
     rename_local_project, same_path,
 };
+use crate::tui::reverse_workbench_support::write_active_project_hint;
 use crate::tui::script_runtime::{load_script_files, read_script_text};
 use crate::tui::task_store::{apply_filter, load_tasks};
 
@@ -175,7 +176,7 @@ pub(super) fn handle_project_rename_input(
                                 *ctx.current_project = new_path.clone();
                                 *ctx.scripts_dir = ctx.current_project.join("scripts");
                                 let _ = fs::create_dir_all(&*ctx.scripts_dir);
-                                *ctx.all_tasks = load_tasks(ctx.current_project.join("tasks"))?;
+                                *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
                                 *ctx.tasks = apply_filter(ctx.all_tasks, ctx.filter);
                                 *ctx.scripts = load_script_files(ctx.scripts_dir)?;
                                 *ctx.task_selected =
@@ -187,6 +188,7 @@ pub(super) fn handle_project_rename_input(
                                 } else {
                                     ctx.script_buffer.clear();
                                 }
+                                let _ = write_active_project_hint(ctx.root_ws, ctx.current_project);
                             }
                             *ctx.projects = load_projects(ctx.root_ws)?;
                             if let Some(pos) = ctx

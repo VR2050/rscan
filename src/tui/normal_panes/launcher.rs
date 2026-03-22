@@ -22,7 +22,7 @@ pub(super) fn handle_launcher_key(
         KeyCode::Enter => {
             if let Some((_, cmd)) = ctx.launcher_items.get(*ctx.launcher_selected) {
                 *ctx.status_line = execute_short_command(ctx.current_project, cmd);
-                *ctx.all_tasks = load_tasks(ctx.current_project.join("tasks"))?;
+                *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
                 *ctx.tasks = apply_filter(ctx.all_tasks, *ctx.filter);
                 *ctx.result_selected =
                     (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));

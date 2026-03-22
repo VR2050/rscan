@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:height="32dp"
+    android:width="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:fillColor="@drawable/_icon_pay_wx__0_res_0x7f080010"
+        android:pathData="M16,0c8.837,0 16,7.163 16,16s-7.163,16 -16,16S0,24.837 0,16 7.163,0 16,0z"
+        android:fillType="nonZero"/>
+    <path
+        android:fillColor="#fff"
+        android:pathData="M13.72,18.283c-1.15,0.636 -1.32,-0.358 -1.32,-0.358l-1.44,-3.336c-0.555,-1.586 0.48,-0.715 0.48,-0.715s0.886,0.665 1.56,1.073c0.671,0.405 1.44,0.118 1.44,0.118l9.415,-4.315c-1.738,-2.146 -4.607,-3.55 -7.856,-3.55 -5.3,0 -9.599,3.735 -9.599,8.343 0,2.65 1.423,5.008 3.64,6.537l-0.4,2.28s-0.195,0.667 0.48,0.358c0.46,-0.211 1.634,-0.966 2.332,-1.425 1.099,0.38 2.294,0.591 3.548,0.591 5.301,0 9.6,-3.734 9.6,-8.342 0,-1.335 -0.363,-2.595 -1.004,-3.714 -3,1.793 -9.977,5.957 -10.877,6.454"
+        android:fillType="nonZero"/>
+</vector>

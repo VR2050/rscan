@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <include layout="@layout/view_module_header"/>
+    <FrameLayout
+        android:background="@color/white"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <androidx.recyclerview.widget.RecyclerView
+                android:orientation="horizontal"
+                android:id="@+id/rv_list"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:paddingBottom="5dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="6dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+            <include layout="@layout/view_module_footer"/>
+        </LinearLayout>
+        <include layout="@layout/view_restricted"/>
+    </FrameLayout>
+    <include layout="@layout/ad_single_item"/>
+</LinearLayout>

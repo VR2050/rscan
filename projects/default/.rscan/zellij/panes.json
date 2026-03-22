@@ -1,0 +1,76 @@
+{
+  "panes": [
+    {
+      "name": "art-job-189e1e",
+      "tab": "Inspect",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c",
+      "role": "inspect-artifacts",
+      "command": "printf 'task=%s kind=%s status=%s\\n\\n' 'job-189e1e5d728fdc2c' 'reverse' 'succeeded'; printf 'artifacts/logs known to task metadata:\\n';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e1e5d728fdc2c/asm_full.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e1e5d728fdc2c/calls.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e1e5d728fdc2c/xrefs.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c/stdout.log';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c/stderr.log';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e1e5d728fdc2c';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c/stdout.log';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c/stderr.log';printf '\\nworkspace listing:\\n'; ls -lah; printf '\\n';exec '/usr/bin/zsh' -i",
+      "updated_at": 1773908567
+    },
+    {
+      "name": "logs-189e19247f",
+      "tab": "Inspect",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/tasks/task-189e19247ffd9663",
+      "role": "inspect-logs",
+      "command": "printf 'task=%s kind=%s status=%s\\n' 'task-189e19247ffd9663' 'reverse' 'succeeded'; printf 'cwd=%s\\n\\n' '/home/vr2050/RUST/rscan_codex/projects/default/tasks/task-189e19247ffd9663'; files=''; for f in events.jsonl stdout.log stderr.log; do if [ -e \"$f\" ]; then files=\"$files $f\"; fi; done; if [ -z \"$files\" ]; then echo 'no event/log file yet; dropping to shell'; exec '/usr/bin/zsh' -i; else exec tail -n 80 -F $files; fi",
+      "updated_at": 1773908583
+    },
+    {
+      "name": "logs-job-189e1e",
+      "tab": "Inspect",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c",
+      "role": "inspect-logs",
+      "command": "printf 'task=%s kind=%s status=%s\\n' 'job-189e1e5d728fdc2c' 'reverse' 'succeeded'; printf 'cwd=%s\\n\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e1e5d728fdc2c'; files=''; for f in events.jsonl stdout.log stderr.log; do if [ -e \"$f\" ]; then files=\"$files $f\"; fi; done; if [ -z \"$files\" ]; then echo 'no event/log file yet; dropping to shell'; exec '/usr/bin/zsh' -i; else exec tail -n 80 -F $files; fi",
+      "updated_at": 1773908559
+    },
+    {
+      "name": "logs-job-189e30",
+      "tab": "Inspect",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e3069e145c332",
+      "role": "inspect-logs",
+      "command": "printf 'task=%s kind=%s status=%s\\n' 'job-189e3069e145c332' 'reverse' 'succeeded'; printf 'cwd=%s\\n\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e3069e145c332'; files=''; for f in events.jsonl stdout.log stderr.log; do if [ -e \"$f\" ]; then files=\"$files $f\"; fi; done; if [ -z \"$files\" ]; then echo 'no event/log file yet; dropping to shell'; exec '/usr/bin/zsh' -i; else exec tail -n 80 -F $files; fi",
+      "updated_at": 1773908553
+    },
+    {
+      "name": "rart-189e402c8f",
+      "tab": "Inspect",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e402c8f0c2b6f",
+      "role": "inspect-artifacts",
+      "command": "printf 'reverse-job=%s kind=%s status=%s\\n' 'job-189e402c8f0c2b6f' 'decompile' 'succeeded'; printf 'backend=%s mode=%s\\n' 'rust-asm' 'full'; printf 'target=%s\\n\\n' '/home/vr2050/RUST/rscan_codex/projects/default/binaries/easy'; printf 'recorded artifacts:\\n';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e402c8f0c2b6f/asm_full.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e402c8f0c2b6f/calls.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e402c8f0c2b6f/xrefs.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e402c8f0c2b6f/stdout.log';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e402c8f0c2b6f/stderr.log';printf '\\nlisting:\\n'; ls -lah; printf '\\n';exec '/usr/bin/zsh' -i",
+      "updated_at": 1773925983
+    },
+    {
+      "name": "rart-189e41a386",
+      "tab": "Inspect",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41a38695b37d",
+      "role": "inspect-artifacts",
+      "command": "printf 'reverse-job=%s kind=%s status=%s\\n' 'job-189e41a38695b37d' 'decompile' 'succeeded'; printf 'backend=%s mode=%s\\n' 'ghidra' 'function'; printf 'target=%s\\n\\n' '/home/vr2050/RUST/rscan_codex/projects/default/binaries/easy'; printf 'recorded artifacts:\\n';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e41a38695b37d/stdout.log';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/jobs/job-189e41a38695b37d/stderr.log';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41a38695b37d/function.jsonl';printf ' - %s\\n' '/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41a38695b37d/ir.jsonl';printf '\\nlisting:\\n'; ls -lah; printf '\\n';exec '/usr/bin/zsh' -i",
+      "updated_at": 1773927798
+    },
+    {
+      "name": "rjob-189e409898",
+      "tab": "Reverse",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e4098983ec3d5",
+      "role": "reverse-job-shell",
+      "command": null,
+      "updated_at": 1773926346
+    },
+    {
+      "name": "rjob-189e41f927",
+      "tab": "Reverse",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e41f9270e87b9",
+      "role": "reverse-job-shell",
+      "command": null,
+      "updated_at": 1773927929
+    },
+    {
+      "name": "task-job-189e40",
+      "tab": "Reverse",
+      "cwd": "/home/vr2050/RUST/rscan_codex/projects/default/reverse_out/job-189e402c8f0c2b6f",
+      "role": "task-shell",
+      "command": null,
+      "updated_at": 1773925903
+    }
+  ]
+}
