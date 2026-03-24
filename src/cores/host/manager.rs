@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use tokio::net::lookup_host;
 
 use super::PortScanner;
-use super::models::{Protocol, ScanResult};
+use super::models::{Protocol, ScanProgressCallback, ScanResult};
 use super::syn_scan::{SynConfig, SynScanner};
 use super::tcp_scanner::{TcpConfig, TcpScanner};
 use super::udp_scanner::{UdpConfig, UdpScanner};
@@ -110,6 +110,19 @@ impl ScanManager {
         self.tcp_scanner.scan_ports(ip, ports).await
     }
 
+    pub async fn tcp_scan_with_progress(
+        &self,
+        host: &str,
+        ports: &[u16],
+        progress: Option<ScanProgressCallback>,
+    ) -> Result<ScanResult, RustpenError> {
+        let ip = self.resolve_host(host).await?;
+        Ok(self
+            .tcp_scanner
+            .scan_ports_with_progress(ip, ports, progress)
+            .await)
+    }
+
     /// 扫描单个TCP端口
     pub async fn tcp_scan_port(&self, host: &str, port: u16) -> Result<ScanResult, RustpenError> {
         let ip = self.resolve_host(host).await?;
@@ -122,6 +135,20 @@ impl ScanManager {
 
         let ip = self.resolve_host(host).await?;
         self.tcp_scanner.scan_ports(ip, &common_ports()).await
+    }
+
+    pub async fn quick_tcp_scan_with_progress(
+        &self,
+        host: &str,
+        progress: Option<ScanProgressCallback>,
+    ) -> Result<ScanResult, RustpenError> {
+        use super::ports::common_ports;
+
+        let ip = self.resolve_host(host).await?;
+        Ok(self
+            .tcp_scanner
+            .scan_ports_with_progress(ip, &common_ports(), progress)
+            .await)
     }
 
     /// === UDP 扫描方法 ===

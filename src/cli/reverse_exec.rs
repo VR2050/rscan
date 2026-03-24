@@ -47,9 +47,11 @@ pub(super) async fn handle_analyze(
         "reverse",
         vec![input.display().to_string()],
         |events| async move {
-            if let Some(w) = events {
+            report_progress(&events, 8.0, "reverse.analyze: preparing input");
+            if let Some(ref w) = events {
                 let _ = w.log("info", format!("reverse analyze {}", input.display()));
             }
+            report_progress(&events, 18.0, "reverse.analyze: reading target");
             let bytes = std::fs::read(&input)?;
             let is_apk = bytes.len() >= 4
                 && &bytes[0..4] == b"PK\x03\x04"
@@ -60,6 +62,7 @@ pub(super) async fn handle_analyze(
                         .windows("classes.dex".len())
                         .any(|w| w == b"classes.dex"));
 
+            report_progress(&events, 35.0, "reverse.analyze: loading rules");
             let mut hot_rules = match rules_file {
                 Some(path) => Some(RuleHotReloader::new(path)?),
                 None => None,
@@ -70,6 +73,15 @@ pub(super) async fn handle_analyze(
                 None => &default_rules,
             };
 
+            report_progress(
+                &events,
+                52.0,
+                if is_apk {
+                    "reverse.analyze: analyzing apk"
+                } else {
+                    "reverse.analyze: analyzing binary"
+                },
+            );
             let s = if is_apk {
                 let report = ReverseAnalyzer::analyze_apk_with_rules(&input, rules_ref)?;
                 to_json_or_raw(&report, &output)?
@@ -78,12 +90,10 @@ pub(super) async fn handle_analyze(
                 to_json_or_raw(&report, &output)?
             };
 
-            if let Some(path) = out {
-                let file = File::create(path).await.map_err(RustpenError::Io)?;
-                write_host_output_to_file(file, &s).await?;
-            } else {
-                println!("{s}");
-            }
+            report_progress(&events, 90.0, "reverse.analyze: rendering output");
+            let _ = write_task_output(&events, out.as_ref(), "reverse-analyze-result", &output, &s)
+                .await?;
+            report_progress(&events, 98.0, "reverse.analyze: output done");
             Ok(())
         },
     )
@@ -93,6 +103,7 @@ pub(super) async fn handle_analyze(
 }
 
 pub(super) async fn handle_decompile_plan(
+    cli: &Cli,
     input: Option<PathBuf>,
     input_pos: Option<PathBuf>,
     engine: String,
@@ -108,15 +119,36 @@ pub(super) async fn handle_decompile_plan(
     let engine = DecompilerEngine::parse(&engine).ok_or_else(|| {
         RustpenError::ParseError("invalid --engine. use: objdump|radare2|ghidra|jadx".to_string())
     })?;
-    let orchestrator = ReverseOrchestrator::detect();
-    let plan = orchestrator.build_decompile_plan(engine, &input, output_dir.as_deref())?;
-    let s = to_json_or_raw(&plan, &output)?;
-    if let Some(path) = out {
-        let file = File::create(path).await.map_err(RustpenError::Io)?;
-        write_host_output_to_file(file, &s).await?;
-    } else {
-        println!("{s}");
-    }
+    with_task(
+        cli,
+        "reverse",
+        vec![input.display().to_string()],
+        |events| async move {
+            report_progress(&events, 10.0, "reverse.decompile-plan: preparing");
+            if let Some(ref w) = events {
+                let _ = w.log(
+                    "info",
+                    format!("decompile-plan engine={engine:?} file={}", input.display()),
+                );
+            }
+            let orchestrator = ReverseOrchestrator::detect();
+            report_progress(&events, 50.0, "reverse.decompile-plan: building plan");
+            let plan = orchestrator.build_decompile_plan(engine, &input, output_dir.as_deref())?;
+            report_progress(&events, 90.0, "reverse.decompile-plan: rendering output");
+            let s = to_json_or_raw(&plan, &output)?;
+            let _ = write_task_output(
+                &events,
+                out.as_ref(),
+                "reverse-decompile-plan-result",
+                &output,
+                &s,
+            )
+            .await?;
+            report_progress(&events, 98.0, "reverse.decompile-plan: output done");
+            Ok(())
+        },
+    )
+    .await?;
     Ok(())
 }
 
@@ -162,7 +194,8 @@ pub(super) async fn handle_decompile_run(
         "reverse",
         vec![input.display().to_string()],
         |events| async move {
-            if let Some(w) = events {
+            report_progress(&events, 10.0, "reverse.decompile-run: preparing job");
+            if let Some(ref w) = events {
                 let _ = w.log(
                     "info",
                     format!(
@@ -173,14 +206,19 @@ pub(super) async fn handle_decompile_run(
                     ),
                 );
             }
+            report_progress(&events, 35.0, "reverse.decompile-run: executing");
             let report = run_decompile_job(&input, &workspace, &engine, mode, func, timeout_secs)?;
+            report_progress(&events, 90.0, "reverse.decompile-run: rendering output");
             let s = to_json_or_raw(&report, &output)?;
-            if let Some(path) = out {
-                let file = File::create(path).await.map_err(RustpenError::Io)?;
-                write_host_output_to_file(file, &s).await?;
-            } else {
-                println!("{s}");
-            }
+            let _ = write_task_output(
+                &events,
+                out.as_ref(),
+                "reverse-decompile-run-result",
+                &output,
+                &s,
+            )
+            .await?;
+            report_progress(&events, 98.0, "reverse.decompile-run: output done");
             Ok(())
         },
     )
@@ -234,7 +272,8 @@ pub(super) async fn handle_decompile_batch(
         "reverse",
         vec![format!("batch:{} files", inputs.len())],
         |events| async move {
-            if let Some(w) = events {
+            report_progress(&events, 10.0, "reverse.decompile-batch: preparing jobs");
+            if let Some(ref w) = events {
                 let _ = w.log(
                     "info",
                     format!(
@@ -245,6 +284,11 @@ pub(super) async fn handle_decompile_batch(
                     ),
                 );
             }
+            report_progress(
+                &events,
+                35.0,
+                format!("reverse.decompile-batch: executing {} jobs", inputs.len()),
+            );
             let report = run_decompile_batch(
                 &inputs,
                 &workspace,
@@ -254,13 +298,17 @@ pub(super) async fn handle_decompile_batch(
                 timeout_secs,
                 parallel_jobs,
             )?;
+            report_progress(&events, 90.0, "reverse.decompile-batch: rendering output");
             let s = to_json_or_raw(&report, &output)?;
-            if let Some(path) = out {
-                let file = File::create(path).await.map_err(RustpenError::Io)?;
-                write_host_output_to_file(file, &s).await?;
-            } else {
-                println!("{s}");
-            }
+            let _ = write_task_output(
+                &events,
+                out.as_ref(),
+                "reverse-decompile-batch-result",
+                &output,
+                &s,
+            )
+            .await?;
+            report_progress(&events, 98.0, "reverse.decompile-batch: output done");
             Ok(())
         },
     )

@@ -98,15 +98,45 @@ fn finish_command(ctx: &mut NonNormalInputCtx<'_>) -> Result<(), RustpenError> {
     if !trimmed.is_empty() {
         push_history(ctx, &trimmed);
     }
-    *ctx.status_line = execute_short_command(ctx.current_project, ctx.cmd_buffer);
+    let exec = execute_short_command(ctx.current_project, ctx.cmd_buffer);
+    *ctx.status_line = exec.status_line;
     *ctx.input_mode = InputMode::Normal;
     reset_command_state(ctx);
 
     *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
     *ctx.tasks = apply_filter(ctx.all_tasks, ctx.filter);
-    *ctx.task_selected = (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
-    *ctx.result_selected = (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+    focus_new_task(
+        ctx.all_tasks,
+        ctx.tasks,
+        exec.task_id.as_deref(),
+        ctx.task_selected,
+        ctx.result_selected,
+    );
     Ok(())
+}
+
+fn focus_new_task(
+    all_tasks: &[crate::tui::models::TaskView],
+    tasks: &[crate::tui::models::TaskView],
+    task_id: Option<&str>,
+    task_selected: &mut usize,
+    result_selected: &mut usize,
+) {
+    if let Some(task_id) = task_id {
+        if let Some(pos) = all_tasks.iter().position(|task| task.meta.id == task_id) {
+            *result_selected = pos;
+        } else {
+            *result_selected = (*result_selected).min(all_tasks.len().saturating_sub(1));
+        }
+        if let Some(pos) = tasks.iter().position(|task| task.meta.id == task_id) {
+            *task_selected = pos;
+        } else {
+            *task_selected = (*task_selected).min(tasks.len().saturating_sub(1));
+        }
+        return;
+    }
+    *task_selected = (*task_selected).min(tasks.len().saturating_sub(1));
+    *result_selected = (*result_selected).min(all_tasks.len().saturating_sub(1));
 }
 
 fn reset_command_state(ctx: &mut NonNormalInputCtx<'_>) {

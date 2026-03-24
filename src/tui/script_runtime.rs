@@ -1,11 +1,15 @@
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, TryRecvError};
+use std::thread;
+use std::time::Duration;
 
 use crate::cores::engine::task::{
-    EventKind, TaskEvent, TaskMeta, TaskStatus, append_task_event, ensure_task_dir, new_task_id,
-    now_epoch_secs, write_task_meta,
+    EventKind, TaskEvent, TaskMeta, TaskStatus, append_task_event, ensure_task_dir, load_task_meta,
+    new_task_id, now_epoch_secs, write_task_meta,
 };
 use crate::errors::RustpenError;
 
@@ -108,10 +112,69 @@ pub(crate) fn save_current_script(
     Ok(format!("saved: {}", path.display()))
 }
 
-pub(crate) fn start_script_runner(path: PathBuf) -> Receiver<ScriptRunResult> {
+fn update_script_task_progress(
+    dir: &PathBuf,
+    pct: f32,
+    message: impl Into<String>,
+) -> Result<(), RustpenError> {
+    let message = message.into();
+    let mut meta = load_task_meta(dir)?;
+    meta.progress = Some(pct);
+    write_task_meta(dir, &meta)?;
+    append_task_event(
+        dir,
+        &TaskEvent {
+            ts: now_epoch_secs(),
+            level: "info".to_string(),
+            kind: EventKind::Progress,
+            message: Some(message),
+            data: Some(pct.into()),
+        },
+    )?;
+    Ok(())
+}
+
+fn spawn_script_progress_heartbeat(
+    dir: PathBuf,
+    path: PathBuf,
+    done: Arc<AtomicBool>,
+) -> std::thread::JoinHandle<()> {
+    thread::spawn(move || {
+        let ext = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let stage = if ext == "rs" {
+            "script: compiling/running"
+        } else {
+            "script: running"
+        };
+        let mut pct = 12.0f32;
+        while !done.load(Ordering::Relaxed) {
+            let _ = update_script_task_progress(&dir, pct, stage);
+            pct = (pct + 8.0).min(72.0);
+            thread::sleep(Duration::from_millis(400));
+        }
+        let _ = update_script_task_progress(&dir, 88.0, "script: finalizing");
+    })
+}
+
+pub(crate) fn start_script_runner(
+    path: PathBuf,
+    task_dir: Option<PathBuf>,
+) -> Receiver<ScriptRunResult> {
     let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
+    thread::spawn(move || {
+        let done = Arc::new(AtomicBool::new(false));
+        let heartbeat = task_dir
+            .as_ref()
+            .map(|dir| spawn_script_progress_heartbeat(dir.clone(), path.clone(), done.clone()));
         let result = run_script_once(path);
+        done.store(true, Ordering::Relaxed);
+        if let Some(handle) = heartbeat {
+            let _ = handle.join();
+        }
         let _ = tx.send(result);
     });
     rx
@@ -268,6 +331,7 @@ pub(crate) fn start_script_task(
         },
     );
     write_task_meta(&dir, &meta)?;
+    let _ = update_script_task_progress(&dir, 5.0, "script: queued");
     let _ = append_task_event(
         &dir,
         &TaskEvent {

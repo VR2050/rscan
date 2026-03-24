@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use crate::cores::engine::task::{EventKind, TaskStatus};
 
 use super::models::{InputMode, MainPane, MiniConsoleLayout, MiniConsoleTab, TaskTab, TaskView};
-use super::task_store::{load_events, load_log_tail};
+use super::task_store::{load_events, load_log_tail, load_text_artifact_snippets};
 
 pub(crate) fn mini_console_dock_rect(
     area: Rect,
@@ -93,21 +93,19 @@ pub(crate) fn build_mini_console_lines(
     script_output: &[String],
     mini_terminal_lines: &[String],
     terminal_screen_lines: &[Line<'static>],
-    status_line: &str,
     zellij_managed: bool,
     zellij_session: Option<&str>,
     zellij_tabs: &[&str],
 ) -> Vec<Line<'static>> {
     let terminal_label = if zellij_managed { "Zellij" } else { "Terminal" };
     let mut out = vec![line_s(&format!(
-        "pane={} | tab={} | status={}",
+        "pane={} | tab={}",
         pane.label(),
         match tab {
             MiniConsoleTab::Output => "Output",
             MiniConsoleTab::Terminal => terminal_label,
             MiniConsoleTab::Problems => "Problems",
         },
-        status_line
     ))];
     let controls = if zellij_managed {
         concat!(
@@ -276,9 +274,21 @@ pub(crate) fn build_mini_console_lines(
     out.push(line_s("stdout/stderr:"));
     let stdout = load_log_tail(&task.dir, "stdout.log", 2);
     let stderr = load_log_tail(&task.dir, "stderr.log", 2);
-    if stdout.is_empty() && stderr.is_empty() {
+    let artifact_snippets = load_text_artifact_snippets(task, 3, 1);
+    if stdout.is_empty() && stderr.is_empty() && artifact_snippets.is_empty() {
         out.push(line_s("- <empty>"));
     } else {
+        for (path, lines) in artifact_snippets {
+            out.push(line_s(&format!(
+                "art> [{}]",
+                path.file_name()
+                    .and_then(|v| v.to_str())
+                    .unwrap_or("artifact")
+            )));
+            for line in lines {
+                out.push(line_s(&format!("art> {}", line)));
+            }
+        }
         for line in stdout {
             out.push(line_s(&format!("out> {}", line)));
         }
@@ -391,4 +401,114 @@ pub(crate) fn task_tab_label(tab: TaskTab) -> &'static str {
 
 pub(crate) fn line_s(s: &str) -> Line<'static> {
     Line::from(Span::raw(s.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cores::engine::task::{TaskMeta, TaskStatus};
+    use crate::tui::models::TaskOrigin;
+
+    fn make_task(
+        base_name: &str,
+        kind: &str,
+        artifact_body: &str,
+    ) -> (std::path::PathBuf, TaskView) {
+        let base = std::env::temp_dir().join(format!(
+            "rscan_mini_console_{base_name}_{:x}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let task_dir = base.join("tasks").join(format!("task-{kind}"));
+        std::fs::create_dir_all(&task_dir).unwrap();
+        let artifact = task_dir.join(format!("{kind}-result.txt"));
+        std::fs::write(&artifact, artifact_body).unwrap();
+        let task = TaskView {
+            meta: TaskMeta {
+                id: format!("task-{kind}"),
+                kind: kind.to_string(),
+                tags: vec!["127.0.0.1".to_string()],
+                status: TaskStatus::Succeeded,
+                created_at: 1,
+                started_at: Some(1),
+                ended_at: Some(2),
+                progress: Some(100.0),
+                note: None,
+                artifacts: vec![artifact],
+                logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+                extra: None,
+            },
+            dir: task_dir,
+            origin: TaskOrigin::Task,
+        };
+        (base, task)
+    }
+
+    #[test]
+    fn mini_console_output_includes_artifact_snippet() {
+        let (base, task) = make_task(
+            "artifact_snippet",
+            "host",
+            "host=127.0.0.1 open=2\n22 tcp ssh\n80 tcp http\n",
+        );
+
+        let lines = build_mini_console_lines(
+            MiniConsoleTab::Output,
+            MainPane::Tasks,
+            std::slice::from_ref(&task),
+            std::slice::from_ref(&task),
+            0,
+            &[],
+            0,
+            &[],
+            &[],
+            &[],
+            false,
+            None,
+            &[],
+        );
+        let rendered = lines
+            .iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(rendered.contains("art> [host-result.txt]"));
+        assert!(rendered.contains("art> 22 tcp ssh"));
+
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn mini_console_problems_lists_failed_task_and_stderr() {
+        let (base, mut task) = make_task("problems", "web", "OK 200 https://example.com/\n");
+        task.meta.status = TaskStatus::Failed;
+        std::fs::write(task.dir.join("stderr.log"), "network timeout\n").unwrap();
+
+        let lines = build_mini_console_lines(
+            MiniConsoleTab::Problems,
+            MainPane::Tasks,
+            std::slice::from_ref(&task),
+            std::slice::from_ref(&task),
+            0,
+            &[],
+            0,
+            &[],
+            &[],
+            &[],
+            false,
+            None,
+            &[],
+        );
+        let rendered = lines
+            .iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(rendered.contains("[web] task-web"));
+        assert!(rendered.contains("network timeout"));
+
+        let _ = std::fs::remove_dir_all(base);
+    }
 }

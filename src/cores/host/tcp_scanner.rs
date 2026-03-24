@@ -12,7 +12,9 @@ use tokio::task::JoinSet;
 use tokio::time::{sleep, timeout}; // 异步超时包装器
 
 // 导入项目内部模块
-use super::models::{PortResult, PortStatus, Protocol, ScanResult};
+use super::models::{
+    PortResult, PortStatus, Protocol, ScanProgress, ScanProgressCallback, ScanResult,
+};
 use crate::errors::RustpenError; // 自定义错误类型 // 数据模型
 
 /// TCP扫描配置 - 控制扫描行为参数
@@ -210,6 +212,16 @@ impl TcpScanner {
 
     /// 顺序扫描多个端口 - 逐个端口扫描（单线程）
     async fn scan_ports_sequential(&self, host: IpAddr, ports: &[u16]) -> ScanResult {
+        self.scan_ports_sequential_with_progress(host, ports, None)
+            .await
+    }
+
+    async fn scan_ports_sequential_with_progress(
+        &self,
+        host: IpAddr,
+        ports: &[u16],
+        progress: Option<ScanProgressCallback>,
+    ) -> ScanResult {
         let start_time = Instant::now(); // 记录整个扫描开始时间
         let port_plan = self.prepare_port_plan(ports);
 
@@ -222,6 +234,7 @@ impl TcpScanner {
 
         // 顺序扫描每个端口
         let base_gap_ms = self.worker_base_gap_ms(1);
+        let total = port_plan.len();
         for (seq, &port) in port_plan.iter().enumerate() {
             Self::maybe_pace_probe(base_gap_ms, self.config.jitter_ms, 0, seq as u64, 0).await;
             // 异步检查单个端口
@@ -234,6 +247,13 @@ impl TcpScanner {
             if port_result.status == PortStatus::Open {
                 scan_result.add_open_port_detail(port_result);
             }
+            if let Some(cb) = progress.as_ref() {
+                cb(ScanProgress {
+                    scanned: seq + 1,
+                    total,
+                    open: scan_result.open_ports_count(),
+                });
+            }
         }
 
         // 计算整个扫描耗时
@@ -243,6 +263,16 @@ impl TcpScanner {
 
     /// 并发扫描多个端口 - 同时扫描多个端口（多任务）
     async fn scan_ports_concurrent(&self, host: IpAddr, ports: &[u16]) -> ScanResult {
+        self.scan_ports_concurrent_with_progress(host, ports, None)
+            .await
+    }
+
+    async fn scan_ports_concurrent_with_progress(
+        &self,
+        host: IpAddr,
+        ports: &[u16],
+        progress: Option<ScanProgressCallback>,
+    ) -> ScanResult {
         let start_time = Instant::now(); // 记录整个扫描开始时间
 
         // 创建扫描结果容器
@@ -261,12 +291,17 @@ impl TcpScanner {
         let base_gap_ms = self.worker_base_gap_ms(worker_count);
         let jitter_ms = self.config.jitter_ms;
         let adaptive_backpressure = self.config.adaptive_backpressure;
+        let progress_scanned = Arc::new(AtomicUsize::new(0));
+        let progress_open = Arc::new(AtomicUsize::new(0));
         let ports = Arc::new(port_plan);
         let index = Arc::new(AtomicUsize::new(0));
         let mut workers = JoinSet::new();
         for worker_id in 0..worker_count {
             let ports = Arc::clone(&ports);
             let index = Arc::clone(&index);
+            let progress = progress.clone();
+            let progress_scanned = Arc::clone(&progress_scanned);
+            let progress_open = Arc::clone(&progress_open);
             workers.spawn(async move {
                 let mut local = Vec::with_capacity((ports.len() / worker_count).max(8));
                 let mut seq = 0_u64;
@@ -307,6 +342,19 @@ impl TcpScanner {
                         };
                     }
                     seq = seq.wrapping_add(1);
+                    let scanned = progress_scanned.fetch_add(1, Ordering::Relaxed) + 1;
+                    let open = if result.status == PortStatus::Open {
+                        progress_open.fetch_add(1, Ordering::Relaxed) + 1
+                    } else {
+                        progress_open.load(Ordering::Relaxed)
+                    };
+                    if let Some(cb) = progress.as_ref() {
+                        cb(ScanProgress {
+                            scanned,
+                            total: ports.len(),
+                            open,
+                        });
+                    }
                     local.push(result);
                 }
                 local
@@ -329,6 +377,21 @@ impl TcpScanner {
         // 计算整个扫描耗时
         scan_result.scan_duration = start_time.elapsed();
         scan_result
+    }
+
+    pub async fn scan_ports_with_progress(
+        &self,
+        host: IpAddr,
+        ports: &[u16],
+        progress: Option<ScanProgressCallback>,
+    ) -> ScanResult {
+        if self.config.concurrent && self.config.concurrency > 1 {
+            self.scan_ports_concurrent_with_progress(host, ports, progress)
+                .await
+        } else {
+            self.scan_ports_sequential_with_progress(host, ports, progress)
+                .await
+        }
     }
 }
 

@@ -230,13 +230,11 @@ fn prefer_non_empty(primary: Vec<String>, fallback: Vec<String>) -> Vec<String> 
 }
 
 fn plan_engine_suggestions(prefix: &str) -> Vec<String> {
-    [
-        "objdump", "radare2", "r2", "ghidra", "ida", "idat64", "jadx",
-    ]
-    .iter()
-    .filter(|s| s.starts_with(prefix))
-    .map(|s| (*s).to_string())
-    .collect()
+    ["objdump", "radare2", "r2", "ghidra", "jadx"]
+        .iter()
+        .filter(|s| s.starts_with(prefix))
+        .map(|s| (*s).to_string())
+        .collect()
 }
 
 fn run_engine_suggestions(prefix: &str) -> Vec<String> {
@@ -246,8 +244,6 @@ fn run_engine_suggestions(prefix: &str) -> Vec<String> {
         "radare2",
         "r2",
         "ghidra",
-        "ida",
-        "idat64",
         "jadx",
         "rust",
         "rust-asm",

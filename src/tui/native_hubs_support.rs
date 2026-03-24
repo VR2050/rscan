@@ -20,7 +20,7 @@ use super::{
 use crate::tui::project_store::project_name_from_path;
 use crate::tui::reverse_workbench_support::{relative_or_full, resolve_active_project};
 use crate::tui::script_runtime::load_script_files;
-use crate::tui::task_store::load_tasks;
+use crate::tui::task_store::{load_tasks, load_text_artifact_snippets, preview_text_artifact};
 use crate::tui::zellij;
 
 type HubTerminal = Terminal<CrosstermBackend<std::io::Stdout>>;
@@ -134,6 +134,19 @@ pub(super) fn build_task_detail_lines(active_project: &Path, task: &TaskView) ->
 
 pub(super) fn build_task_preview_lines(task: &TaskView) -> Vec<String> {
     let mut out = Vec::new();
+    for (path, lines) in load_text_artifact_snippets(task, super::LOG_TAIL_MAX_LINES.min(40), 2) {
+        if lines.is_empty() {
+            continue;
+        }
+        out.push(format!(
+            "[artifact:{}]",
+            path.file_name()
+                .and_then(|v| v.to_str())
+                .unwrap_or("artifact")
+        ));
+        out.extend(lines);
+        out.push(String::new());
+    }
     for path in preview_source_paths(task).into_iter().take(3) {
         let Some(lines) =
             read_log_tail_lines(&path, super::LOG_TAIL_MAX_LINES, super::LOG_TAIL_MAX_BYTES)
@@ -186,6 +199,12 @@ pub(super) fn task_detail_cache_signature(task: &TaskView) -> u64 {
         runtime.role.hash(&mut hasher);
         runtime.cwd.hash(&mut hasher);
         runtime.command.hash(&mut hasher);
+    }
+    if let Some((path, _)) = preview_text_artifact(task, 1) {
+        hash_path_snapshot(&mut hasher, &path);
+    }
+    for (path, _) in load_text_artifact_snippets(task, 1, 2) {
+        hash_path_snapshot(&mut hasher, &path);
     }
     for path in preview_source_paths(task) {
         hash_path_snapshot(&mut hasher, &path);
@@ -474,6 +493,41 @@ fn user_shell() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cores::engine::task::{TaskMeta, TaskStatus};
+    use crate::tui::models::TaskOrigin;
+
+    fn make_task(base_name: &str, kind: &str, artifact_body: &str) -> (PathBuf, TaskView) {
+        let base = std::env::temp_dir().join(format!(
+            "rscan_native_hub_{base_name}_{:x}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let task_dir = base.join("tasks").join(format!("task-{kind}"));
+        std::fs::create_dir_all(&task_dir).unwrap();
+        let artifact = task_dir.join(format!("{kind}-result.txt"));
+        std::fs::write(&artifact, artifact_body).unwrap();
+        let task = TaskView {
+            meta: TaskMeta {
+                id: format!("task-{kind}"),
+                kind: kind.to_string(),
+                tags: vec!["https://example.com".to_string()],
+                status: TaskStatus::Succeeded,
+                created_at: 1,
+                started_at: Some(1),
+                ended_at: Some(2),
+                progress: Some(100.0),
+                note: None,
+                artifacts: vec![artifact],
+                logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+                extra: None,
+            },
+            dir: task_dir,
+            origin: TaskOrigin::Task,
+        };
+        (base, task)
+    }
 
     #[test]
     fn pane_command_targets_hidden_pane_route() {
@@ -501,5 +555,37 @@ mod tests {
         let rs = build_script_run_command(Path::new("/tmp/demo.rs"));
         assert!(py.contains("python3"));
         assert!(rs.contains("rustc"));
+    }
+
+    #[test]
+    fn task_preview_lines_include_artifact_content() {
+        let (base, task) = make_task(
+            "preview",
+            "web",
+            "OK 200 https://example.com/admin\nOK 200 https://example.com/debug\n",
+        );
+
+        let lines = build_task_preview_lines(&task);
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("[artifact:web-result.txt]"))
+        );
+        assert!(lines.iter().any(|line| line.contains("/admin")));
+
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn task_detail_cache_signature_changes_when_artifact_changes() {
+        let (base, task) = make_task("signature", "vuln", "matched=word:body\n");
+        let before = task_detail_cache_signature(&task);
+        let artifact = task.meta.artifacts[0].clone();
+        std::thread::sleep(Duration::from_millis(2));
+        std::fs::write(&artifact, "matched=word:body,status:code\n").unwrap();
+        let after = task_detail_cache_signature(&task);
+        assert_ne!(before, after);
+
+        let _ = std::fs::remove_dir_all(base);
     }
 }

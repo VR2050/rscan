@@ -6,6 +6,7 @@ use super::AppState;
 use crate::cores::engine::task::{TaskStatus, now_epoch_secs};
 use crate::errors::RustpenError;
 use crate::tui::models::{InputMode, TaskTab, TaskView};
+use crate::tui::pane_cache_text::build_dashboard_recent_items;
 use crate::tui::pane_text::{
     build_dashboard_lines, build_result_panel_lines, build_task_detail_lines,
 };
@@ -34,12 +35,29 @@ impl AppState {
             registry_signature,
         };
         if self.dashboard_cache_key.as_ref() != Some(&dashboard_key) {
+            self.dashboard_total = self.all_tasks.len();
+            self.dashboard_running = self
+                .all_tasks
+                .iter()
+                .filter(|t| t.meta.status == TaskStatus::Running)
+                .count();
+            self.dashboard_failed = self
+                .all_tasks
+                .iter()
+                .filter(|t| t.meta.status == TaskStatus::Failed)
+                .count();
+            self.dashboard_succeeded = self
+                .all_tasks
+                .iter()
+                .filter(|t| t.meta.status == TaskStatus::Succeeded)
+                .count();
             self.dashboard_lines = build_dashboard_lines(
                 &self.all_tasks,
                 &self.current_project,
                 zellij_managed,
                 zellij_session.as_deref(),
             );
+            self.dashboard_recent_items = build_dashboard_recent_items(&self.all_tasks, 10);
             self.dashboard_cache_key = Some(dashboard_key);
             self.dashboard_render_serial = self.dashboard_render_serial.wrapping_add(1);
         }
@@ -447,6 +465,12 @@ fn task_collection_signature(tasks: &[TaskView]) -> u64 {
         task.meta.tags.hash(&mut hasher);
         task.meta.artifacts.hash(&mut hasher);
         task.meta.logs.hash(&mut hasher);
+        for path in &task.meta.artifacts {
+            hash_task_path_state(path, &mut hasher);
+        }
+        for path in &task.meta.logs {
+            hash_task_path_state(path, &mut hasher);
+        }
         task.origin.hash(&mut hasher);
         task.meta
             .extra
@@ -455,6 +479,24 @@ fn task_collection_signature(tasks: &[TaskView]) -> u64 {
             .hash(&mut hasher);
     }
     hasher.finish()
+}
+
+fn hash_task_path_state(path: &std::path::Path, hasher: &mut DefaultHasher) {
+    path.hash(hasher);
+    let Ok(meta) = std::fs::metadata(path) else {
+        0u8.hash(hasher);
+        return;
+    };
+    1u8.hash(hasher);
+    meta.len().hash(hasher);
+    meta.is_dir().hash(hasher);
+    meta.is_file().hash(hasher);
+    let modified = meta
+        .modified()
+        .ok()
+        .and_then(|ts| ts.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|dur| dur.as_secs());
+    modified.hash(hasher);
 }
 
 fn task_status_code(status: &TaskStatus) -> u8 {

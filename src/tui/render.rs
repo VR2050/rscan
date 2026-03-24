@@ -54,7 +54,12 @@ pub(crate) struct RenderCtx<'a> {
 
     pub(crate) projects: &'a [ProjectEntry],
     pub(crate) project_selected: usize,
+    pub(crate) dashboard_total: usize,
+    pub(crate) dashboard_running: usize,
+    pub(crate) dashboard_failed: usize,
+    pub(crate) dashboard_succeeded: usize,
     pub(crate) dashboard_lines: &'a [Line<'static>],
+    pub(crate) dashboard_recent_items: &'a [ListItem<'static>],
     pub(crate) project_list_items: &'a [ListItem<'static>],
     pub(crate) project_detail_lines: &'a [Line<'static>],
 

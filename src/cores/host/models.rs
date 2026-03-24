@@ -4,6 +4,7 @@
 use bitvec::prelude::*; // 位图操作库，用于高效存储端口状态
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr; // IP地址类型（IPv4/IPv6）
+use std::sync::Arc;
 use std::time::Duration; // 时间间隔类型 // 序列化/反序列化支持
 
 /// 端口状态 - 使用u8表示，更高效
@@ -33,6 +34,15 @@ pub enum Protocol {
     Arp,  // 地址解析协议
     Dns,  // DNS 探测（基于 UDP/TCP，但语义上单列）
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ScanProgress {
+    pub scanned: usize,
+    pub total: usize,
+    pub open: usize,
+}
+
+pub type ScanProgressCallback = Arc<dyn Fn(ScanProgress) + Send + Sync>;
 
 /// 极简端口结果 - 只存储必要信息，优化内存使用
 #[derive(Debug, Clone, Serialize, Deserialize)]

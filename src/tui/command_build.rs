@@ -150,11 +150,11 @@ pub(crate) fn build_task_spawn_args(
                     let engine = parts.get(3).copied().unwrap_or("objdump");
                     let engine_ok = matches!(
                         engine.to_ascii_lowercase().as_str(),
-                        "objdump" | "radare2" | "r2" | "ghidra" | "ida" | "idat64" | "jadx"
+                        "objdump" | "radare2" | "r2" | "ghidra" | "jadx"
                     );
                     if !engine_ok {
                         return Err(format!(
-                            "engine 不支持: {}，可选 objdump|radare2|ghidra|ida|jadx",
+                            "engine 不支持: {}，可选 objdump|radare2|ghidra|jadx",
                             engine
                         ));
                     }
@@ -282,11 +282,11 @@ pub(crate) fn build_task_spawn_args(
             let engine = parts.get(2).copied().unwrap_or("objdump");
             let engine_ok = matches!(
                 engine.to_ascii_lowercase().as_str(),
-                "objdump" | "radare2" | "r2" | "ghidra" | "ida" | "idat64" | "jadx"
+                "objdump" | "radare2" | "r2" | "ghidra" | "jadx"
             );
             if !engine_ok {
                 return Err(format!(
-                    "engine 不支持: {}，可选 objdump|radare2|ghidra|ida|jadx",
+                    "engine 不支持: {}，可选 objdump|radare2|ghidra|jadx",
                     engine
                 ));
             }
@@ -346,7 +346,7 @@ fn append_reverse_run_args(
     let engine = parts.get(engine_idx).copied().unwrap_or("auto");
     if !reverse_run_engine_supported(engine) {
         return Err(format!(
-            "engine 不支持: {}，可选 auto|objdump|radare2|ghidra|ida|jadx|rust|rust-asm|rust-index",
+            "engine 不支持: {}，可选 auto|objdump|radare2|ghidra|jadx|rust|rust-asm|rust-index",
             engine
         ));
     }
@@ -387,8 +387,6 @@ fn reverse_run_engine_supported(engine: &str) -> bool {
             | "radare2"
             | "r2"
             | "ghidra"
-            | "ida"
-            | "idat64"
             | "jadx"
             | "rust"
             | "rust-asm"

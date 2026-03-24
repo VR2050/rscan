@@ -21,11 +21,33 @@ pub(super) fn handle_launcher_key(
         }
         KeyCode::Enter => {
             if let Some((_, cmd)) = ctx.launcher_items.get(*ctx.launcher_selected) {
-                *ctx.status_line = execute_short_command(ctx.current_project, cmd);
+                let exec = execute_short_command(ctx.current_project, cmd);
+                *ctx.status_line = exec.status_line;
                 *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
                 *ctx.tasks = apply_filter(ctx.all_tasks, *ctx.filter);
-                *ctx.result_selected =
-                    (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+                if let Some(task_id) = exec.task_id.as_deref() {
+                    if let Some(pos) = ctx
+                        .all_tasks
+                        .iter()
+                        .position(|task| task.meta.id == task_id)
+                    {
+                        *ctx.result_selected = pos;
+                    } else {
+                        *ctx.result_selected =
+                            (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+                    }
+                    if let Some(pos) = ctx.tasks.iter().position(|task| task.meta.id == task_id) {
+                        *ctx.task_selected = pos;
+                    } else {
+                        *ctx.task_selected =
+                            (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
+                    }
+                } else {
+                    *ctx.task_selected =
+                        (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
+                    *ctx.result_selected =
+                        (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+                }
             }
             Ok(PaneNormalAction::Handled)
         }

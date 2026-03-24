@@ -77,12 +77,8 @@ pub(super) async fn handle_vuln_command(
                 } else {
                     format_vuln_report_pretty(&report, color_enabled())
                 };
-                if let Some(path) = out {
-                    let file = File::create(path).await.map_err(RustpenError::Io)?;
-                    write_host_output_to_file(file, &s).await?;
-                } else {
-                    println!("{s}");
-                }
+                let _ = write_task_output(&events, out.as_ref(), "vuln-scan-result", &output, &s)
+                    .await?;
                 report_progress(&events, 98.0, "vuln.scan: output done");
                 Ok(())
             })
@@ -114,12 +110,14 @@ pub(super) async fn handle_vuln_command(
                     } else {
                         format_container_audit_pretty(&report, color_enabled())
                     };
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{s}");
-                    }
+                    let _ = write_task_output(
+                        &events,
+                        out.as_ref(),
+                        "vuln-container-audit-result",
+                        &output,
+                        &s,
+                    )
+                    .await?;
                     report_progress(&events, 98.0, "vuln.container-audit: output done");
                     Ok(())
                 },
@@ -147,12 +145,14 @@ pub(super) async fn handle_vuln_command(
                     } else {
                         format_system_guard_pretty(&report, color_enabled())
                     };
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{s}");
-                    }
+                    let _ = write_task_output(
+                        &events,
+                        out.as_ref(),
+                        "vuln-system-guard-result",
+                        &output,
+                        &s,
+                    )
+                    .await?;
                     report_progress(&events, 98.0, "vuln.system-guard: output done");
                     Ok(())
                 },
@@ -216,12 +216,14 @@ pub(super) async fn handle_vuln_command(
                     } else {
                         format_stealth_check_pretty(&report, color_enabled())
                     };
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{s}");
-                    }
+                    let _ = write_task_output(
+                        &events,
+                        out.as_ref(),
+                        "vuln-stealth-check-result",
+                        &output,
+                        &s,
+                    )
+                    .await?;
                     report_progress(&events, 98.0, "vuln.stealth-check: output done");
                     Ok(())
                 },
@@ -279,12 +281,14 @@ pub(super) async fn handle_vuln_command(
                     } else {
                         format_fragment_audit_pretty(&report, color_enabled())
                     };
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{s}");
-                    }
+                    let _ = write_task_output(
+                        &events,
+                        out.as_ref(),
+                        "vuln-fragment-audit-result",
+                        &output,
+                        &s,
+                    )
+                    .await?;
                     report_progress(&events, 98.0, "vuln.fragment-audit: output done");
                     Ok(())
                 },

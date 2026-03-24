@@ -192,6 +192,7 @@ pub fn append_task_event(dir: &Path, event: &TaskEvent) -> Result<(), RustpenErr
 pub struct TaskEventWriter {
     dir: PathBuf,
     last_progress_bucket: Arc<Mutex<Option<u8>>>,
+    write_lock: Arc<Mutex<()>>,
 }
 
 impl TaskEventWriter {
@@ -199,6 +200,7 @@ impl TaskEventWriter {
         Self {
             dir,
             last_progress_bucket: Arc::new(Mutex::new(None)),
+            write_lock: Arc::new(Mutex::new(())),
         }
     }
 
@@ -207,18 +209,40 @@ impl TaskEventWriter {
         level: impl Into<String>,
         message: impl Into<String>,
     ) -> Result<(), RustpenError> {
+        let _write_guard = self.write_lock.lock().ok();
+        let level = level.into();
+        let message = message.into();
         let ev = TaskEvent {
             ts: now_epoch_secs(),
-            level: level.into(),
+            level: level.clone(),
             kind: EventKind::Log,
-            message: Some(message.into()),
+            message: Some(message.clone()),
             data: None,
         };
-        append_task_event(&self.dir, &ev)
+        append_task_event(&self.dir, &ev)?;
+        let filename = if level.eq_ignore_ascii_case("error") {
+            "stderr.log"
+        } else {
+            "stdout.log"
+        };
+        self.append_file_line(filename, &message)
     }
 
     pub fn progress(&self, pct: f32, message: Option<String>) -> Result<(), RustpenError> {
+        let _write_guard = self.write_lock.lock().ok();
         let pct = pct.clamp(0.0, 100.0);
+        let bucket = pct.round() as u8;
+        let mut should_emit = true;
+        if let Ok(mut last) = self.last_progress_bucket.lock() {
+            if last.as_ref().copied().is_some_and(|seen| bucket <= seen) {
+                should_emit = false;
+            } else {
+                *last = Some(bucket);
+            }
+        }
+        if !should_emit {
+            return Ok(());
+        }
         let ev = TaskEvent {
             ts: now_epoch_secs(),
             level: "info".to_string(),
@@ -227,29 +251,61 @@ impl TaskEventWriter {
             data: Some(Value::from(pct)),
         };
         append_task_event(&self.dir, &ev)?;
-
-        // Best-effort meta progress update so TUI table progress can refresh in near-real-time.
-        let bucket = pct.round() as u8;
-        let mut should_write_meta = true;
-        if let Ok(mut last) = self.last_progress_bucket.lock() {
-            if last.as_ref().copied() == Some(bucket) {
-                should_write_meta = false;
-            } else {
-                *last = Some(bucket);
-            }
-        }
-        if should_write_meta {
-            let _ = self.update_meta_progress(pct);
+        let _ = self.update_meta_progress(pct);
+        if let Some(msg) = ev.message.as_deref() {
+            let _ = self.append_file_line("stdout.log", &format!("[progress {:>5.1}%] {msg}", pct));
         }
         Ok(())
     }
 
     fn update_meta_progress(&self, pct: f32) -> Result<(), RustpenError> {
-        let path = self.dir.join("meta.json");
-        let text = std::fs::read_to_string(&path).map_err(RustpenError::Io)?;
-        let mut meta: TaskMeta =
-            serde_json::from_str(&text).map_err(|e| RustpenError::ParseError(e.to_string()))?;
+        let mut meta = load_task_meta(&self.dir)?;
         meta.progress = Some(pct);
         write_task_meta(&self.dir, &meta)
+    }
+
+    pub fn dir(&self) -> &Path {
+        &self.dir
+    }
+
+    pub fn register_artifact(&self, path: impl Into<PathBuf>) -> Result<(), RustpenError> {
+        let path = path.into();
+        self.update_meta(|meta| {
+            if !meta.artifacts.iter().any(|item| item == &path) {
+                meta.artifacts.push(path.clone());
+            }
+        })
+    }
+
+    pub fn append_stdout(&self, text: &str) -> Result<(), RustpenError> {
+        self.append_file_text("stdout.log", text)
+    }
+
+    pub fn append_stderr(&self, text: &str) -> Result<(), RustpenError> {
+        self.append_file_text("stderr.log", text)
+    }
+
+    fn update_meta<F>(&self, mut f: F) -> Result<(), RustpenError>
+    where
+        F: FnMut(&mut TaskMeta),
+    {
+        let mut meta = load_task_meta(&self.dir)?;
+        f(&mut meta);
+        write_task_meta(&self.dir, &meta)
+    }
+
+    fn append_file_line(&self, filename: &str, line: &str) -> Result<(), RustpenError> {
+        let mut owned = line.to_string();
+        if !owned.ends_with('\n') {
+            owned.push('\n');
+        }
+        self.append_file_text(filename, &owned)
+    }
+
+    fn append_file_text(&self, filename: &str, text: &str) -> Result<(), RustpenError> {
+        let path = self.dir.join(filename);
+        let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+        file.write_all(text.as_bytes())?;
+        Ok(())
     }
 }

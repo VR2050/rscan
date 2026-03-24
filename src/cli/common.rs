@@ -1,4 +1,5 @@
 use super::*;
+use crate::cores::engine::task::load_task_meta;
 
 #[path = "common_host.rs"]
 mod common_host;
@@ -399,6 +400,7 @@ pub(super) fn finalize_task_ctx(
     note: Option<String>,
 ) -> Result<(), RustpenError> {
     if let Some(c) = ctx.as_mut() {
+        c.meta = load_task_meta(&c.dir).unwrap_or_else(|_| c.meta.clone());
         c.meta.status = status;
         c.meta.ended_at = Some(now_epoch_secs());
         c.meta.progress = Some(100.0);
@@ -445,4 +447,48 @@ where
             Err(e)
         }
     }
+}
+
+pub(super) fn output_extension(fmt: &str) -> &'static str {
+    if fmt.eq_ignore_ascii_case("json") {
+        "json"
+    } else if fmt.eq_ignore_ascii_case("csv") {
+        "csv"
+    } else {
+        "txt"
+    }
+}
+
+pub(super) async fn write_task_output(
+    events: &Option<TaskEventWriter>,
+    explicit_out: Option<&PathBuf>,
+    stem: &str,
+    fmt: &str,
+    body: &str,
+) -> Result<Option<PathBuf>, RustpenError> {
+    let target_path = if let Some(path) = explicit_out {
+        Some(path.clone())
+    } else {
+        events.as_ref().map(|writer| {
+            writer
+                .dir()
+                .join(format!("{stem}.{}", output_extension(fmt)))
+        })
+    };
+
+    if let Some(path) = target_path.clone() {
+        let file = File::create(&path).await.map_err(RustpenError::Io)?;
+        write_host_output_to_file(file, body).await?;
+        if let Some(writer) = events.as_ref() {
+            let _ = writer.register_artifact(path.clone());
+            let _ = writer.append_stdout(&format!("saved output -> {}\n", path.display()));
+        }
+    } else {
+        println!("{body}");
+        if let Some(writer) = events.as_ref() {
+            let _ = writer.append_stdout(&format!("{body}\n"));
+        }
+    }
+
+    Ok(target_path)
 }

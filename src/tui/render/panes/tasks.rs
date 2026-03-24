@@ -68,18 +68,60 @@ fn is_compact(area: Rect) -> bool {
 }
 
 fn draw_tasks_compact(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
+    if area.height >= 8 {
+        let body = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(42), Constraint::Percentage(58)].as_ref())
+            .split(area);
+        let mut state = ratatui::widgets::ListState::default();
+        state.select(if ctx.tasks.is_empty() {
+            None
+        } else {
+            Some(ctx.task_selected.min(ctx.tasks.len().saturating_sub(1)))
+        });
+        let list = List::new(ctx.task_compact_items.to_vec())
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(pane_border_style(ctx, MainPane::Tasks))
+                    .title("Tasks (compact)"),
+            )
+            .highlight_style(
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .highlight_symbol(">> ");
+        f.render_stateful_widget(list, body[0], &mut state);
+
+        let detail = Paragraph::new(ctx.task_detail_lines.to_vec()).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(pane_border_style(ctx, MainPane::Tasks))
+                .title("Detail / Preview"),
+        );
+        f.render_widget(detail.scroll((ctx.detail_scroll, 0)), body[1]);
+        return;
+    }
+
     let mut state = ratatui::widgets::ListState::default();
     state.select(if ctx.tasks.is_empty() {
         None
     } else {
         Some(ctx.task_selected.min(ctx.tasks.len().saturating_sub(1)))
     });
+    let title = if ctx.tasks.is_empty() {
+        "Tasks (compact)"
+    } else {
+        "Tasks (compact, height too small for detail)"
+    };
     let list = List::new(ctx.task_compact_items.to_vec())
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(pane_border_style(ctx, MainPane::Tasks))
-                .title("Tasks (compact)"),
+                .title(title),
         )
         .highlight_style(
             Style::default()

@@ -288,7 +288,7 @@ fn task_list_item(task: &TaskView) -> ListItem<'static> {
     let line = Line::from(vec![
         Span::styled(
             format!("{:<8}", task.meta.kind),
-            Style::default().fg(Color::Cyan),
+            Style::default().fg(kind_color(&task.meta.kind)),
         ),
         Span::styled(
             format!("{:<10}", status),
@@ -298,6 +298,26 @@ fn task_list_item(task: &TaskView) -> ListItem<'static> {
         Span::raw(note),
     ]);
     ListItem::new(line)
+}
+
+fn kind_color(kind: &str) -> Color {
+    if kind == "host" || kind.starts_with("host-") {
+        Color::LightBlue
+    } else if kind == "web" || kind.starts_with("web-") {
+        Color::LightMagenta
+    } else if kind == "vuln" || kind.starts_with("vuln-") {
+        Color::LightRed
+    } else if kind == "reverse"
+        || kind.starts_with("reverse-")
+        || kind == "decompile"
+        || kind.starts_with("decompile-")
+    {
+        Color::LightCyan
+    } else if kind == "script" || kind.starts_with("script-") {
+        Color::LightYellow
+    } else {
+        Color::Gray
+    }
 }
 
 fn panel(title: &str, focused: bool) -> Block<'static> {

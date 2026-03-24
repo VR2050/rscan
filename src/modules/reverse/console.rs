@@ -66,6 +66,21 @@ fn router() -> &'static Mutex<OutputRouter> {
     ROUTER.get_or_init(|| Mutex::new(OutputRouter::new()))
 }
 
+fn is_supported_tui_engine_token(tok: &str) -> bool {
+    matches!(
+        tok.to_ascii_lowercase().as_str(),
+        "auto"
+            | "ghidra"
+            | "jadx"
+            | "objdump"
+            | "radare2"
+            | "r2"
+            | "rust"
+            | "rust-asm"
+            | "rust-index"
+    )
+}
+
 fn out_write(data: &str) {
     let lock = router().lock();
     if let Ok(mut r) = lock {
@@ -1210,6 +1225,7 @@ enum TuiPendingAction {
     DeleteJob,
     StringSearch,
     Decompile,
+    Asm,
 }
 
 #[derive(Clone, Copy)]
@@ -1252,6 +1268,7 @@ struct DecompileRequest {
     function: Option<String>,
     skip_asm: bool,
     only_named: bool,
+    engine_override: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -1510,8 +1527,8 @@ impl TuiState {
         if code == "<no pseudocode>" && mode_lower == "index" && !has_function_overlay {
             code = concat!(
                 "index mode: pseudocode/asm not exported.\n",
-                "press d to run full decompile, or use d fn=. ",
-                "for a single-function overlay."
+                "press d for full decompile, or x for full asm.\n",
+                "use d fn=. for pseudocode overlay, or x fn=. for asm overlay."
             )
             .to_string();
         }
@@ -1524,7 +1541,10 @@ impl TuiState {
         let row_strings = as_str_vec(r.get("strings"));
         let mut asm = as_str_vec(r.get("asm"));
         if asm.is_empty() && mode_lower == "index" && !has_function_overlay {
-            asm.push("<index mode: asm not exported. run full decompile or d fn=.>".to_string());
+            asm.push(
+                "<index mode: asm not exported. run x for full asm, or x fn=. for asm overlay.>"
+                    .to_string(),
+            );
         }
 
         if pseudo_missing
@@ -1986,7 +2006,7 @@ impl TuiState {
                         self.input_buf.clear();
                     }
                 }
-                KeyCode::Char('x') => {
+                KeyCode::Char('X') => {
                     self.clear_filters();
                 }
                 KeyCode::Char('o') => {
@@ -2028,8 +2048,17 @@ impl TuiState {
                     self.pending_action = Some(TuiPendingAction::Decompile);
                     self.input_buf.clear();
                     self.log(concat!(
-                        "[rscan] decompile: <full|index> [noasm] [only-named] | ",
-                        "fn=<name>|function . => direct overlay (no job)"
+                        "[rscan] decompile examples: full | index noasm | ",
+                        "fn=. | function main | engine=ghidra full"
+                    ));
+                }
+                KeyCode::Char('x') => {
+                    self.input_mode = TuiInputMode::Prompt;
+                    self.pending_action = Some(TuiPendingAction::Asm);
+                    self.input_buf.clear();
+                    self.log(concat!(
+                        "[rscan] asm examples: full | fn=. | rust fn=. | ",
+                        "engine=objdump full | ghidra function main"
                     ));
                 }
                 KeyCode::Tab => {
@@ -2041,8 +2070,8 @@ impl TuiState {
                         "keys: j/k move, h/l focus, b back/close-strings, ",
                         "enter select/jump, pgup/pgdn/home/end scroll, / filter, ",
                         "s search, S global-string-search, W toggle-global-strings, ",
-                        "c note, ; line-note, C clear-note, x clear, g goto, : cmd, ",
-                        "1..6 tabs, d decompile/overlay, r refresh, R reindex, q quit"
+                        "c note, ; line-note, C clear-note, X clear, g goto, : cmd, ",
+                        "1..6 tabs, d decompile/overlay, x asm-mode, r refresh, R reindex, q quit"
                     ));
                 }
                 _ => {}
@@ -2111,6 +2140,9 @@ impl TuiState {
                             }
                             Some(TuiPendingAction::Decompile) => {
                                 self.start_decompile_from_input(&val);
+                            }
+                            Some(TuiPendingAction::Asm) => {
+                                self.start_asm_from_input(&val);
                             }
                             Some(TuiPendingAction::Command) => {
                                 if !val.is_empty() {
@@ -2498,6 +2530,7 @@ impl TuiState {
         let mut only_named = false;
         let mut explicit_function = false;
         let mut expect_function_arg = false;
+        let mut engine_override: Option<String> = None;
         let raw = input.trim();
         if raw.is_empty() {
             if let Ok(env_mode) = std::env::var("RSCAN_TUI_MODE") {
@@ -2527,6 +2560,12 @@ impl TuiState {
                 }
                 continue;
             }
+            if let Some(rest) = tok.strip_prefix("engine=") {
+                if is_supported_tui_engine_token(rest) {
+                    engine_override = Some(rest.to_ascii_lowercase());
+                }
+                continue;
+            }
             let t = tok.to_ascii_lowercase();
             match t.as_str() {
                 "full" => mode = Some(DecompileMode::Full),
@@ -2551,6 +2590,9 @@ impl TuiState {
                     expect_function_arg = false;
                     function = Some(tok.to_string());
                 }
+                _ if is_supported_tui_engine_token(tok) => {
+                    engine_override = Some(t);
+                }
                 _ => {}
             }
         }
@@ -2573,20 +2615,51 @@ impl TuiState {
             function,
             skip_asm,
             only_named,
+            engine_override,
         }
     }
 
     fn start_decompile_from_input(&mut self, input: &str) {
         let req = self.parse_decompile_input(input);
-        self.start_decompile_request(req);
+        self.start_decompile_request(req, "ghidra", false);
     }
 
-    fn start_decompile_request(&mut self, req: DecompileRequest) {
+    fn parse_asm_input(&self, input: &str) -> DecompileRequest {
+        let mut req = self.parse_decompile_input(input);
+        if req.mode == DecompileMode::Index && req.function.is_some() {
+            req.mode = DecompileMode::Function;
+        }
+        if input.trim().is_empty() && req.function.is_none() {
+            req.mode = DecompileMode::Full;
+        }
+        if req.function.is_some() && req.mode != DecompileMode::Function {
+            req.mode = DecompileMode::Function;
+        }
+        if req.engine_override.is_none() {
+            req.engine_override = Some("rust-asm".to_string());
+        }
+        req.skip_asm = false;
+        req
+    }
+
+    fn start_asm_from_input(&mut self, input: &str) {
+        let req = self.parse_asm_input(input);
+        self.start_decompile_request(req, "rust-asm", true);
+    }
+
+    fn start_decompile_request(
+        &mut self,
+        req: DecompileRequest,
+        default_engine: &str,
+        focus_asm: bool,
+    ) {
         if self.decompile_running {
             self.log("[rscan] decompile already running");
             return;
         }
-        let engine = std::env::var("RSCAN_TUI_ENGINE").unwrap_or_else(|_| "ghidra".to_string());
+        let engine = req.engine_override.clone().unwrap_or_else(|| {
+            std::env::var("RSCAN_TUI_ENGINE").unwrap_or_else(|_| default_engine.to_string())
+        });
         let timeout = std::env::var("RSCAN_TUI_TIMEOUT")
             .ok()
             .and_then(|v| v.parse::<u64>().ok())
@@ -2638,6 +2711,9 @@ impl TuiState {
         self.decompile_rx = Some(rx);
         self.decompile_running = true;
         self.decompile_last_tick = Instant::now();
+        if focus_asm {
+            self.set_tab(TuiTab::Asm);
+        }
         let mut extra = Vec::new();
         if let Some(f) = &req.function {
             extra.push(format!("function={}", f));
@@ -2916,6 +2992,10 @@ impl TuiState {
                 let rest = parts.collect::<Vec<_>>().join(" ");
                 self.start_decompile_from_input(&rest);
             }
+            "asm" => {
+                let rest = parts.collect::<Vec<_>>().join(" ");
+                self.start_asm_from_input(&rest);
+            }
             "tab" => {
                 let t = parts.next().unwrap_or("");
                 match t {
@@ -2933,7 +3013,7 @@ impl TuiState {
                 "find <kw>, search <kw>, strings <open|close|kw>, load-strings, ",
                 "index, reindex, refresh, graph <calls|xrefs> <out> [job_id], ",
                 "delete [job_id], note <text>|clear, note-line <n> <text>|clear, ",
-                "decompile [full|index|fn=.], tab <1..6>"
+                "decompile [full|index|fn=.], asm [engine=<name>|<name>] [full|index|fn=.], tab <1..6>"
             )),
             _ => self.log("[rscan] unknown command"),
         }
@@ -3363,9 +3443,9 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
     let input_hint = match state.input_mode {
         TuiInputMode::Normal => concat!(
             "(/ filter, s search, S global-search, W global-strings, c note, ",
-            "; line-note, C clear-note, x clear, g goto, : cmd, 1..6 tabs, ",
+            "; line-note, C clear-note, X clear, g goto, : cmd, 1..6 tabs, ",
             "h/l focus, b back/close, tab cycle, pgup/pgdn/home/end, ",
-            "enter jump, d decompile/overlay, r refresh, R reindex, ? help, q quit)"
+            "enter jump, d decompile/overlay, x asm-mode, r refresh, R reindex, ? help, q quit)"
         ),
         TuiInputMode::Prompt => match state.pending_action {
             Some(TuiPendingAction::Filter) => "filter> ",
@@ -3376,7 +3456,12 @@ fn draw_tui(f: &mut ratatui::Frame<'_>, state: &mut TuiState) {
             Some(TuiPendingAction::CommentLine) => "line-note> ",
             Some(TuiPendingAction::DeleteJob) => "delete> ",
             Some(TuiPendingAction::StringSearch) => "string> ",
-            Some(TuiPendingAction::Decompile) => "decompile> ",
+            Some(TuiPendingAction::Decompile) => {
+                "decompile> [full|index|fn=. ] [noasm] [only-named] [engine=ghidra|jadx|auto] "
+            }
+            Some(TuiPendingAction::Asm) => {
+                "asm> [full|index|fn=. ] [engine=rust-asm|rust|objdump|radare2|ghidra|jadx|auto] "
+            }
             None => "input> ",
         },
     };
@@ -4047,6 +4132,12 @@ fn print_help() {
         "  decompile|run <auto|ghidra|r2|jadx> [workspace] [timeout_secs] [index|full|function] [name_or_ea]"
     );
     cprintln!("    + optional flags: [deep|no-deep] [rust-first|no-rust-first]");
+    cprintln!("  # TUI reverse console:");
+    cprintln!("  #   d -> decompile> [full|index|fn=. ]");
+    cprintln!(
+        "  #   x -> asm> [engine=<rust-asm|rust|objdump|radare2|ghidra|jadx|auto>] [full|index|fn=. ]"
+    );
+    cprintln!("  #   :asm rust fn=.   # current function asm overlay with rust engine");
     cprintln!("  jobs");
     cprintln!("  set-job <job_id>");
     cprintln!("  pin-job <job_id>");

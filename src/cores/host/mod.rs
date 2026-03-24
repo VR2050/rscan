@@ -6,7 +6,9 @@ pub mod ports;
 pub mod targets;
 pub mod tcp_scanner;
 pub mod udp_scanner;
-pub use models::{PortResult, PortStatus, Protocol, ScanResult};
+pub use models::{
+    PortResult, PortStatus, Protocol, ScanProgress, ScanProgressCallback, ScanResult,
+};
 pub use ports::parse_ports;
 pub use targets::parse_targets;
 pub use tcp_scanner::{PortScanner, TcpConfig, TcpScanOrder, TcpScanner};

@@ -1,5 +1,6 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, VecDeque};
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use crate::cores::engine::task::{
@@ -214,13 +215,14 @@ pub(crate) fn apply_filter(all: &[TaskView], filter: StatusFilter) -> Vec<TaskVi
 }
 
 fn task_matches_result_filter(task: &TaskView, filter: ResultKindFilter) -> bool {
+    let kind = task.meta.kind.as_str();
     match filter {
         ResultKindFilter::All => true,
-        ResultKindFilter::Host => task.meta.kind == "host",
-        ResultKindFilter::Web => task.meta.kind == "web",
-        ResultKindFilter::Vuln => task.meta.kind == "vuln",
-        ResultKindFilter::Reverse => task.meta.kind == "reverse",
-        ResultKindFilter::Script => task.meta.kind == "script",
+        ResultKindFilter::Host => kind == "host" || kind.starts_with("host-"),
+        ResultKindFilter::Web => kind == "web" || kind.starts_with("web-"),
+        ResultKindFilter::Vuln => kind == "vuln" || kind.starts_with("vuln-"),
+        ResultKindFilter::Reverse => kind == "reverse" || kind.starts_with("reverse-"),
+        ResultKindFilter::Script => kind == "script" || kind.starts_with("script-"),
     }
 }
 
@@ -241,53 +243,64 @@ fn task_matches_result_query(task: &TaskView, query: &str) -> bool {
     }
 
     let meta = &task.meta;
-    let mut hay = vec![
-        meta.id.to_ascii_lowercase(),
-        meta.kind.to_ascii_lowercase(),
-        meta.status.to_string().to_ascii_lowercase(),
-        meta.note.clone().unwrap_or_default().to_ascii_lowercase(),
-        meta.tags.join(" ").to_ascii_lowercase(),
-        meta.artifacts
+    if contains_case_insensitive(&meta.id, &q)
+        || contains_case_insensitive(&meta.kind, &q)
+        || contains_case_insensitive(&meta.status.to_string(), &q)
+        || meta
+            .note
+            .as_deref()
+            .is_some_and(|note| contains_case_insensitive(note, &q))
+        || meta
+            .tags
             .iter()
-            .map(|p| p.display().to_string())
-            .collect::<Vec<_>>()
-            .join(" ")
-            .to_ascii_lowercase(),
-        meta.logs
+            .any(|tag| contains_case_insensitive(tag, &q))
+        || meta
+            .artifacts
             .iter()
-            .map(|p| p.display().to_string())
-            .collect::<Vec<_>>()
-            .join(" ")
-            .to_ascii_lowercase(),
-    ];
-    if hay.iter().any(|h| h.contains(&q)) {
+            .any(|path| contains_path_case_insensitive(path, &q))
+        || meta
+            .logs
+            .iter()
+            .any(|path| contains_path_case_insensitive(path, &q))
+    {
         return true;
     }
 
-    let ev_join = load_events(&task.dir, 30)
-        .into_iter()
-        .map(|ev| {
-            format!(
-                "{} {:?} {} {}",
-                ev.level,
-                ev.kind,
-                ev.message.unwrap_or_default(),
-                ev.data.map(|v| v.to_string()).unwrap_or_default()
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-        .to_ascii_lowercase();
-    hay.push(ev_join);
+    if load_events(&task.dir, 30).into_iter().any(|ev| {
+        contains_case_insensitive(&ev.level, &q)
+            || contains_case_insensitive(&format!("{:?}", ev.kind), &q)
+            || ev
+                .message
+                .as_deref()
+                .is_some_and(|message| contains_case_insensitive(message, &q))
+            || ev
+                .data
+                .as_ref()
+                .is_some_and(|data| contains_case_insensitive(&data.to_string(), &q))
+    }) {
+        return true;
+    }
 
-    let out_join = load_log_tail(&task.dir, "stdout.log", 30)
+    if load_text_artifact_snippets(task, 24, 3)
+        .into_iter()
+        .flat_map(|(_, lines)| lines.into_iter())
+        .any(|line| contains_case_insensitive(&line, &q))
+    {
+        return true;
+    }
+
+    load_log_tail(&task.dir, "stdout.log", 30)
         .into_iter()
         .chain(load_log_tail(&task.dir, "stderr.log", 30))
-        .collect::<Vec<_>>()
-        .join("\n")
-        .to_ascii_lowercase();
-    hay.push(out_join);
-    hay.iter().any(|h| h.contains(&q))
+        .any(|line| contains_case_insensitive(&line, &q))
+}
+
+fn contains_case_insensitive(text: &str, needle_lower: &str) -> bool {
+    text.to_ascii_lowercase().contains(needle_lower)
+}
+
+fn contains_path_case_insensitive(path: &Path, needle_lower: &str) -> bool {
+    contains_case_insensitive(&path.display().to_string(), needle_lower)
 }
 
 pub(crate) fn build_result_indices(
@@ -321,11 +334,8 @@ pub(crate) fn load_events(task_dir: &PathBuf, limit: usize) -> Vec<TaskEvent> {
     if !path.is_file() {
         return vec![];
     }
-    let Ok(text) = fs::read_to_string(&path) else {
-        return vec![];
-    };
-    text.lines()
-        .rev()
+    tail_lines(&path, limit)
+        .into_iter()
         .filter_map(|line| {
             let line = line.trim();
             if line.is_empty() {
@@ -333,29 +343,121 @@ pub(crate) fn load_events(task_dir: &PathBuf, limit: usize) -> Vec<TaskEvent> {
             }
             serde_json::from_str::<TaskEvent>(line).ok()
         })
-        .take(limit)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
         .collect::<Vec<_>>()
 }
 
 pub(crate) fn load_log_tail(task_dir: &PathBuf, filename: &str, limit: usize) -> Vec<String> {
     let path = task_dir.join(filename);
+    load_path_tail(&path, limit)
+}
+
+pub(crate) fn load_path_tail(path: &Path, limit: usize) -> Vec<String> {
     if !path.is_file() {
         return Vec::new();
     }
-    let Ok(text) = fs::read_to_string(&path) else {
+    tail_lines(path, limit)
+}
+
+pub(crate) fn load_text_artifact_snippets(
+    task: &TaskView,
+    limit_per_file: usize,
+    max_files: usize,
+) -> Vec<(PathBuf, Vec<String>)> {
+    previewable_artifact_paths(task)
+        .into_iter()
+        .take(max_files.max(1))
+        .map(|path| {
+            let lines = load_path_tail(&path, limit_per_file);
+            (path, lines)
+        })
+        .filter(|(_, lines)| !lines.is_empty())
+        .collect()
+}
+
+pub(crate) fn preview_text_artifact(
+    task: &TaskView,
+    limit: usize,
+) -> Option<(PathBuf, Vec<String>)> {
+    previewable_artifact_paths(task)
+        .into_iter()
+        .next()
+        .map(|path| {
+            let lines = load_path_tail(&path, limit);
+            (path, lines)
+        })
+}
+
+fn previewable_artifact_paths(task: &TaskView) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let mut seen = BTreeSet::new();
+    for artifact in &task.meta.artifacts {
+        collect_previewable_paths(artifact, 1, &mut seen, &mut out);
+    }
+    out
+}
+
+fn collect_previewable_paths(
+    path: &Path,
+    depth_left: usize,
+    seen: &mut BTreeSet<PathBuf>,
+    out: &mut Vec<PathBuf>,
+) {
+    if path.is_file() {
+        let normalized = path.to_path_buf();
+        if is_previewable_text_artifact(&normalized) && seen.insert(normalized.clone()) {
+            out.push(normalized);
+        }
+        return;
+    }
+
+    if !path.is_dir() || depth_left == 0 {
+        return;
+    }
+
+    let Ok(entries) = fs::read_dir(path) else {
+        return;
+    };
+    let mut entries = entries.filter_map(Result::ok).collect::<Vec<_>>();
+    entries.sort_by_key(|entry| entry.path());
+    for entry in entries {
+        collect_previewable_paths(&entry.path(), depth_left.saturating_sub(1), seen, out);
+    }
+}
+
+fn tail_lines(path: &Path, limit: usize) -> Vec<String> {
+    if limit == 0 {
+        return Vec::new();
+    }
+    let Ok(file) = fs::File::open(path) else {
         return Vec::new();
     };
-    let mut lines: Vec<String> = text
-        .lines()
-        .rev()
-        .take(limit)
-        .map(|s| s.to_string())
-        .collect();
-    lines.reverse();
-    lines
+    let mut tail = VecDeque::with_capacity(limit.min(128));
+    for line in BufReader::new(file).lines() {
+        let Ok(line) = line else {
+            continue;
+        };
+        if tail.len() == limit {
+            tail.pop_front();
+        }
+        tail.push_back(line);
+    }
+    tail.into_iter().collect()
+}
+
+fn is_previewable_text_artifact(path: &Path) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+    matches!(
+        path.extension()
+            .and_then(|value| value.to_str())
+            .map(|value| value.to_ascii_lowercase()),
+        Some(ext)
+            if matches!(
+                ext.as_str(),
+                "txt" | "log" | "json" | "jsonl" | "csv" | "tsv" | "md" | "html" | "htm" | "xml" | "yaml" | "yml"
+            )
+    )
 }
 
 #[cfg(test)]
@@ -369,6 +471,15 @@ mod tests {
             .map(|d| d.as_nanos())
             .unwrap_or_default();
         std::env::temp_dir().join(format!("rscan_task_store_{name}_{ns:x}"))
+    }
+
+    fn write_task_meta_file(task_dir: &Path, meta: &TaskMeta) {
+        std::fs::create_dir_all(task_dir).unwrap();
+        std::fs::write(
+            task_dir.join("meta.json"),
+            serde_json::to_string_pretty(meta).unwrap(),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -495,6 +606,148 @@ mod tests {
                 .unwrap();
         assert_eq!(runtime.backend, "zellij");
         assert_eq!(runtime.pane_name.as_deref(), Some("rev-job-two"));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn load_text_artifact_snippets_reads_previewable_files_inside_artifact_dirs() {
+        let ws = temp_workspace("artifact_snippets");
+        let task_dir = ws.join("tasks").join("task-web");
+        let artifact_dir = task_dir.join("artifacts");
+        std::fs::create_dir_all(&artifact_dir).unwrap();
+        std::fs::write(
+            artifact_dir.join("web-dir-result.txt"),
+            "OK 200 https://example.com/admin\nCLIENT 404 https://example.com/missing\n",
+        )
+        .unwrap();
+
+        let meta = TaskMeta {
+            id: "task-web".to_string(),
+            kind: "web".to_string(),
+            tags: vec!["https://example.com".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![artifact_dir.clone()],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        let snippets = load_text_artifact_snippets(&tasks[0], 8, 2);
+        assert_eq!(snippets.len(), 1);
+        assert!(snippets[0].0.ends_with("web-dir-result.txt"));
+        assert!(snippets[0].1.iter().any(|line| line.contains("/admin")));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn result_query_matches_artifact_content() {
+        let ws = temp_workspace("artifact_query");
+        let task_dir = ws.join("tasks").join("task-vuln");
+        std::fs::create_dir_all(&task_dir).unwrap();
+        let artifact_path = task_dir.join("vuln-scan-result.txt");
+        std::fs::write(
+            &artifact_path,
+            "HIGH cvescan GET https://example.com/login\nmatched=word:body,status:code\n",
+        )
+        .unwrap();
+
+        let meta = TaskMeta {
+            id: "task-vuln".to_string(),
+            kind: "vuln".to_string(),
+            tags: vec!["https://example.com".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![artifact_path],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        assert!(task_matches_result_query(&tasks[0], "cvescan"));
+        assert!(task_matches_result_query(&tasks[0], "matched=word:body"));
+        assert!(task_matches_result_query(&tasks[0], "/login"));
+        assert!(!task_matches_result_query(&tasks[0], "totally-missing"));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn preview_text_artifact_prefers_sorted_previewable_file_in_directory() {
+        let ws = temp_workspace("preview_sorted");
+        let task_dir = ws.join("tasks").join("task-web");
+        let artifact_dir = task_dir.join("artifacts");
+        std::fs::create_dir_all(&artifact_dir).unwrap();
+        std::fs::write(artifact_dir.join("z-last.txt"), "zzz\n").unwrap();
+        std::fs::write(artifact_dir.join("a-first.txt"), "aaa\n").unwrap();
+
+        let meta = TaskMeta {
+            id: "task-web".to_string(),
+            kind: "web".to_string(),
+            tags: vec!["https://example.com".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![artifact_dir],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        let (path, lines) = preview_text_artifact(&tasks[0], 5).unwrap();
+        assert!(path.ends_with("a-first.txt"));
+        assert_eq!(lines.first().map(String::as_str), Some("aaa"));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn load_text_artifact_snippets_respects_max_files_limit() {
+        let ws = temp_workspace("artifact_limit");
+        let task_dir = ws.join("tasks").join("task-web");
+        let artifact_dir = task_dir.join("artifacts");
+        std::fs::create_dir_all(&artifact_dir).unwrap();
+        std::fs::write(artifact_dir.join("a.txt"), "one\n").unwrap();
+        std::fs::write(artifact_dir.join("b.txt"), "two\n").unwrap();
+        std::fs::write(artifact_dir.join("c.txt"), "three\n").unwrap();
+
+        let meta = TaskMeta {
+            id: "task-web".to_string(),
+            kind: "web".to_string(),
+            tags: vec!["https://example.com".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![artifact_dir],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        let snippets = load_text_artifact_snippets(&tasks[0], 5, 2);
+        assert_eq!(snippets.len(), 2);
+        assert!(snippets[0].0.ends_with("a.txt"));
+        assert!(snippets[1].0.ends_with("b.txt"));
 
         let _ = std::fs::remove_dir_all(ws);
     }

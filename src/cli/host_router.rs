@@ -1,4 +1,27 @@
 use super::*;
+use crate::cores::host::ScanProgress;
+use std::sync::Arc;
+
+fn host_progress_callback(
+    events: &Option<TaskEventWriter>,
+    stage: &'static str,
+) -> Option<crate::cores::host::ScanProgressCallback> {
+    events.as_ref().map(|writer| {
+        let writer = writer.clone();
+        Arc::new(move |progress: ScanProgress| {
+            let pct = if progress.total == 0 {
+                35.0
+            } else {
+                (20.0 + (progress.scanned as f32 / progress.total as f32) * 70.0).min(90.0)
+            };
+            let msg = format!(
+                "{stage}: scanned {}/{} open={}",
+                progress.scanned, progress.total, progress.open
+            );
+            let _ = writer.progress(pct, Some(msg));
+        }) as crate::cores::host::ScanProgressCallback
+    })
+}
 
 pub(super) async fn handle_host_command(
     cli: &Cli,
@@ -46,12 +69,8 @@ pub(super) async fn handle_host_command(
                     .await?;
                     report_progress(&events, 88.0, format!("host.tcp: rows={}", rows.len()));
                     let s = format_engine_scan_results(&rows, &output);
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{}", s);
-                    }
+                    let _ = write_task_output(&events, out.as_ref(), "host-tcp-result", &output, &s)
+                        .await?;
                 } else {
                     report_progress(&events, 18.0, "host.tcp: parse ports");
                     let mut base_cfg = tcp_config_with_overrides(
@@ -65,6 +84,7 @@ pub(super) async fn handle_host_command(
                         tcp_adaptive_backpressure,
                     );
                     let parsed = parse_ports_flags(&ports)?;
+                    let progress_cb = host_progress_callback(&events, "host.tcp");
                     if tcp_auto_tune && parsed.len() >= 256 {
                         report_progress(&events, 24.0, "host.tcp: auto-tune sampling");
                         let sample_ports = sample_ports_for_autotune(&parsed, 2048);
@@ -139,7 +159,9 @@ pub(super) async fn handle_host_command(
                                 crate::cores::host::ScanManager::new(base_cfg.clone()),
                             );
                             report_progress(&events, 35.0, "host.tcp: scanning (standard)");
-                            scanner.scan_tcp(&host, &parsed).await?
+                            scanner
+                                .scan_tcp_with_progress(&host, &parsed, progress_cb.clone())
+                                .await?
                         }
                         TcpMode::Turbo => {
                             let phase1_cfg = turbo_phase1_config(base_cfg.clone());
@@ -147,7 +169,9 @@ pub(super) async fn handle_host_command(
                                 crate::cores::host::ScanManager::new(phase1_cfg),
                             );
                             report_progress(&events, 35.0, "host.tcp: scanning (turbo-pass1)");
-                            scanner.scan_tcp(&host, &parsed).await?
+                            scanner
+                                .scan_tcp_with_progress(&host, &parsed, progress_cb.clone())
+                                .await?
                         }
                         TcpMode::TurboVerify => {
                             let phase1_cfg = turbo_phase1_config(base_cfg.clone());
@@ -338,12 +362,8 @@ pub(super) async fn handle_host_command(
                         ),
                     );
                     let s = format_host_scan_result(&res, &output);
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{}", s);
-                    }
+                    let _ = write_task_output(&events, out.as_ref(), "host-tcp-result", &output, &s)
+                        .await?;
                 }
                 report_progress(&events, 98.0, "host.tcp: output done");
                 Ok(())
@@ -381,12 +401,9 @@ pub(super) async fn handle_host_command(
                     .await?;
                     report_progress(&events, 88.0, format!("host.udp: rows={}", rows.len()));
                     let s = format_engine_scan_results(&rows, &output);
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{}", s);
-                    }
+                    let _ =
+                        write_task_output(&events, out.as_ref(), "host-udp-result", &output, &s)
+                            .await?;
                 } else {
                     report_progress(&events, 18.0, "host.udp: parse ports");
                     use crate::cores::host::ScanManager;
@@ -404,12 +421,9 @@ pub(super) async fn handle_host_command(
                         format!("host.udp: open_ports={}", res.open_ports_count()),
                     );
                     let s = format_host_scan_result(&res, &output);
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{}", s);
-                    }
+                    let _ =
+                        write_task_output(&events, out.as_ref(), "host-udp-result", &output, &s)
+                            .await?;
                 }
                 report_progress(&events, 98.0, "host.udp: output done");
                 Ok(())
@@ -449,12 +463,9 @@ pub(super) async fn handle_host_command(
                     .await?;
                     report_progress(&events, 88.0, format!("host.syn: rows={}", rows.len()));
                     let s = format_engine_scan_results(&rows, &output);
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{}", s);
-                    }
+                    let _ =
+                        write_task_output(&events, out.as_ref(), "host-syn-result", &output, &s)
+                            .await?;
                 } else {
                     report_progress(&events, 18.0, "host.syn: parse ports");
                     let parsed = parse_ports_flags(&ports)?;
@@ -481,12 +492,9 @@ pub(super) async fn handle_host_command(
                         format!("host.syn: open_ports={}", res.open_ports_count()),
                     );
                     let s = format_host_scan_result(&res, &output);
-                    if let Some(path) = out {
-                        let file = File::create(path).await.map_err(RustpenError::Io)?;
-                        write_host_output_to_file(file, &s).await?;
-                    } else {
-                        println!("{}", s);
-                    }
+                    let _ =
+                        write_task_output(&events, out.as_ref(), "host-syn-result", &output, &s)
+                            .await?;
                 }
                 report_progress(&events, 98.0, "host.syn: output done");
                 Ok(())
@@ -505,20 +513,17 @@ pub(super) async fn handle_host_command(
                 let scanner = HostScanner::with_manager(crate::cores::host::ScanManager::new(
                     tcp_config_for_profile(profile),
                 ));
+                let progress_cb = host_progress_callback(&events, "host.quick");
                 report_progress(&events, 35.0, "host.quick: scanning");
-                let res = scanner.quick_tcp(&host).await?;
+                let res = scanner.quick_tcp_with_progress(&host, progress_cb).await?;
                 report_progress(
                     &events,
                     88.0,
                     format!("host.quick: open_ports={}", res.open_ports_count()),
                 );
                 let s = format_host_scan_result(&res, &output);
-                if let Some(path) = out {
-                    let file = File::create(path).await.map_err(RustpenError::Io)?;
-                    write_host_output_to_file(file, &s).await?;
-                } else {
-                    println!("{}", s);
-                }
+                let _ = write_task_output(&events, out.as_ref(), "host-quick-result", &output, &s)
+                    .await?;
                 report_progress(&events, 98.0, "host.quick: output done");
                 Ok(())
             })

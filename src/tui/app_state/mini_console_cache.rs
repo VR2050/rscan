@@ -43,7 +43,6 @@ impl AppState {
                 selected_task,
                 self.task_poll_serial,
             ),
-            status_line: self.status_line.clone(),
             zellij_managed,
             zellij_session: zellij_session.map(str::to_string),
             script_output_serial: if uses_script_output {
@@ -77,7 +76,6 @@ impl AppState {
             &self.script_output,
             &self.mini_terminal_lines,
             &self.terminal_screen_lines,
-            &self.status_line,
             zellij_managed,
             zellij_session,
             crate::tui::zellij::managed_tabs(),

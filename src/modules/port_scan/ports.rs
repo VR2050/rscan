@@ -19,7 +19,7 @@
 //! }
 //! ```
 
-use crate::cores::host::{ScanManager, ScanResult};
+use crate::cores::host::{ScanManager, ScanProgressCallback, ScanResult};
 use crate::errors::RustpenError;
 
 /// 模块级主机扫描器封装，内部复用 `ScanManager`。
@@ -43,6 +43,17 @@ impl HostScanner {
     /// 扫描 TCP 端口
     pub async fn scan_tcp(&self, host: &str, ports: &[u16]) -> Result<ScanResult, RustpenError> {
         self.manager.tcp_scan(host, ports).await
+    }
+
+    pub async fn scan_tcp_with_progress(
+        &self,
+        host: &str,
+        ports: &[u16],
+        progress: Option<ScanProgressCallback>,
+    ) -> Result<ScanResult, RustpenError> {
+        self.manager
+            .tcp_scan_with_progress(host, ports, progress)
+            .await
     }
 
     /// 扫描 UDP 端口（若 manager 未启用 UDP，将返回错误）
@@ -84,6 +95,16 @@ impl HostScanner {
     /// 快速扫描常用端口（TCP）
     pub async fn quick_tcp(&self, host: &str) -> Result<ScanResult, RustpenError> {
         self.manager.quick_tcp_scan(host).await
+    }
+
+    pub async fn quick_tcp_with_progress(
+        &self,
+        host: &str,
+        progress: Option<ScanProgressCallback>,
+    ) -> Result<ScanResult, RustpenError> {
+        self.manager
+            .quick_tcp_scan_with_progress(host, progress)
+            .await
     }
 
     /// 通过 ARP 扫描 CIDR（局域网主机发现）

@@ -26,6 +26,40 @@ pub(super) fn report_log(events: &Option<TaskEventWriter>, message: impl Into<St
     }
 }
 
+async fn prepare_stream_output(
+    out_path: Option<PathBuf>,
+    fmt: &OutputFormat,
+    events: &Option<TaskEventWriter>,
+    stage: &str,
+) -> Result<(Option<File>, bool), RustpenError> {
+    let resolved = if let Some(path) = out_path {
+        Some(path)
+    } else {
+        events.as_ref().map(|writer| {
+            writer.dir().join(format!(
+                "{}-result.{}",
+                stage.replace('.', "-"),
+                match fmt {
+                    OutputFormat::Json => "json",
+                    OutputFormat::Csv => "csv",
+                    OutputFormat::Raw => "txt",
+                }
+            ))
+        })
+    };
+
+    if let Some(path) = resolved {
+        let file = File::create(&path).await.map_err(RustpenError::Io)?;
+        if let Some(writer) = events.as_ref() {
+            let _ = writer.register_artifact(path.clone());
+            let _ = writer.append_stdout(&format!("saved output -> {}\n", path.display()));
+        }
+        Ok((Some(file), false))
+    } else {
+        Ok((None, true))
+    }
+}
+
 pub(super) async fn consume_module_stream(
     mut rx: tokio::sync::mpsc::Receiver<Result<ModuleScanResult, RustpenError>>,
     out_path: Option<PathBuf>,
@@ -36,33 +70,29 @@ pub(super) async fn consume_module_stream(
 ) -> Result<(), RustpenError> {
     report_progress(&events, 12.0, format!("{stage}: start"));
 
-    let mut file = if let Some(path) = out_path {
-        Some(File::create(path).await.map_err(RustpenError::Io)?)
-    } else {
-        None
-    };
+    let mut output = prepare_stream_output(out_path, &fmt, &events, stage).await?;
 
     let mut processed = 0usize;
     while let Some(r) = rx.recv().await {
         processed += 1;
         match r {
             Ok(m) => {
-                if let Some(file) = file.as_mut() {
+                if let Some(file) = output.0.as_mut() {
                     let line = format!("{}\n", format_scan_result(&m, &fmt));
                     file.write_all(line.as_bytes())
                         .await
                         .map_err(RustpenError::Io)?;
-                } else {
+                } else if output.1 {
                     println!("{}", format_scan_for_stdout(&m, &fmt));
                 }
             }
             Err(e) => {
                 let err_line = format_scan_error_line(&e, &fmt);
-                if let Some(file) = file.as_mut() {
+                if let Some(file) = output.0.as_mut() {
                     file.write_all(format!("{err_line}\n").as_bytes())
                         .await
                         .map_err(RustpenError::Io)?;
-                } else {
+                } else if output.1 {
                     println!("{err_line}");
                 }
             }
@@ -93,11 +123,7 @@ pub(super) async fn consume_module_stream_with_summary(
 ) -> Result<(), RustpenError> {
     report_progress(&events, 12.0, format!("{stage}: start"));
 
-    let mut file = if let Some(path) = out_path {
-        Some(File::create(path).await.map_err(RustpenError::Io)?)
-    } else {
-        None
-    };
+    let mut output = prepare_stream_output(out_path, &fmt, &events, stage).await?;
 
     let mut processed = 0usize;
     let mut clusters: std::collections::BTreeMap<(u16, Option<u64>), usize> =
@@ -110,23 +136,23 @@ pub(super) async fn consume_module_stream_with_summary(
             Ok(m) => {
                 let key = (m.status, m.content_len);
                 *clusters.entry(key).or_insert(0) += 1;
-                if let Some(file) = file.as_mut() {
+                if let Some(file) = output.0.as_mut() {
                     let line = format!("{}\n", format_scan_result(&m, &fmt));
                     file.write_all(line.as_bytes())
                         .await
                         .map_err(RustpenError::Io)?;
-                } else {
+                } else if output.1 {
                     println!("{}", format_scan_for_stdout(&m, &fmt));
                 }
             }
             Err(e) => {
                 err_count += 1;
                 let err_line = format_scan_error_line(&e, &fmt);
-                if let Some(file) = file.as_mut() {
+                if let Some(file) = output.0.as_mut() {
                     file.write_all(format!("{err_line}\n").as_bytes())
                         .await
                         .map_err(RustpenError::Io)?;
-                } else {
+                } else if output.1 {
                     println!("{err_line}");
                 }
             }
@@ -163,7 +189,7 @@ pub(super) async fn consume_module_stream_with_summary(
         err_count
     );
 
-    if let Some(file) = file.as_mut() {
+    if let Some(file) = output.0.as_mut() {
         file.write_all(format!("{summary_header}\n").as_bytes())
             .await
             .map_err(RustpenError::Io)?;
@@ -172,7 +198,7 @@ pub(super) async fn consume_module_stream_with_summary(
                 .await
                 .map_err(RustpenError::Io)?;
         }
-    } else {
+    } else if output.1 {
         println!("{summary_header}");
         for ln in &summary_lines {
             println!("{ln}");

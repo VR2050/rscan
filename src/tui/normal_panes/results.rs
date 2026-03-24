@@ -2,10 +2,11 @@ use crossterm::event::KeyCode;
 
 use super::{PaneNormalAction, PaneNormalCtx};
 use crate::errors::RustpenError;
-use crate::tui::models::{InputMode, MainPane, TaskTab};
+use crate::tui::models::{InputMode, MainPane, StatusFilter, TaskTab};
 use crate::tui::task_actions::{
     open_task_artifacts_in_runtime, open_task_logs_in_runtime, open_task_shell_in_runtime,
 };
+use crate::tui::task_store::apply_filter;
 
 pub(super) fn handle_results_key(
     key: KeyCode,
@@ -90,15 +91,22 @@ pub(super) fn handle_results_key(
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::Enter => {
-            if let Some(idx) = ctx.result_indices.get(*ctx.result_selected)
-                && let Some(cur) = ctx.all_tasks.get(*idx)
-                && let Some(pos) = ctx.tasks.iter().position(|t| t.meta.id == cur.meta.id)
-            {
-                *ctx.task_selected = pos;
-                *pane = MainPane::Tasks;
-                *ctx.task_tab = TaskTab::Logs;
-                *ctx.detail_scroll = 0;
-                *ctx.status_line = format!("已定位到任务: {}", cur.meta.id);
+            if let Some(idx) = ctx.result_indices.get(*ctx.result_selected) {
+                if let Some(cur) = ctx.all_tasks.get(*idx) {
+                    if ctx.tasks.iter().all(|t| t.meta.id != cur.meta.id) {
+                        *ctx.filter = StatusFilter::All;
+                        *ctx.tasks = apply_filter(ctx.all_tasks, *ctx.filter);
+                    }
+                    if let Some(pos) = ctx.tasks.iter().position(|t| t.meta.id == cur.meta.id) {
+                        *ctx.task_selected = pos;
+                        *pane = MainPane::Tasks;
+                        *ctx.task_tab = TaskTab::Logs;
+                        *ctx.detail_scroll = 0;
+                        *ctx.status_line = format!("已定位到任务: {}", cur.meta.id);
+                    } else {
+                        *ctx.status_line = format!("任务存在但当前无法定位: {}", cur.meta.id);
+                    }
+                }
             }
             Ok(PaneNormalAction::Handled)
         }

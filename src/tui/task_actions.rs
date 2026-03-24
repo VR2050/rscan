@@ -138,7 +138,12 @@ fn load_task_by_id(workspace: &PathBuf, task_id: &str) -> Result<TaskView, Strin
 }
 
 fn preferred_shell_tab(task: &TaskView) -> &'static str {
-    if task.meta.kind == "reverse" {
+    let kind = task.meta.kind.as_str();
+    if kind == "reverse"
+        || kind.starts_with("reverse-")
+        || kind == "decompile"
+        || kind.starts_with("decompile-")
+    {
         zellij::REVERSE_TAB
     } else {
         zellij::WORK_TAB

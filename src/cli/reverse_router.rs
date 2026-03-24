@@ -51,8 +51,10 @@ pub(super) async fn handle_reverse_command(
             output,
             out,
         } => {
-            reverse_exec::handle_decompile_plan(input, input_pos, engine, output_dir, output, out)
-                .await?;
+            reverse_exec::handle_decompile_plan(
+                cli, input, input_pos, engine, output_dir, output, out,
+            )
+            .await?;
         }
         ReverseActions::DecompileRun {
             input,

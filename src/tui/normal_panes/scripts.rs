@@ -89,7 +89,10 @@ pub(super) fn handle_scripts_key(
             }
             if let Some(path) = ctx.scripts.get(*ctx.script_selected) {
                 *ctx.script_task = start_script_task(ctx.current_project, path).ok();
-                *ctx.script_runner_rx = Some(start_script_runner(path.clone()));
+                *ctx.script_runner_rx = Some(start_script_runner(
+                    path.clone(),
+                    ctx.script_task.as_ref().map(|task| task.dir.clone()),
+                ));
                 *ctx.script_running = true;
                 *ctx.status_line = format!("running script: {}", path.display());
             }

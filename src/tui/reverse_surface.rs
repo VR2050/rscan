@@ -733,7 +733,7 @@ fn build_file_panel_text(state: &ReverseSurfaceState) -> Text<'static> {
         lines.push(Line::from("p/F4 打开文件目录"));
         lines.push(Line::from("picker 开着时再按 F4 关闭"));
         lines.push(Line::from("Enter 打开当前 viewer"));
-        lines.push(Line::from("i/f/a 对当前文件分析"));
+        lines.push(Line::from("i=auto-index  f/d=ghidra-full  a=analyze"));
     } else {
         lines.push(Line::from("当前未选文件"));
         lines.push(Line::from(""));

@@ -384,12 +384,8 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
                 } else {
                     crawled.join("\n")
                 };
-                if let Some(path) = out {
-                    let file = File::create(path).await.map_err(RustpenError::Io)?;
-                    write_host_output_to_file(file, &s).await?;
-                } else {
-                    println!("{s}");
-                }
+                let _ = write_task_output(&events, out.as_ref(), "web-crawl-result", &output, &s)
+                    .await?;
                 report_progress(&events, 98.0, "web.crawl: output done");
                 Ok(())
             })
@@ -471,12 +467,8 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
                     }
                     out.join("\n")
                 };
-                if let Some(path) = out {
-                    let file = File::create(path).await.map_err(RustpenError::Io)?;
-                    write_host_output_to_file(file, &s).await?;
-                } else {
-                    println!("{s}");
-                }
+                let _ = write_task_output(&events, out.as_ref(), "web-live-result", &output, &s)
+                    .await?;
                 report_progress(&events, 98.0, "web.live: output done");
                 Ok(())
             })

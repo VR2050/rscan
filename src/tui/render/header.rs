@@ -27,44 +27,46 @@ pub(super) fn draw_header(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         .count();
     let spinner = spinner_char(ctx.ui_tick);
     let key_hint = if ctx.zellij_managed {
-        concat!(
-            " | Keys: 1-6 panes  l:layout  v:aux  g:ctrl-shell  :task  ",
-            "L/W/A:native-pane  zrun:work  zfocus:tab  Ctrl-g:locked  q:quit",
-        )
+        " 1-6 panes  l layout  :task  L/W/A native  zrun  q quit"
     } else {
-        " | Keys: 1-6 panes  l:layout  v:console  g:terminal  :cmd  r:refresh  q:quit"
+        " 1-6 panes  l layout  :cmd  g terminal  q quit"
     };
     let line1 = Line::from(vec![
         Span::styled("rscan", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(key_hint),
-    ]);
-
-    let mut line2 = vec![
-        Span::raw("PANE="),
+        Span::raw(" | project="),
+        Span::styled(
+            project_name_from_path(ctx.current_project),
+            Style::default().fg(Color::LightCyan),
+        ),
+        Span::raw(" | pane="),
         Span::styled(
             ctx.pane.label(),
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(" | LAYOUT="),
+    ]);
+
+    let mut line2 = vec![
+        Span::raw("layout="),
         Span::styled(
             ctx.main_layout.label(),
             Style::default().fg(Color::LightYellow),
         ),
-        Span::raw(" | FILTER="),
+        Span::raw(" | task-filter="),
         Span::styled(ctx.filter.label(), Style::default().fg(Color::Yellow)),
-        Span::raw(" | TAB="),
+        Span::raw(" | task-tab="),
         Span::styled(
             task_tab_label(ctx.task_tab),
             Style::default().fg(Color::Green),
         ),
-        Span::raw(" | RFILTER="),
+        Span::raw(" | result-filter="),
         Span::styled(
             ctx.result_kind_filter.label(),
             Style::default().fg(Color::LightMagenta),
         ),
-        Span::raw(" | RSORT="),
+        Span::raw(" | sort="),
         Span::styled(
             if ctx.result_failed_first {
                 "failed-first"
@@ -73,22 +75,17 @@ pub(super) fn draw_header(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
             },
             Style::default().fg(Color::LightGreen),
         ),
-        Span::raw(" | PROJECT="),
-        Span::styled(
-            project_name_from_path(ctx.current_project),
-            Style::default().fg(Color::LightCyan),
-        ),
-        Span::raw(" | TASKS="),
+        Span::raw(" | queue="),
         Span::styled(
             format!("R{} F{} S{} {}", running, failed, succeeded, spinner),
             Style::default().fg(Color::LightGreen),
         ),
     ];
     if ctx.script_running {
-        line2.push(Span::raw(" | SCRIPT=RUN"));
+        line2.push(Span::raw(" | script=run"));
     }
     if ctx.zellij_managed {
-        line2.push(Span::raw(" | ZELLIJ="));
+        line2.push(Span::raw(" | zellij="));
         line2.push(Span::styled(
             ctx.zellij_session.as_deref().unwrap_or("attached"),
             Style::default().fg(Color::LightBlue),
@@ -108,7 +105,7 @@ pub(super) fn draw_header(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         InputMode::ResultSearchInput => Some("results-search"),
     };
     if let Some(mode) = mode {
-        line2.push(Span::raw(" | MODE="));
+        line2.push(Span::raw(" | mode="));
         line2.push(Span::styled(
             mode,
             Style::default()
