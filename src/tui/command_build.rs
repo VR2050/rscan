@@ -12,7 +12,7 @@ pub(crate) fn build_task_spawn_args(
     match head {
         "host" => {
             if parts.len() < 2 {
-                return Err("用法: host <quick|tcp> ...".to_string());
+                return Err("用法: host <quick|tcp|udp|syn|arp> ...".to_string());
             }
             let sub = parts[1];
             match sub {
@@ -26,6 +26,7 @@ pub(crate) fn build_task_spawn_args(
                         "--host".to_string(),
                         parts[2].to_string(),
                     ]);
+                    append_host_extra_args(&mut args, &parts[3..], HostExtraKind::Quick)?;
                 }
                 "tcp" => {
                     if parts.len() < 4 {
@@ -39,13 +40,54 @@ pub(crate) fn build_task_spawn_args(
                         "--ports".to_string(),
                         parts[3].to_string(),
                     ]);
+                    append_host_extra_args(&mut args, &parts[4..], HostExtraKind::Tcp)?;
+                }
+                "udp" => {
+                    if parts.len() < 4 {
+                        return Err("用法: host udp <host> <ports>".to_string());
+                    }
+                    args.extend([
+                        "host".to_string(),
+                        "udp".to_string(),
+                        "--host".to_string(),
+                        parts[2].to_string(),
+                        "--ports".to_string(),
+                        parts[3].to_string(),
+                    ]);
+                    append_host_extra_args(&mut args, &parts[4..], HostExtraKind::Udp)?;
+                }
+                "syn" => {
+                    if parts.len() < 4 {
+                        return Err("用法: host syn <host> <ports>".to_string());
+                    }
+                    args.extend([
+                        "host".to_string(),
+                        "syn".to_string(),
+                        "--host".to_string(),
+                        parts[2].to_string(),
+                        "--ports".to_string(),
+                        parts[3].to_string(),
+                    ]);
+                    append_host_extra_args(&mut args, &parts[4..], HostExtraKind::Syn)?;
+                }
+                "arp" => {
+                    if parts.len() < 3 {
+                        return Err("用法: host arp <cidr>".to_string());
+                    }
+                    args.extend([
+                        "host".to_string(),
+                        "arp".to_string(),
+                        "--cidr".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_host_extra_args(&mut args, &parts[3..], HostExtraKind::Arp)?;
                 }
                 _ => return Err(format!("未知 host 子命令: {sub}")),
             }
         }
         "web" => {
             if parts.len() < 2 {
-                return Err("用法: web <dir|fuzz|dns> ...".to_string());
+                return Err("用法: web <dir|fuzz|dns|crawl|live> ...".to_string());
             }
             let sub = parts[1];
             match sub {
@@ -63,6 +105,7 @@ pub(crate) fn build_task_spawn_args(
                         args.push("--paths".into());
                         args.push(p.to_string());
                     }
+                    append_web_extra_args(&mut args, &parts[4..], WebExtraKind::Dir)?;
                 }
                 "fuzz" => {
                     if parts.len() < 4 {
@@ -78,6 +121,7 @@ pub(crate) fn build_task_spawn_args(
                         args.push("--keywords".into());
                         args.push(kw.to_string());
                     }
+                    append_web_extra_args(&mut args, &parts[4..], WebExtraKind::Fuzz)?;
                 }
                 "dns" => {
                     if parts.len() < 4 {
@@ -93,42 +137,133 @@ pub(crate) fn build_task_spawn_args(
                         args.push("--words".into());
                         args.push(w.to_string());
                     }
+                    append_web_extra_args(&mut args, &parts[4..], WebExtraKind::Dns)?;
+                }
+                "crawl" => {
+                    if parts.len() < 3 {
+                        return Err("用法: web crawl <seed_url>".to_string());
+                    }
+                    args.extend([
+                        "web".to_string(),
+                        "crawl".to_string(),
+                        "--seeds".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_web_extra_args(&mut args, &parts[3..], WebExtraKind::Crawl)?;
+                }
+                "live" => {
+                    if parts.len() < 3 {
+                        return Err("用法: web live <url_csv>".to_string());
+                    }
+                    args.extend(["web".to_string(), "live".to_string()]);
+                    for url in parts[2].split(',') {
+                        args.push("--urls".into());
+                        args.push(url.to_string());
+                    }
+                    append_web_extra_args(&mut args, &parts[3..], WebExtraKind::Live)?;
                 }
                 _ => return Err(format!("未知 web 子命令: {sub}")),
             }
         }
         "vuln" => {
             if parts.len() < 2 {
-                return Err("用法: vuln scan <target_url> [templates_dir]".to_string());
+                return Err(
+                    "用法: vuln <lint|scan|container-audit|system-guard|stealth-check|fragment-audit> ..."
+                        .to_string(),
+                );
             }
             let sub = parts[1];
-            if sub != "scan" {
-                return Err(format!("未知 vuln 子命令: {sub}"));
+            match sub {
+                "lint" => {
+                    if parts.len() < 3 {
+                        return Err("用法: vuln lint <templates_path>".to_string());
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "lint".to_string(),
+                        "--templates".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                }
+                "scan" => {
+                    if parts.len() < 3 {
+                        return Err("用法: vuln scan <target_url> [templates_dir]".to_string());
+                    }
+                    let templates = if parts.len() >= 4 && !parts[3].starts_with("--") {
+                        PathBuf::from(parts[3])
+                    } else {
+                        ensure_builtin_vuln_templates(workspace)
+                            .map_err(|e| format!("准备漏洞模板失败: {}", e))?
+                    };
+                    if !templates.exists() {
+                        return Err(format!("模板目录不存在: {}", templates.display()));
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "scan".to_string(),
+                        "--targets".to_string(),
+                        parts[2].to_string(),
+                        "--templates".to_string(),
+                        templates.display().to_string(),
+                    ]);
+                    let extra_start = if parts.len() >= 4 && !parts[3].starts_with("--") {
+                        4
+                    } else {
+                        3
+                    };
+                    append_vuln_scan_extra_args(&mut args, &parts[extra_start..])?;
+                }
+                "container-audit" => {
+                    if parts.len() < 3 {
+                        return Err("用法: vuln container-audit <manifests_path>".to_string());
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "container-audit".to_string(),
+                        "--manifests".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                }
+                "system-guard" => {
+                    args.extend(["vuln".to_string(), "system-guard".to_string()]);
+                }
+                "stealth-check" => {
+                    if parts.len() < 3 {
+                        return Err("用法: vuln stealth-check <target_url>".to_string());
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "stealth-check".to_string(),
+                        "--target".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_vuln_targeted_extra_args(&mut args, &parts[3..], VulnTargetedKind::Stealth)?;
+                }
+                "fragment-audit" => {
+                    if parts.len() < 3 {
+                        return Err("用法: vuln fragment-audit <target_url>".to_string());
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "fragment-audit".to_string(),
+                        "--target".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_vuln_targeted_extra_args(
+                        &mut args,
+                        &parts[3..],
+                        VulnTargetedKind::Fragment,
+                    )?;
+                }
+                _ => return Err(format!("未知 vuln 子命令: {sub}")),
             }
-            if parts.len() < 3 {
-                return Err("用法: vuln scan <target_url> [templates_dir]".to_string());
-            }
-            let templates = if parts.len() >= 4 {
-                PathBuf::from(parts[3])
-            } else {
-                ensure_builtin_vuln_templates(workspace)
-                    .map_err(|e| format!("准备漏洞模板失败: {}", e))?
-            };
-            if !templates.exists() {
-                return Err(format!("模板目录不存在: {}", templates.display()));
-            }
-            args.extend([
-                "vuln".to_string(),
-                "scan".to_string(),
-                "--targets".to_string(),
-                parts[2].to_string(),
-                "--templates".to_string(),
-                templates.display().to_string(),
-            ]);
         }
         "reverse" => {
             if parts.len() < 2 {
-                return Err("用法: reverse <analyze|plan|run> ...".to_string());
+                return Err(
+                    "用法: reverse <analyze|plan|run|jobs|job-status|job-logs|job-artifacts|job-functions|job-show|job-search|job-clear|job-prune|job-doctor|debug-script> ..."
+                        .to_string(),
+                );
             }
             let sub = parts[1];
             match sub {
@@ -142,12 +277,21 @@ pub(crate) fn build_task_spawn_args(
                         "--input".to_string(),
                         parts[2].to_string(),
                     ]);
+                    append_reverse_analyze_extra_args(&mut args, &parts[3..])?;
                 }
                 "plan" => {
                     if parts.len() < 3 {
                         return Err("用法: reverse plan <input_file> [engine]".to_string());
                     }
-                    let engine = parts.get(3).copied().unwrap_or("objdump");
+                    let engine = if let Some(value) = parts.get(3) {
+                        if value.starts_with("--") {
+                            "objdump"
+                        } else {
+                            value
+                        }
+                    } else {
+                        "objdump"
+                    };
                     let engine_ok = matches!(
                         engine.to_ascii_lowercase().as_str(),
                         "objdump" | "radare2" | "r2" | "ghidra" | "jadx"
@@ -166,9 +310,141 @@ pub(crate) fn build_task_spawn_args(
                         "--engine".to_string(),
                         engine.to_string(),
                     ]);
+                    let extra_start = if parts.len() >= 4 && !parts[3].starts_with("--") {
+                        4
+                    } else {
+                        3
+                    };
+                    append_reverse_plan_extra_args(&mut args, &parts[extra_start..])?;
                 }
                 "run" => {
                     append_reverse_run_args(&mut args, workspace, parts, 2, 3, 4, 5)?;
+                }
+                "jobs" => {
+                    args.extend(["reverse".to_string(), "jobs".to_string()]);
+                }
+                "job-status" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse job-status <job_id>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-status".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                }
+                "job-logs" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse job-logs <job_id>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-logs".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_reverse_job_logs_extra_args(&mut args, &parts[3..])?;
+                }
+                "job-artifacts" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse job-artifacts <job_id>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-artifacts".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                }
+                "job-functions" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse job-functions <job_id>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-functions".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                }
+                "job-show" => {
+                    if parts.len() < 4 {
+                        return Err("用法: reverse job-show <job_id> <function>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-show".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                        "--name".to_string(),
+                        parts[3].to_string(),
+                    ]);
+                }
+                "job-search" => {
+                    if parts.len() < 4 {
+                        return Err("用法: reverse job-search <job_id> <keyword>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-search".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                        "--keyword".to_string(),
+                        parts[3].to_string(),
+                    ]);
+                    append_reverse_job_search_extra_args(&mut args, &parts[4..])?;
+                }
+                "job-clear" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse job-clear <job_id>|--all".to_string());
+                    }
+                    args.extend(["reverse".to_string(), "job-clear".to_string()]);
+                    if parts[2] == "--all" {
+                        args.push("--all".to_string());
+                        append_reverse_job_clear_extra_args(&mut args, &parts[3..])?;
+                    } else {
+                        args.extend(["--job".to_string(), parts[2].to_string()]);
+                        append_reverse_job_clear_extra_args(&mut args, &parts[3..])?;
+                    }
+                }
+                "job-prune" => {
+                    args.extend(["reverse".to_string(), "job-prune".to_string()]);
+                    append_reverse_job_prune_extra_args(&mut args, &parts[2..])?;
+                }
+                "job-doctor" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse job-doctor <job_id>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "job-doctor".to_string(),
+                        "--job".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                }
+                "debug-script" => {
+                    if parts.len() < 4 {
+                        return Err(
+                            "用法: reverse debug-script <input_file> <script_out> [profile]"
+                                .to_string(),
+                        );
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "debug-script".to_string(),
+                        "--input".to_string(),
+                        parts[2].to_string(),
+                        "--script-out".to_string(),
+                        parts[3].to_string(),
+                    ]);
+                    let extra_start = if parts.len() >= 5 && !parts[4].starts_with("--") {
+                        args.extend(["--profile".to_string(), parts[4].to_string()]);
+                        5
+                    } else {
+                        4
+                    };
+                    append_reverse_debug_script_extra_args(&mut args, &parts[extra_start..])?;
                 }
                 _ => return Err(format!("未知 reverse 子命令: {sub}")),
             }
@@ -183,6 +459,7 @@ pub(crate) fn build_task_spawn_args(
                 "--host".to_string(),
                 parts[1].to_string(),
             ]);
+            append_host_extra_args(&mut args, &parts[2..], HostExtraKind::Quick)?;
         }
         "h.tcp" => {
             if parts.len() < 3 {
@@ -196,6 +473,47 @@ pub(crate) fn build_task_spawn_args(
                 "--ports".to_string(),
                 parts[2].to_string(),
             ]);
+            append_host_extra_args(&mut args, &parts[3..], HostExtraKind::Tcp)?;
+        }
+        "h.udp" => {
+            if parts.len() < 3 {
+                return Err("用法: h.udp <host> <ports>".to_string());
+            }
+            args.extend([
+                "host".to_string(),
+                "udp".to_string(),
+                "--host".to_string(),
+                parts[1].to_string(),
+                "--ports".to_string(),
+                parts[2].to_string(),
+            ]);
+            append_host_extra_args(&mut args, &parts[3..], HostExtraKind::Udp)?;
+        }
+        "h.syn" => {
+            if parts.len() < 3 {
+                return Err("用法: h.syn <host> <ports>".to_string());
+            }
+            args.extend([
+                "host".to_string(),
+                "syn".to_string(),
+                "--host".to_string(),
+                parts[1].to_string(),
+                "--ports".to_string(),
+                parts[2].to_string(),
+            ]);
+            append_host_extra_args(&mut args, &parts[3..], HostExtraKind::Syn)?;
+        }
+        "h.arp" => {
+            if parts.len() < 2 {
+                return Err("用法: h.arp <cidr>".to_string());
+            }
+            args.extend([
+                "host".to_string(),
+                "arp".to_string(),
+                "--cidr".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_host_extra_args(&mut args, &parts[2..], HostExtraKind::Arp)?;
         }
         "w.dir" => {
             if parts.len() < 3 {
@@ -211,6 +529,7 @@ pub(crate) fn build_task_spawn_args(
                 args.push("--paths".into());
                 args.push(p.to_string());
             }
+            append_web_extra_args(&mut args, &parts[3..], WebExtraKind::Dir)?;
         }
         "w.fuzz" => {
             if parts.len() < 3 {
@@ -226,6 +545,7 @@ pub(crate) fn build_task_spawn_args(
                 args.push("--keywords".into());
                 args.push(kw.to_string());
             }
+            append_web_extra_args(&mut args, &parts[3..], WebExtraKind::Fuzz)?;
         }
         "w.dns" => {
             if parts.len() < 3 {
@@ -241,12 +561,47 @@ pub(crate) fn build_task_spawn_args(
                 args.push("--words".into());
                 args.push(w.to_string());
             }
+            append_web_extra_args(&mut args, &parts[3..], WebExtraKind::Dns)?;
+        }
+        "w.crawl" => {
+            if parts.len() < 2 {
+                return Err("用法: w.crawl <seed_url>".to_string());
+            }
+            args.extend([
+                "web".to_string(),
+                "crawl".to_string(),
+                "--seeds".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_web_extra_args(&mut args, &parts[2..], WebExtraKind::Crawl)?;
+        }
+        "w.live" => {
+            if parts.len() < 2 {
+                return Err("用法: w.live <url_csv>".to_string());
+            }
+            args.extend(["web".to_string(), "live".to_string()]);
+            for url in parts[1].split(',') {
+                args.push("--urls".into());
+                args.push(url.to_string());
+            }
+            append_web_extra_args(&mut args, &parts[2..], WebExtraKind::Live)?;
+        }
+        "v.lint" => {
+            if parts.len() < 2 {
+                return Err("用法: v.lint <templates_path>".to_string());
+            }
+            args.extend([
+                "vuln".to_string(),
+                "lint".to_string(),
+                "--templates".to_string(),
+                parts[1].to_string(),
+            ]);
         }
         "v.scan" => {
             if parts.len() < 2 {
                 return Err("用法: v.scan <target_url> [templates_dir]".to_string());
             }
-            let templates = if parts.len() >= 3 {
+            let templates = if parts.len() >= 3 && !parts[2].starts_with("--") {
                 PathBuf::from(parts[2])
             } else {
                 ensure_builtin_vuln_templates(workspace)
@@ -263,6 +618,50 @@ pub(crate) fn build_task_spawn_args(
                 "--templates".to_string(),
                 templates.display().to_string(),
             ]);
+            let extra_start = if parts.len() >= 3 && !parts[2].starts_with("--") {
+                3
+            } else {
+                2
+            };
+            append_vuln_scan_extra_args(&mut args, &parts[extra_start..])?;
+        }
+        "v.ca" => {
+            if parts.len() < 2 {
+                return Err("用法: v.ca <manifests_path>".to_string());
+            }
+            args.extend([
+                "vuln".to_string(),
+                "container-audit".to_string(),
+                "--manifests".to_string(),
+                parts[1].to_string(),
+            ]);
+        }
+        "v.sg" => {
+            args.extend(["vuln".to_string(), "system-guard".to_string()]);
+        }
+        "v.sc" => {
+            if parts.len() < 2 {
+                return Err("用法: v.sc <target_url>".to_string());
+            }
+            args.extend([
+                "vuln".to_string(),
+                "stealth-check".to_string(),
+                "--target".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_vuln_targeted_extra_args(&mut args, &parts[2..], VulnTargetedKind::Stealth)?;
+        }
+        "v.fa" => {
+            if parts.len() < 2 {
+                return Err("用法: v.fa <target_url>".to_string());
+            }
+            args.extend([
+                "vuln".to_string(),
+                "fragment-audit".to_string(),
+                "--target".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_vuln_targeted_extra_args(&mut args, &parts[2..], VulnTargetedKind::Fragment)?;
         }
         "r.analyze" => {
             if parts.len() < 2 {
@@ -274,12 +673,21 @@ pub(crate) fn build_task_spawn_args(
                 "--input".to_string(),
                 parts[1].to_string(),
             ]);
+            append_reverse_analyze_extra_args(&mut args, &parts[2..])?;
         }
         "r.plan" => {
             if parts.len() < 2 {
                 return Err("用法: r.plan <input_file> [engine]".to_string());
             }
-            let engine = parts.get(2).copied().unwrap_or("objdump");
+            let engine = if let Some(value) = parts.get(2) {
+                if value.starts_with("--") {
+                    "objdump"
+                } else {
+                    value
+                }
+            } else {
+                "objdump"
+            };
             let engine_ok = matches!(
                 engine.to_ascii_lowercase().as_str(),
                 "objdump" | "radare2" | "r2" | "ghidra" | "jadx"
@@ -298,13 +706,468 @@ pub(crate) fn build_task_spawn_args(
                 "--engine".to_string(),
                 engine.to_string(),
             ]);
+            let extra_start = if parts.len() >= 3 && !parts[2].starts_with("--") {
+                3
+            } else {
+                2
+            };
+            append_reverse_plan_extra_args(&mut args, &parts[extra_start..])?;
         }
         "r.run" => {
             append_reverse_run_args(&mut args, workspace, parts, 1, 2, 3, 4)?;
         }
+        "r.jobs" => {
+            args.extend(["reverse".to_string(), "jobs".to_string()]);
+        }
+        "r.status" => {
+            if parts.len() < 2 {
+                return Err("用法: r.status <job_id>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-status".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+            ]);
+        }
+        "r.logs" => {
+            if parts.len() < 2 {
+                return Err("用法: r.logs <job_id>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-logs".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_reverse_job_logs_extra_args(&mut args, &parts[2..])?;
+        }
+        "r.artifacts" => {
+            if parts.len() < 2 {
+                return Err("用法: r.artifacts <job_id>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-artifacts".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+            ]);
+        }
+        "r.funcs" => {
+            if parts.len() < 2 {
+                return Err("用法: r.funcs <job_id>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-functions".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+            ]);
+        }
+        "r.show" => {
+            if parts.len() < 3 {
+                return Err("用法: r.show <job_id> <function>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-show".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+                "--name".to_string(),
+                parts[2].to_string(),
+            ]);
+        }
+        "r.search" => {
+            if parts.len() < 3 {
+                return Err("用法: r.search <job_id> <keyword>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-search".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+                "--keyword".to_string(),
+                parts[2].to_string(),
+            ]);
+            append_reverse_job_search_extra_args(&mut args, &parts[3..])?;
+        }
+        "r.clear" => {
+            if parts.len() < 2 {
+                return Err("用法: r.clear <job_id>|--all".to_string());
+            }
+            args.extend(["reverse".to_string(), "job-clear".to_string()]);
+            if parts[1] == "--all" {
+                args.push("--all".to_string());
+                append_reverse_job_clear_extra_args(&mut args, &parts[2..])?;
+            } else {
+                args.extend(["--job".to_string(), parts[1].to_string()]);
+                append_reverse_job_clear_extra_args(&mut args, &parts[2..])?;
+            }
+        }
+        "r.prune" => {
+            args.extend(["reverse".to_string(), "job-prune".to_string()]);
+            append_reverse_job_prune_extra_args(&mut args, &parts[1..])?;
+        }
+        "r.doctor" => {
+            if parts.len() < 2 {
+                return Err("用法: r.doctor <job_id>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "job-doctor".to_string(),
+                "--job".to_string(),
+                parts[1].to_string(),
+            ]);
+        }
+        "r.debug" => {
+            if parts.len() < 3 {
+                return Err("用法: r.debug <input_file> <script_out> [profile]".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "debug-script".to_string(),
+                "--input".to_string(),
+                parts[1].to_string(),
+                "--script-out".to_string(),
+                parts[2].to_string(),
+            ]);
+            let extra_start = if parts.len() >= 4 && !parts[3].starts_with("--") {
+                args.extend(["--profile".to_string(), parts[3].to_string()]);
+                4
+            } else {
+                3
+            };
+            append_reverse_debug_script_extra_args(&mut args, &parts[extra_start..])?;
+        }
         _ => return Err(format!("未知命令: {head}")),
     }
     Ok(args)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HostExtraKind {
+    Quick,
+    Tcp,
+    Udp,
+    Syn,
+    Arp,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WebExtraKind {
+    Dir,
+    Fuzz,
+    Dns,
+    Crawl,
+    Live,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum VulnTargetedKind {
+    Stealth,
+    Fragment,
+}
+
+fn append_host_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+    kind: HostExtraKind,
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--profile" => {
+                let Some(value) = extras.get(idx + 1) else {
+                    return Err("--profile 需要取值: low-noise|balanced|aggressive".to_string());
+                };
+                if !matches!(*value, "low-noise" | "balanced" | "aggressive") {
+                    return Err(format!(
+                        "profile 不支持: {}，可选 low-noise|balanced|aggressive",
+                        value
+                    ));
+                }
+                args.extend(["--profile".to_string(), (*value).to_string()]);
+                idx += 2;
+            }
+            "--service-detect" => {
+                if matches!(kind, HostExtraKind::Arp | HostExtraKind::Quick) {
+                    return Err("--service-detect 仅支持 tcp/udp/syn".to_string());
+                }
+                args.push("--service-detect".to_string());
+                idx += 1;
+            }
+            "--probes-file" => {
+                if matches!(kind, HostExtraKind::Arp | HostExtraKind::Quick) {
+                    return Err("--probes-file 仅支持 tcp/udp/syn".to_string());
+                }
+                let Some(value) = extras.get(idx + 1) else {
+                    return Err("--probes-file 需要文件路径".to_string());
+                };
+                args.extend(["--probes-file".to_string(), (*value).to_string()]);
+                idx += 2;
+            }
+            "--syn-mode" => {
+                if kind != HostExtraKind::Syn {
+                    return Err("--syn-mode 仅支持 host syn / h.syn".to_string());
+                }
+                let Some(value) = extras.get(idx + 1) else {
+                    return Err("--syn-mode 需要取值: strict|verify-filtered".to_string());
+                };
+                if !matches!(*value, "strict" | "verify-filtered") {
+                    return Err(format!(
+                        "syn-mode 不支持: {}，可选 strict|verify-filtered",
+                        value
+                    ));
+                }
+                args.extend(["--syn-mode".to_string(), (*value).to_string()]);
+                idx += 2;
+            }
+            unknown => {
+                return Err(format!("未知 host 扩展参数: {unknown}"));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn append_web_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+    kind: WebExtraKind,
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--profile" => {
+                let value = expect_value(extras, idx, "--profile 需要取值")?;
+                ensure_profile(value)?;
+                args.extend(["--profile".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--concurrency" | "-c" => {
+                let value = expect_value(extras, idx, "--concurrency 需要取值")?;
+                args.extend(["--concurrency".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--timeout-ms" | "-t" => {
+                let value = expect_value(extras, idx, "--timeout-ms 需要取值")?;
+                args.extend(["--timeout-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--max-retries" | "-r" => {
+                let value = expect_value(extras, idx, "--max-retries 需要取值")?;
+                args.extend(["--max-retries".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--header" | "-H" => {
+                let value = expect_value(extras, idx, "--header 需要取值")?;
+                args.extend(["--header".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--status-min" => {
+                let value = expect_value(extras, idx, "--status-min 需要取值")?;
+                args.extend(["--status-min".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--status-max" => {
+                let value = expect_value(extras, idx, "--status-max 需要取值")?;
+                args.extend(["--status-max".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--method" | "-X" => {
+                let value = expect_value(extras, idx, "--method 需要取值")?;
+                args.extend(["--method".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--recursive" | "-R" => {
+                if kind != WebExtraKind::Dir {
+                    return Err("--recursive 仅支持 web dir / w.dir".to_string());
+                }
+                args.push("--recursive".to_string());
+                idx += 1;
+            }
+            "--recursive-depth" | "-D" => {
+                if kind != WebExtraKind::Dir {
+                    return Err("--recursive-depth 仅支持 web dir / w.dir".to_string());
+                }
+                let value = expect_value(extras, idx, "--recursive-depth 需要取值")?;
+                args.extend(["--recursive-depth".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--words-file" => {
+                if kind != WebExtraKind::Dns {
+                    return Err("--words-file 仅支持 web dns / w.dns".to_string());
+                }
+                let value = expect_value(extras, idx, "--words-file 需要文件路径")?;
+                args.extend(["--words-file".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--discovery-mode" => {
+                if kind != WebExtraKind::Dns {
+                    return Err("--discovery-mode 仅支持 web dns / w.dns".to_string());
+                }
+                let value = expect_value(extras, idx, "--discovery-mode 需要取值")?;
+                if !matches!(value, "rough" | "precise") {
+                    return Err(format!(
+                        "discovery-mode 不支持: {}，可选 rough|precise",
+                        value
+                    ));
+                }
+                args.extend(["--discovery-mode".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--keywords-file" => {
+                if kind != WebExtraKind::Fuzz {
+                    return Err("--keywords-file 仅支持 web fuzz / w.fuzz".to_string());
+                }
+                let value = expect_value(extras, idx, "--keywords-file 需要文件路径")?;
+                args.extend(["--keywords-file".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--max-depth" => {
+                if kind != WebExtraKind::Crawl {
+                    return Err("--max-depth 仅支持 web crawl / w.crawl".to_string());
+                }
+                let value = expect_value(extras, idx, "--max-depth 需要取值")?;
+                args.extend(["--max-depth".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--max-pages" => {
+                if kind != WebExtraKind::Crawl {
+                    return Err("--max-pages 仅支持 web crawl / w.crawl".to_string());
+                }
+                let value = expect_value(extras, idx, "--max-pages 需要取值")?;
+                args.extend(["--max-pages".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--obey-robots" => {
+                if kind != WebExtraKind::Crawl {
+                    return Err("--obey-robots 仅支持 web crawl / w.crawl".to_string());
+                }
+                args.push("--obey-robots".to_string());
+                idx += 1;
+            }
+            unknown => return Err(format!("未知 web 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_vuln_scan_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--severity" => {
+                let value = expect_value(extras, idx, "--severity 需要取值")?;
+                for item in value.split(',').filter(|item| !item.is_empty()) {
+                    args.extend(["--severity".to_string(), item.to_string()]);
+                }
+                idx += 2;
+            }
+            "--tag" => {
+                let value = expect_value(extras, idx, "--tag 需要取值")?;
+                for item in value.split(',').filter(|item| !item.is_empty()) {
+                    args.extend(["--tag".to_string(), item.to_string()]);
+                }
+                idx += 2;
+            }
+            "--concurrency" | "-c" => {
+                let value = expect_value(extras, idx, "--concurrency 需要取值")?;
+                args.extend(["--concurrency".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--timeout-ms" | "-T" => {
+                let value = expect_value(extras, idx, "--timeout-ms 需要取值")?;
+                args.extend(["--timeout-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 vuln scan 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_vuln_targeted_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+    kind: VulnTargetedKind,
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--timeout-ms" | "-T" => {
+                let value = expect_value(extras, idx, "--timeout-ms 需要取值")?;
+                args.extend(["--timeout-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--concurrency" | "-c" => {
+                if kind != VulnTargetedKind::Fragment {
+                    return Err("--concurrency 仅支持 fragment-audit".to_string());
+                }
+                let value = expect_value(extras, idx, "--concurrency 需要取值")?;
+                args.extend(["--concurrency".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--burst-concurrency" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err("--burst-concurrency 仅支持 stealth-check".to_string());
+                }
+                let value = expect_value(extras, idx, "--burst-concurrency 需要取值")?;
+                args.extend(["--burst-concurrency".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--low-noise-requests" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err("--low-noise-requests 仅支持 stealth-check".to_string());
+                }
+                let value = expect_value(extras, idx, "--low-noise-requests 需要取值")?;
+                args.extend(["--low-noise-requests".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--burst-requests" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err("--burst-requests 仅支持 stealth-check".to_string());
+                }
+                let value = expect_value(extras, idx, "--burst-requests 需要取值")?;
+                args.extend(["--burst-requests".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--requests-per-tier" => {
+                if kind != VulnTargetedKind::Fragment {
+                    return Err("--requests-per-tier 仅支持 fragment-audit".to_string());
+                }
+                let value = expect_value(extras, idx, "--requests-per-tier 需要取值")?;
+                args.extend(["--requests-per-tier".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--payload-min-bytes" => {
+                if kind != VulnTargetedKind::Fragment {
+                    return Err("--payload-min-bytes 仅支持 fragment-audit".to_string());
+                }
+                let value = expect_value(extras, idx, "--payload-min-bytes 需要取值")?;
+                args.extend(["--payload-min-bytes".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--payload-max-bytes" => {
+                if kind != VulnTargetedKind::Fragment {
+                    return Err("--payload-max-bytes 仅支持 fragment-audit".to_string());
+                }
+                let value = expect_value(extras, idx, "--payload-max-bytes 需要取值")?;
+                args.extend(["--payload-max-bytes".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--payload-step-bytes" => {
+                if kind != VulnTargetedKind::Fragment {
+                    return Err("--payload-step-bytes 仅支持 fragment-audit".to_string());
+                }
+                let value = expect_value(extras, idx, "--payload-step-bytes 需要取值")?;
+                args.extend(["--payload-step-bytes".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 vuln 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
 }
 
 fn ensure_builtin_vuln_templates(workspace: &PathBuf) -> Result<PathBuf, RustpenError> {
@@ -343,14 +1206,30 @@ fn append_reverse_run_args(
     let Some(input) = parts.get(input_idx) else {
         return Err("用法: reverse run <input_file> [engine] [mode] [function]".to_string());
     };
-    let engine = parts.get(engine_idx).copied().unwrap_or("auto");
+    let engine = if let Some(value) = parts.get(engine_idx) {
+        if value.starts_with("--") {
+            "auto"
+        } else {
+            value
+        }
+    } else {
+        "auto"
+    };
     if !reverse_run_engine_supported(engine) {
         return Err(format!(
             "engine 不支持: {}，可选 auto|objdump|radare2|ghidra|jadx|rust|rust-asm|rust-index",
             engine
         ));
     }
-    let mode = parts.get(mode_idx).copied().unwrap_or("full");
+    let mode = if let Some(value) = parts.get(mode_idx) {
+        if value.starts_with("--") {
+            "full"
+        } else {
+            value
+        }
+    } else {
+        "full"
+    };
     if !matches!(mode, "full" | "index" | "function") {
         return Err(format!("mode 不支持: {}，可选 full|index|function", mode));
     }
@@ -374,9 +1253,227 @@ fn append_reverse_run_args(
                     .to_string(),
             );
         };
+        if function.starts_with("--") {
+            return Err(
+                "function 模式需要额外参数: reverse run <input_file> [engine] function <function>"
+                    .to_string(),
+            );
+        }
         args.extend(["--function".to_string(), (*function).to_string()]);
     }
+    let extra_start = if mode == "function" {
+        function_idx + 1
+    } else if parts.get(mode_idx).is_some_and(|value| !value.starts_with("--")) {
+        mode_idx + 1
+    } else if parts.get(engine_idx).is_some_and(|value| !value.starts_with("--")) {
+        engine_idx + 1
+    } else {
+        input_idx + 1
+    };
+    append_reverse_run_extra_args(args, &parts[extra_start..])?;
     Ok(())
+}
+
+fn append_reverse_analyze_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--rules-file" => {
+                let value = expect_value(extras, idx, "--rules-file 需要文件路径")?;
+                args.extend(["--rules-file".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--dynamic" => {
+                args.push("--dynamic".to_string());
+                idx += 1;
+            }
+            "--dynamic-timeout-ms" => {
+                let value = expect_value(extras, idx, "--dynamic-timeout-ms 需要取值")?;
+                args.extend(["--dynamic-timeout-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--dynamic-syscalls" => {
+                let value = expect_value(extras, idx, "--dynamic-syscalls 需要取值")?;
+                args.extend(["--dynamic-syscalls".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--dynamic-blocklist" => {
+                let value = expect_value(extras, idx, "--dynamic-blocklist 需要取值")?;
+                args.extend(["--dynamic-blocklist".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse analyze 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_plan_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--output-dir" | "-d" => {
+                let value = expect_value(extras, idx, "--output-dir 需要目录路径")?;
+                args.extend(["--output-dir".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse plan 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_run_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--deep" => {
+                args.push("--deep".to_string());
+                idx += 1;
+            }
+            "--rust-first" => {
+                args.push("--rust-first".to_string());
+                idx += 1;
+            }
+            "--no-rust-first" => {
+                args.push("--no-rust-first".to_string());
+                idx += 1;
+            }
+            "--timeout-secs" | "-t" => {
+                let value = expect_value(extras, idx, "--timeout-secs 需要取值")?;
+                args.extend(["--timeout-secs".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse run 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_job_logs_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--stream" | "-s" => {
+                let value = expect_value(extras, idx, "--stream 需要取值")?;
+                if !matches!(value, "stdout" | "stderr" | "both") {
+                    return Err(format!(
+                        "stream 不支持: {}，可选 stdout|stderr|both",
+                        value
+                    ));
+                }
+                args.extend(["--stream".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse job-logs 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_job_search_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--max" | "-m" => {
+                let value = expect_value(extras, idx, "--max 需要取值")?;
+                args.extend(["--max".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse job-search 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_job_clear_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    for extra in extras {
+        match *extra {
+            "--all" => args.push("--all".to_string()),
+            unknown => return Err(format!("未知 reverse job-clear 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_job_prune_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--keep" | "-k" => {
+                let value = expect_value(extras, idx, "--keep 需要取值")?;
+                args.extend(["--keep".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--older-than-days" => {
+                let value = expect_value(extras, idx, "--older-than-days 需要取值")?;
+                args.extend(["--older-than-days".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--include-running" => {
+                args.push("--include-running".to_string());
+                idx += 1;
+            }
+            unknown => return Err(format!("未知 reverse job-prune 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_debug_script_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--pwndbg-init" | "-P" => {
+                let value = expect_value(extras, idx, "--pwndbg-init 需要文件路径")?;
+                args.extend(["--pwndbg-init".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--profile" | "-p" => {
+                let value = expect_value(extras, idx, "--profile 需要取值")?;
+                if !matches!(value, "pwngdb" | "pwndbg") {
+                    return Err(format!("profile 不支持: {}，可选 pwngdb|pwndbg", value));
+                }
+                args.extend(["--profile".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse debug-script 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn expect_value<'a>(extras: &'a [&str], idx: usize, err: &str) -> Result<&'a str, String> {
+    extras.get(idx + 1).copied().ok_or_else(|| err.to_string())
+}
+
+fn ensure_profile(value: &str) -> Result<(), String> {
+    if matches!(value, "low-noise" | "balanced" | "aggressive") {
+        Ok(())
+    } else {
+        Err(format!(
+            "profile 不支持: {}，可选 low-noise|balanced|aggressive",
+            value
+        ))
+    }
 }
 
 fn reverse_run_engine_supported(engine: &str) -> bool {
@@ -409,5 +1506,123 @@ mod tests {
             args.windows(2)
                 .any(|w| w == ["--workspace", ws.display().to_string().as_str()])
         );
+    }
+
+    #[test]
+    fn build_host_syn_accepts_service_detect_profile_and_syn_mode() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let parts = [
+            "host",
+            "syn",
+            "127.0.0.1",
+            "22,80",
+            "--profile",
+            "low-noise",
+            "--service-detect",
+            "--probes-file",
+            "/tmp/probes.txt",
+            "--syn-mode",
+            "strict",
+        ];
+        let args = build_task_spawn_args(&ws, "host", &parts).unwrap();
+        assert!(args.windows(2).any(|w| w == ["--profile", "low-noise"]));
+        assert!(args.iter().any(|arg| arg == "--service-detect"));
+        assert!(args.windows(2).any(|w| w == ["--probes-file", "/tmp/probes.txt"]));
+        assert!(args.windows(2).any(|w| w == ["--syn-mode", "strict"]));
+    }
+
+    #[test]
+    fn build_host_udp_alias_accepts_profile_and_probes() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let parts = [
+            "h.udp",
+            "127.0.0.1",
+            "53,161",
+            "--profile",
+            "aggressive",
+            "--probes-file",
+            "/tmp/probes.txt",
+        ];
+        let args = build_task_spawn_args(&ws, "h.udp", &parts).unwrap();
+        assert!(args.windows(2).any(|w| w == ["--profile", "aggressive"]));
+        assert!(args.windows(2).any(|w| w == ["--probes-file", "/tmp/probes.txt"]));
+    }
+
+    #[test]
+    fn build_web_dir_accepts_core_extra_flags() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let parts = [
+            "web",
+            "dir",
+            "https://example.com",
+            "/,/admin",
+            "--profile",
+            "aggressive",
+            "--concurrency",
+            "24",
+            "--timeout-ms",
+            "3000",
+            "--header",
+            "Authorization: Bearer x",
+            "--recursive",
+            "--recursive-depth",
+            "3",
+        ];
+        let args = build_task_spawn_args(&ws, "web", &parts).unwrap();
+        assert!(args.windows(2).any(|w| w == ["--profile", "aggressive"]));
+        assert!(args.windows(2).any(|w| w == ["--concurrency", "24"]));
+        assert!(args.windows(2).any(|w| w == ["--timeout-ms", "3000"]));
+        assert!(args.windows(2).any(|w| w == ["--header", "Authorization: Bearer x"]));
+        assert!(args.iter().any(|arg| arg == "--recursive"));
+        assert!(args.windows(2).any(|w| w == ["--recursive-depth", "3"]));
+    }
+
+    #[test]
+    fn build_vuln_scan_accepts_filters_and_tuning() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let parts = [
+            "v.scan",
+            "https://example.com",
+            "--severity",
+            "high,critical",
+            "--tag",
+            "cve,rce",
+            "--concurrency",
+            "16",
+            "--timeout-ms",
+            "4500",
+        ];
+        let args = build_task_spawn_args(&ws, "v.scan", &parts).unwrap();
+        assert!(args.windows(2).any(|w| w == ["--severity", "high"]));
+        assert!(args.windows(2).any(|w| w == ["--severity", "critical"]));
+        assert!(args.windows(2).any(|w| w == ["--tag", "cve"]));
+        assert!(args.windows(2).any(|w| w == ["--tag", "rce"]));
+        assert!(args.windows(2).any(|w| w == ["--concurrency", "16"]));
+        assert!(args.windows(2).any(|w| w == ["--timeout-ms", "4500"]));
+    }
+
+    #[test]
+    fn build_reverse_job_commands_and_run_flags() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let run_parts = [
+            "r.run",
+            "/bin/ls",
+            "ghidra",
+            "full",
+            "--deep",
+            "--no-rust-first",
+            "--timeout-secs",
+            "90",
+        ];
+        let run_args = build_task_spawn_args(&ws, "r.run", &run_parts).unwrap();
+        assert!(run_args.iter().any(|arg| arg == "--deep"));
+        assert!(run_args.iter().any(|arg| arg == "--no-rust-first"));
+        assert!(run_args.windows(2).any(|w| w == ["--timeout-secs", "90"]));
+
+        let job_parts = ["reverse", "job-search", "job-123", "main", "--max", "10"];
+        let job_args = build_task_spawn_args(&ws, "reverse", &job_parts).unwrap();
+        assert!(job_args.windows(2).any(|w| w == ["--job", "job-123"]));
+        assert!(job_args.windows(2).any(|w| w == ["--keyword", "main"]));
+        assert!(job_args.windows(2).any(|w| w == ["--max", "10"]));
     }
 }

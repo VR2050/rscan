@@ -21,6 +21,23 @@ pub(crate) fn load_tasks(workspace: PathBuf) -> Result<Vec<TaskView>, RustpenErr
     Ok(metas)
 }
 
+pub(crate) fn task_has_log_output(task: &TaskView) -> bool {
+    task.meta
+        .logs
+        .iter()
+        .any(|path| path.is_file() && !load_path_tail(path, 4).is_empty())
+}
+
+pub(crate) fn task_has_previewable_artifact(task: &TaskView) -> bool {
+    previewable_artifact_paths(task)
+        .into_iter()
+        .any(|path| path.is_file() && !load_path_tail(&path, 4).is_empty())
+}
+
+pub(crate) fn task_has_displayable_result(task: &TaskView) -> bool {
+    task_has_previewable_artifact(task) || task_has_log_output(task)
+}
+
 fn load_structured_tasks(dir: PathBuf) -> Result<Vec<TaskView>, RustpenError> {
     if !dir.exists() {
         return Ok(Vec::new());

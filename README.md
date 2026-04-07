@@ -2,9 +2,13 @@
 
 rscan 是用 Rust 编写的多合一安全扫描器，覆盖主机/端口探测、Web 目录与指纹识别、漏洞 PoC/Fuzz、以及二进制逆向分析（集成 Ghidra）。项目面向渗透测试、资产测绘与自动化安全评估场景，强调高并发、模块化和可扩展。
 
-> 状态：活跃开发中（2026-03-18）。接口随时可能调整，生产使用请留意版本变更。
+> 状态：活跃开发中（2026-03-24）。接口随时可能调整，生产使用请留意版本变更。
 
-## 最近更新（2026-03-18）
+## 最近更新（2026-03-24）
+- **TUI 结果展示链修复**：新任务提交后立即写入占位 `meta.json`，不再出现“任务列表里没有记录，突然 100%”的错觉；`Results` 会根据 artifact / logs / empty 三种状态给出明确诊断。
+- **TUI 命令层补满**：统一命令模式已接入 `host / web / vuln / reverse` 的高频主链与关键 flags；不改 CLI，只在 `TUI` 层做参数翻译与补全增强。
+- **补全策略更顺手**：顶层优先补 `host/web/vuln/reverse` 父级命令，再补子分支与常用 flags，减少一上来被占位符干扰的感觉。
+- **Launcher 示例同步扩展**：`Launcher` 现在覆盖 `host quick/tcp/udp/syn/arp`、`web dir/fuzz/dns/crawl/live`、`vuln lint/scan/...`、`reverse analyze/run/job-*` 等高频路径。
 - **TUI Workbench 原生可视化**：`Dashboard` 现在会直接显示 `.rscan/zellij/panes.json` 的 native pane registry 摘要与最近绑定；`Tasks / Results` 详情会显式展示 `runtime.tab / pane / cwd / command`，控制面真正“知道”自己在操控哪块 zellij 工作区。
 - **zellij-native runtime 深度收口**：managed tabs 固定为 `Control / Work / Inspect / Reverse`；`Tasks / Results` 可直接把当前任务送进原生日志 pane、artifact shell、task shell，reverse jobs 继续与普通任务共享统一表面。
 - **pane 复用更稳**：优先基于 `zellij action dump-layout` 查找命名 pane；若 live layout 无法命中，则会回退到 `.rscan/zellij/panes.json` 的最近绑定作为 soft hint 聚焦对应 tab，尽量减少 pane 爆炸。
@@ -76,10 +80,21 @@ RSCAN_ZELLIJ=1 cargo run -- tui
 - `Tasks / Results` 详情会显式展示任务当前的 runtime 绑定，包括 `session/tab/pane/cwd/command`，便于确认任务和哪个原生 pane 在绑定。
 - reverse decompile job 可直接在命令模式中用 `r.run <input> [engine] [mode]` 发起，日志/产物会落到当前 project 的 `jobs/` 与 `reverse_out/`，并自动回流到统一任务面。
 - 命令模式支持 `zlogs <task_id>`、`zshell <task_id>`、`zart <task_id>`、`zrev`、`zfocus <control|work|inspect|reverse>`。
+- 统一命令模式现在支持更完整的模块入口：
+  - `host` / `h.*`：`quick/tcp/udp/syn/arp`
+  - `web` / `w.*`：`dir/fuzz/dns/crawl/live`
+  - `vuln` / `v.*`：`lint/scan/container-audit/system-guard/stealth-check/fragment-audit`
+  - `reverse` / `r.*`：`analyze/plan/run/jobs/job-status/job-logs/job-artifacts/job-functions/job-show/job-search/job-clear/job-prune/job-doctor/debug-script`
+- `Results` 现在会显式给出结果健康状态：
+  - `artifact-ready`：已有可预览 artifact
+  - `logs-only`：还没有 artifact，但日志已有可展示内容
+  - `empty`：任务已结束，但当前没有 artifact，也没有可展示日志
+- 若某个任务显示 `100%` 但右侧没有你期待的结构化内容，优先看 `result-state` 与 `Result Diagnosis`，再决定是开日志还是开 artifact。
 - 对带固定语义的 pane（如任务日志、artifact、reverse workspace），现在会优先复用已存在的命名 pane；若 live layout 暂时无法命中，则会使用最近 registry 绑定作为 soft hint 聚焦到对应 tab。
 - 命名 pane 的最近一次绑定会持久化到 `.rscan/zellij/panes.json`，为后续更深的 plugin/精确聚焦集成保留稳定锚点。
 - zellij managed layout 现在始终以 project root 为基准生成；具体 pane 仍可切到 task/reverse 的真实工作目录，避免把 task 目录误当 workspace。
 - zellij 模式下不再在 TUI 内维护 mini PTY，避免重复终端模拟带来的延迟与重绘负担。
+- 更细的命令、补全、结果诊断说明见 `docs/TUI_USAGE.md`。
 - 更细的设计说明见 `docs/ZELLIJ_NATIVE_INTEGRATION.md`。
 
 #### Reverse Workspace 操作建议
@@ -233,15 +248,6 @@ RSCAN_ZELLIJ=1 cargo run -- tui
 - **服务识别与漏洞验证**：扫描后基于 `service` 元数据筛选 → 使用 `vuln_check` PoC/Fuzz 针对性探测 → 结果写入统一输出便于归档。
 - **恶意样本快速 triage**：`reverse analyze` 获取基础信息 → `reverse decompile-run --mode index` 建索引 → 控制台/TUI 搜索可疑字符串/函数 → 需要时切换 `full` 导出伪代码或调用图。
 - **批量反编译**：`reverse decompile-batch ./samples --engine ghidra --mode full --max-jobs N`，配合 `job-status/job-logs` 监控与重跑失败任务。
-
-## TUI 一体化改造建议（规划）
-- **统一任务视图**：在现有逆向 TUI 框架上增加 Host/Web/Vuln/Shell 任务列表与详情 Pane，复用 job 概念，支持跨模块过滤与状态同步。
-- **模块化 Pane**：为各模块定制右侧信息窗格，如端口开放矩阵、HTTP 响应摘要、PoC 命中详情、payload 预览/复制。
-- **即席操作**：在 TUI 中直接触发常用子命令（扫描、重试、导出、流式写盘），并以日志 Pane 实时流式展示 stdout/stderr。
-- **配置与模板编辑**：提供内嵌表单或快捷键打开 `rules/`、词典、探针文件，支持快速增删改并热加载。
-- **结果导出与回放**：在 TUI 内一键导出当前筛选结果为 json/csv；支持读取历史 job 进行回放和对比。
-- **键位与可用性**: 继续沿用 `j/k` 导航和多窗格切换；为网络扫描补充状态码/耗时排序、速率限速开关、并发阈值热调节。
-- **远程/离线模式**：支持通过 RPC 连接远程扫描节点；离线模式加载本地结果浏览和检索，不必重复扫描。
 
 ## 开发者指南
 - 代码质量：`cargo fmt`、`cargo clippy --all-targets --all-features`。

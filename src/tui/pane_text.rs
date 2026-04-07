@@ -8,6 +8,9 @@ use crate::cores::engine::task::{TaskEvent, TaskStatus};
 use crate::tui::zellij_registry;
 
 use super::models::{InputMode, ResultKindFilter, TaskTab, TaskView};
+use super::task_store::{
+    task_has_displayable_result, task_has_log_output, task_has_previewable_artifact,
+};
 use super::view::{build_event_lines, build_logs_lines, build_notes_lines, line_s};
 
 pub(crate) fn build_dashboard_lines(
@@ -276,6 +279,16 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
     lines.push(line_s(""));
     lines.push(section_line("Module Signals"));
     lines.extend(module_signal_lines(cur, &events, &stdout, &stderr));
+    let result_state = if task_has_previewable_artifact(cur) {
+        "artifact-ready"
+    } else if task_has_log_output(cur) {
+        "logs-only"
+    } else if matches!(cur.meta.status, TaskStatus::Queued | TaskStatus::Running) {
+        "launching"
+    } else {
+        "empty"
+    };
+    lines.push(metric_line("result-state", result_state, result_state_color(result_state)));
     let findings = key_findings(cur, &stdout);
     if !findings.is_empty() {
         lines.push(line_s(""));
@@ -283,6 +296,21 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
         for finding in findings {
             lines.push(line_s(&format!("- {finding}")));
         }
+    } else if cur.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(cur) {
+        lines.push(line_s(""));
+        lines.push(section_line("Result Diagnosis"));
+        lines.push(line_s(
+            "- task 已结束，但当前任务目录内没有可展示的 artifact，也没有可读 stdout/stderr 内容",
+        ));
+        lines.push(line_s(
+            "- 这通常意味着任务只完成了状态写回，没有把结果正文落到当前 project/tasks/<id>/ 中",
+        ));
+    } else if matches!(cur.meta.status, TaskStatus::Queued | TaskStatus::Running)
+        && !task_has_displayable_result(cur)
+    {
+        lines.push(line_s(""));
+        lines.push(section_line("Result Diagnosis"));
+        lines.push(line_s("- 任务已进入队列或执行中，结果正文尚未落盘；先看 Recent Events / Stdout Tail"));
     }
     lines.push(line_s(""));
     append_runtime_lines(&mut lines, cur);
@@ -363,6 +391,15 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
     }
 
     lines
+}
+
+fn result_state_color(state: &str) -> Color {
+    match state {
+        "artifact-ready" => Color::Green,
+        "logs-only" => Color::Yellow,
+        "launching" => Color::LightBlue,
+        _ => Color::LightRed,
+    }
 }
 
 fn key_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {

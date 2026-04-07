@@ -123,10 +123,15 @@ fn focus_new_task(
     result_selected: &mut usize,
 ) {
     if let Some(task_id) = task_id {
-        if let Some(pos) = all_tasks.iter().position(|task| task.meta.id == task_id) {
-            *result_selected = pos;
+        if all_tasks
+            .first()
+            .is_some_and(|task| task.meta.id.as_str() == task_id)
+        {
+            *result_selected = 0;
+        } else if let Some(pos) = all_tasks.iter().position(|task| task.meta.id == task_id) {
+            *result_selected = pos.min(all_tasks.len().saturating_sub(1));
         } else {
-            *result_selected = (*result_selected).min(all_tasks.len().saturating_sub(1));
+            *result_selected = 0;
         }
         if let Some(pos) = tasks.iter().position(|task| task.meta.id == task_id) {
             *task_selected = pos;

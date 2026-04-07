@@ -7,7 +7,10 @@ use ratatui::widgets::{Cell, ListItem, Row};
 use crate::cores::engine::task::TaskStatus;
 
 use super::models::{ProjectEntry, ProjectTemplate, TaskView};
-use super::task_store::{load_log_tail, load_path_tail, load_text_artifact_snippets};
+use super::task_store::{
+    load_log_tail, load_path_tail, load_text_artifact_snippets, task_has_displayable_result,
+    task_has_log_output, task_has_previewable_artifact,
+};
 use super::view::line_s;
 
 pub(crate) fn build_task_table_rows(tasks: &[TaskView]) -> Vec<Row<'static>> {
@@ -38,9 +41,23 @@ pub(crate) fn build_result_list_items(
         .iter()
         .map(|&idx| {
             let task = &all_tasks[idx];
-            let (status_label, status_color) = status_badge(&task.meta.status);
+            let (status_label, status_color) = result_status_badge(task);
             let summary = task_result_summary(task);
             let artifact_count = task.meta.artifacts.len();
+            let result_state = if task_has_previewable_artifact(task) {
+                "artifact"
+            } else if task_has_log_output(task) {
+                "logs"
+            } else {
+                "empty"
+            };
+            let result_color = if task_has_previewable_artifact(task) {
+                Color::LightGreen
+            } else if task_has_log_output(task) {
+                Color::Yellow
+            } else {
+                Color::LightRed
+            };
             let runtime = if task.runtime_binding().is_some() {
                 "bound"
             } else {
@@ -72,6 +89,10 @@ pub(crate) fn build_result_list_items(
                         Style::default().fg(Color::LightBlue),
                     ),
                     Span::styled(
+                        format!("res:{result_state:<8} "),
+                        Style::default().fg(result_color),
+                    ),
+                    Span::styled(
                         format!("rt:{runtime:<5} "),
                         Style::default().fg(Color::DarkGray),
                     ),
@@ -80,6 +101,14 @@ pub(crate) fn build_result_list_items(
             ])
         })
         .collect()
+}
+
+fn result_status_badge(task: &TaskView) -> (&'static str, Color) {
+    if task.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(task) {
+        ("EMPTY", Color::LightRed)
+    } else {
+        status_badge(&task.meta.status)
+    }
 }
 
 pub(crate) fn build_dashboard_recent_items(
@@ -350,6 +379,10 @@ fn shorten_id(id: &str, max: usize) -> String {
 fn task_result_summary(task: &TaskView) -> String {
     if let Some(summary) = structured_result_summary(task) {
         return summary.chars().take(42).collect();
+    }
+
+    if task.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(task) {
+        return "completed but no result payload".to_string();
     }
 
     let note = task.meta.note.as_deref().unwrap_or("").trim();
