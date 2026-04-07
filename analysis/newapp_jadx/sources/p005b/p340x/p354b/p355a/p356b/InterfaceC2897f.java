@@ -1,6 +1,0 @@
-package p005b.p340x.p354b.p355a.p356b;
-
-/* renamed from: b.x.b.a.b.f */
-/* loaded from: classes2.dex */
-public interface InterfaceC2897f extends InterfaceC2898g {
-}

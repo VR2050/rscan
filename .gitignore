@@ -2,12 +2,32 @@
 .gdb_history
 
 # runtime artifacts
+/analysis/
+/.rscan/
+/workspace/
 /jobs/
 /reverse_out/
 /reverse_ws_test/
 /out.txt
 /pseudocode.jsonl
 /easy
+
+# nested project/workspace runtime artifacts
+/projects/**/.rscan/
+/projects/**/jobs/
+/projects/**/reverse_out/
+/projects/**/tasks/
+/projects/**/projects/
+/projects/**/analysis/workbench/
+/projects/**/analysis/README-analyze-*.json
+/workspace/**/.rscan/
+/workspace/**/jobs/
+/workspace/**/reverse_out/
+
+# local editor/agent files
+/.vscode/
+/.codex
+/.codex/
 
 # local temp
 *.tmp

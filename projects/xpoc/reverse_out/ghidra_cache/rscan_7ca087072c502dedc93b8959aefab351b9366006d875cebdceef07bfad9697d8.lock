@@ -1,9 +1,0 @@
-#Ghidra Lock File
-#Sun Mar 22 12:57:29 CST 2026
-<META>\ Supports\ File\ Channel\ Locking=Channel Lock
-Hostname=VR2050
-OS\ Architecture=amd64
-OS\ Name=Linux
-OS\ Version=6.12.20-amd64
-Timestamp=3/22/26, 12\:57\u202FPM
-Username=vr2050

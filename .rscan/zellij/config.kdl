@@ -1,5 +1,0 @@
-keybinds {
-    pane {
-        bind "F4" { ToggleFloatingPanes; SwitchToMode "locked"; }
-    }
-}

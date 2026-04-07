@@ -1,6 +1,0 @@
-package com.alibaba.fastjson.serializer;
-
-/* loaded from: classes.dex */
-public interface ContextObjectSerializer extends ObjectSerializer {
-    void write(JSONSerializer jSONSerializer, Object obj, BeanContext beanContext);
-}

@@ -1,1 +1,0 @@
-/home/vr2050/RUST/rscan_codex/projects/cscan/binaries/cscan
