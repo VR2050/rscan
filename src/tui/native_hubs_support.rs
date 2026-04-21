@@ -1,11 +1,12 @@
 use std::collections::hash_map::DefaultHasher;
+use std::fs;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{IsTerminal, Read, Seek, SeekFrom, stdout};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyEventKind};
+use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
@@ -27,6 +28,35 @@ type HubTerminal = Terminal<CrosstermBackend<std::io::Stdout>>;
 const EVENT_POLL_INTERVAL: Duration = Duration::from_millis(120);
 
 pub(super) fn build_work_detail_lines(state: &WorkHubState) -> Vec<String> {
+    if state.focus == WorkFocus::Templates {
+        if state.launcher_items.is_empty() {
+            return vec![
+                "template list is empty".to_string(),
+                "暂无任务模板可执行".to_string(),
+            ];
+        }
+        let mut out = vec![
+            "任务模板 (Work/Templates)".to_string(),
+            "j/k 选择  Enter 执行  末项=自定义命令".to_string(),
+            String::new(),
+        ];
+        for (idx, (name, cmd)) in state.launcher_items.iter().enumerate().take(12) {
+            let prefix = if idx == state.selected_template {
+                ">>"
+            } else {
+                "  "
+            };
+            out.push(format!("{prefix} {} => {}", name, cmd));
+        }
+        let custom_idx = state.launcher_items.len();
+        let custom_prefix = if custom_idx == state.selected_template {
+            ">>"
+        } else {
+            "  "
+        };
+        out.push(format!("{custom_prefix} [自定义命令...]"));
+        return out;
+    }
     match state.focus {
         WorkFocus::Projects => {
             let Some(project) = state.projects.get(state.selected_project) else {
@@ -76,8 +106,47 @@ pub(super) fn build_work_detail_lines(state: &WorkHubState) -> Vec<String> {
                 format!("path={}", relative_or_full(&state.active_project, script)),
                 format!("runner={}", script_runner_label(script)),
                 "Enter -> 在 Work 新开原生 command pane 跑脚本".to_string(),
+                "E -> 在 Work 打开 helix 编辑脚本".to_string(),
+                "N -> 新建 .rs 脚本模板".to_string(),
                 "脚本运行结束后 pane 会自动落回交互 shell".to_string(),
             ]
+        }
+        WorkFocus::Results => {
+            let Some(task) = state.tasks.get(state.selected_task) else {
+                return vec![
+                    "no result".to_string(),
+                    "当前没有可展示结果的任务".to_string(),
+                ];
+            };
+            vec![
+                format!("task={}", task.meta.id),
+                format!("kind={} | status={}", task.meta.kind, task.meta.status),
+                format!("scroll_offset={}", state.result_scroll),
+                "j/k 或 PgUp/PgDn/Home/End 滚动结果".to_string(),
+                "Enter -> 打开任务日志".to_string(),
+            ]
+        }
+        WorkFocus::Templates => {
+            let mut out = vec![
+                "任务模板 (Work/Templates)".to_string(),
+                "j/k 选择  Enter 执行  末项=自定义命令".to_string(),
+            ];
+            for (idx, (name, cmd)) in state.launcher_items.iter().enumerate().take(12) {
+                let prefix = if idx == state.selected_template {
+                    ">>"
+                } else {
+                    "  "
+                };
+                out.push(format!("{prefix} {} => {}", name, cmd));
+            }
+            let custom_idx = state.launcher_items.len();
+            let custom_prefix = if custom_idx == state.selected_template {
+                ">>"
+            } else {
+                "  "
+            };
+            out.push(format!("{custom_prefix} [自定义命令...]"));
+            out
         }
     }
 }
@@ -175,6 +244,74 @@ pub(super) fn build_task_preview_lines(task: &TaskView) -> Vec<String> {
     out
 }
 
+pub(super) fn build_work_result_lines(state: &WorkHubState) -> Vec<String> {
+    let Some(task) = state.tasks.get(state.selected_task) else {
+        return vec![
+            "no result".to_string(),
+            "当前没有可展示结果的任务".to_string(),
+        ];
+    };
+    let mut out = vec![
+        format!(
+            "Task {} | kind={} | status={}",
+            task.meta.id, task.meta.kind, task.meta.status
+        ),
+        "Result stream (artifact only; json/jsonl/log in Inspect)".to_string(),
+        "-------------------------------------------------------".to_string(),
+    ];
+    for (path, lines) in load_text_artifact_snippets(task, super::LOG_TAIL_MAX_LINES.min(80), 6) {
+        if !work_result_artifact_allowed(&path) || lines.is_empty() {
+            continue;
+        }
+        out.push(String::new());
+        out.push(format!(
+            "== {} ==",
+            path.file_name()
+                .and_then(|v| v.to_str())
+                .unwrap_or("artifact")
+        ));
+        out.extend(lines);
+    }
+    if out.len() <= 3 {
+        return if matches!(
+            task.meta.status,
+            crate::cores::engine::task::TaskStatus::Running
+        ) {
+            vec![
+                "waiting result...".to_string(),
+                "任务运行中，等待产出可展示结果（json/jsonl/log 已隐藏，请到 Inspect 查看）"
+                    .to_string(),
+            ]
+        } else {
+            vec![
+                "no immediate result".to_string(),
+                "未发现可展示结果（json/jsonl/log 已隐藏，请到 Inspect 查看）".to_string(),
+            ]
+        };
+    }
+    out
+}
+
+fn work_result_artifact_allowed(path: &Path) -> bool {
+    let name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if matches!(
+        name.as_str(),
+        "events.jsonl" | "stdout.log" | "stderr.log" | "meta.json"
+    ) {
+        return false;
+    }
+    let ext = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    !matches!(ext.as_str(), "json" | "jsonl" | "log")
+}
+
 pub(super) fn task_detail_cache_signature(task: &TaskView) -> u64 {
     let mut hasher = DefaultHasher::new();
     task.dir.hash(&mut hasher);
@@ -221,8 +358,72 @@ pub(super) fn load_recent_tasks(active_project: &Path) -> Vec<TaskView> {
 pub(super) fn load_recent_scripts(active_project: &Path) -> Vec<PathBuf> {
     let scripts_dir = active_project.join("scripts");
     let mut scripts = load_script_files(&scripts_dir).unwrap_or_default();
+    let script_project_main = scripts_dir
+        .join("rscan_script_project")
+        .join("src")
+        .join("main.rs");
+    if script_project_main.is_file() && !scripts.iter().any(|p| same_path(p, &script_project_main))
+    {
+        scripts.push(script_project_main);
+    }
     scripts.truncate(super::MAX_RECENT_SCRIPTS);
     scripts
+}
+
+pub(super) fn ensure_work_script_project(active_project: &Path) -> Result<PathBuf, RustpenError> {
+    let scripts_dir = active_project.join("scripts");
+    fs::create_dir_all(&scripts_dir).map_err(RustpenError::Io)?;
+    let project_dir = scripts_dir.join("rscan_script_project");
+    if !project_dir.exists() {
+        let status = std::process::Command::new("cargo")
+            .args(["new", "--bin", "rscan_script_project", "--vcs", "none"])
+            .current_dir(&scripts_dir)
+            .status()
+            .map_err(RustpenError::Io)?;
+        if !status.success() {
+            return Err(RustpenError::ParseError(
+                "cargo new rscan_script_project 失败".to_string(),
+            ));
+        }
+    }
+
+    let cargo_toml = project_dir.join("Cargo.toml");
+    let mut text = fs::read_to_string(&cargo_toml).map_err(RustpenError::Io)?;
+    let deps = [
+        (
+            "reqwest",
+            "reqwest = { version = \"0.12\", features = [\"blocking\", \"json\"] }",
+        ),
+        (
+            "serde",
+            "serde = { version = \"1\", features = [\"derive\"] }",
+        ),
+        ("serde_json", "serde_json = \"1\""),
+        ("goblin", "goblin = \"0.8\""),
+        ("iced_x86", "iced-x86 = \"1\""),
+    ];
+    if !text.contains("[dependencies]") {
+        text.push_str("\n[dependencies]\n");
+    }
+    for (needle, line) in deps {
+        if !text.contains(needle) {
+            text.push_str(line);
+            text.push('\n');
+        }
+    }
+    fs::write(&cargo_toml, text).map_err(RustpenError::Io)?;
+
+    let main_rs = project_dir.join("src").join("main.rs");
+    if !main_rs.exists() {
+        fs::create_dir_all(main_rs.parent().unwrap_or(&project_dir)).map_err(RustpenError::Io)?;
+        fs::write(
+            &main_rs,
+            "use goblin::Object;\nuse iced_x86::Decoder;\nuse serde::{Deserialize, Serialize};\n\n#[derive(Debug, Serialize, Deserialize)]\nstruct Msg {\n    ok: bool,\n}\n\nfn main() {\n    let _ = Decoder::new(64, &[], 0);\n    let _ = Object::parse(&[]);\n    println!(\"{}\", serde_json::to_string(&Msg { ok: true }).unwrap());\n}\n",
+        )
+        .map_err(RustpenError::Io)?;
+    }
+
+    Ok(main_rs)
 }
 
 pub(super) fn ensure_interactive_terminal(label: &str) -> Result<(), RustpenError> {
@@ -247,14 +448,20 @@ pub(super) fn run_work_hub(root_ws: PathBuf) -> Result<(), RustpenError> {
             if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
                 continue;
             }
-            let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
-                continue;
-            };
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-            if state.handle_key(key)? {
-                break;
+            match event::read().map_err(RustpenError::Io)? {
+                Event::Key(key) => {
+                    if key.kind == KeyEventKind::Release {
+                        continue;
+                    }
+                    if state.handle_key(key)? {
+                        break;
+                    }
+                }
+                Event::Mouse(mouse) => {
+                    let area = terminal.size().map_err(RustpenError::Io)?;
+                    state.handle_mouse(mouse, area);
+                }
+                _ => {}
             }
         }
         Ok(())
@@ -279,7 +486,7 @@ pub(super) fn run_inspect_hub(root_ws: PathBuf) -> Result<(), RustpenError> {
             let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
                 continue;
             };
-            if key.kind != KeyEventKind::Press {
+            if key.kind == KeyEventKind::Release {
                 continue;
             }
             if state.handle_key(key)? {
@@ -295,8 +502,12 @@ pub(super) fn run_inspect_hub(root_ws: PathBuf) -> Result<(), RustpenError> {
 pub(super) fn init_terminal() -> Result<HubTerminal, RustpenError> {
     enable_raw_mode().map_err(RustpenError::Io)?;
     let mut out = stdout();
-    crossterm::execute!(out, crossterm::terminal::EnterAlternateScreen)
-        .map_err(RustpenError::Io)?;
+    crossterm::execute!(
+        out,
+        crossterm::terminal::EnterAlternateScreen,
+        EnableMouseCapture
+    )
+    .map_err(RustpenError::Io)?;
     let backend = CrosstermBackend::new(out);
     Terminal::new(backend).map_err(RustpenError::Io)
 }
@@ -305,6 +516,7 @@ pub(super) fn restore_terminal(terminal: &mut HubTerminal) -> Result<(), Rustpen
     disable_raw_mode().map_err(RustpenError::Io)?;
     crossterm::execute!(
         terminal.backend_mut(),
+        DisableMouseCapture,
         crossterm::terminal::LeaveAlternateScreen
     )
     .map_err(RustpenError::Io)?;
@@ -572,6 +784,41 @@ mod tests {
                 .any(|line| line.contains("[artifact:web-result.txt]"))
         );
         assert!(lines.iter().any(|line| line.contains("/admin")));
+
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn work_result_lines_hide_json_like_artifacts() {
+        let (base, mut task) = make_task("result_filter", "vuln", "{\"ok\":true}\n");
+        let task_dir = task.dir.clone();
+        let json_path = task_dir.join("scan-result.json");
+        std::fs::write(&json_path, "{\"id\":\"x\"}\n").unwrap();
+        task.meta.artifacts = vec![json_path];
+        let state = super::super::WorkHubState {
+            root_ws: base.clone(),
+            projects: Vec::new(),
+            active_project: base.clone(),
+            selected_project: 0,
+            tasks: vec![task],
+            selected_task: 0,
+            scripts: Vec::new(),
+            selected_script: 0,
+            result_scroll: 0,
+            focus: super::super::WorkFocus::Results,
+            command_mode: false,
+            command_buffer: String::new(),
+            command_candidates: Vec::new(),
+            command_candidate_idx: 0,
+            script_new_mode: false,
+            script_new_buffer: String::new(),
+            launcher_items: Vec::new(),
+            selected_template: 0,
+            message: String::new(),
+            last_refresh: std::time::Instant::now(),
+        };
+        let lines = build_work_result_lines(&state);
+        assert!(lines.iter().any(|line| line.contains("json/jsonl/log")));
 
         let _ = std::fs::remove_dir_all(base);
     }
