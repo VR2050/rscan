@@ -2,13 +2,15 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
 
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpStream, UdpSocket};
 use tokio::sync::{Mutex, mpsc};
 use tokio::time::{Duration, timeout};
 
 use crate::cores::host::Protocol;
 use crate::errors::RustpenError;
-use crate::services::service_probe::ServiceProbeEngine;
+use crate::services::service_probe::{ProbeProtocol, ServiceProbeEngine};
 
 use super::engine_trait::ScanEngine;
 use super::scan_job::{ScanJob, ScanType};
@@ -49,7 +51,7 @@ impl AsyncConnectEngine {
                     let Some(job) = job else {
                         break;
                     };
-                    let mut result = execute_async_job(job).await;
+                    let mut result = execute_async_job(job, probe_engine.as_deref()).await;
                     if let Some(probe) = &probe_engine {
                         result = probe.enrich_scan_result(result);
                     }
@@ -95,9 +97,9 @@ impl ScanEngine for AsyncConnectEngine {
     }
 }
 
-async fn execute_async_job(job: ScanJob) -> ScanResult {
+async fn execute_async_job(job: ScanJob, probe_engine: Option<&ServiceProbeEngine>) -> ScanResult {
     match job.scan_type {
-        ScanType::Connect => scan_connect(job).await,
+        ScanType::Connect => scan_connect(job, probe_engine).await,
         ScanType::UdpProbe => scan_udp(job, false).await,
         ScanType::Dns => scan_udp(job, true).await,
         _ => ScanResult::new(job.target_ip, job.protocol, ScanStatus::Unknown)
@@ -107,23 +109,106 @@ async fn execute_async_job(job: ScanJob) -> ScanResult {
     }
 }
 
-async fn scan_connect(job: ScanJob) -> ScanResult {
+fn select_tcp_probe_candidates(
+    probe_engine: &ServiceProbeEngine,
+    port: u16,
+) -> Vec<(String, Vec<u8>)> {
+    let mut picks = probe_engine
+        .probes()
+        .iter()
+        .filter(|probe| probe.protocol == ProbeProtocol::Tcp && !probe.payload.is_empty())
+        .filter_map(|probe| {
+            let on_port = probe.ports.is_empty() || probe.ports.binary_search(&port).is_ok();
+            on_port.then_some((
+                probe.name.clone(),
+                probe.rarity.unwrap_or(9),
+                probe.payload.clone(),
+            ))
+        })
+        .collect::<Vec<_>>();
+    picks.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| a.2.len().cmp(&b.2.len())));
+    picks
+        .into_iter()
+        .take(4)
+        .map(|(name, _, payload)| (name, payload))
+        .collect()
+}
+
+async fn active_probe_tcp_response(
+    addr: SocketAddr,
+    timeout_ms: u64,
+    candidates: &[(String, Vec<u8>)],
+) -> Option<(String, Vec<u8>)> {
+    if candidates.is_empty() {
+        return None;
+    }
+    let connect_budget = Duration::from_millis(timeout_ms.max(1));
+    let write_budget = Duration::from_millis(220.min(timeout_ms.max(1)));
+    let read_budget = Duration::from_millis(300.min(timeout_ms.max(1)));
+    for (name, payload) in candidates {
+        let Ok(Ok(mut stream)) = timeout(connect_budget, TcpStream::connect(addr)).await else {
+            continue;
+        };
+        if timeout(write_budget, stream.write_all(payload))
+            .await
+            .is_err()
+        {
+            continue;
+        }
+        let mut buf = vec![0u8; 1024];
+        if let Ok(Ok(n)) = timeout(read_budget, stream.read(&mut buf)).await
+            && n > 0
+        {
+            buf.truncate(n);
+            return Some((name.clone(), buf));
+        }
+    }
+    None
+}
+
+async fn scan_connect(job: ScanJob, probe_engine: Option<&ServiceProbeEngine>) -> ScanResult {
     let Some(port) = job.port else {
         return ScanResult::new(job.target_ip, job.protocol, ScanStatus::Error)
             .with_meta("error", "missing_port");
     };
 
     let addr = SocketAddr::new(job.target_ip, port);
+    const CONNECT_BANNER_READ_MS: u64 = 120;
     for attempt in 0..=job.retries {
         let start = Instant::now();
         let fut = TcpStream::connect(addr);
         match timeout(Duration::from_millis(job.timeout_ms), fut).await {
-            Ok(Ok(_)) => {
-                return ScanResult::new(job.target_ip, Protocol::Tcp, ScanStatus::Open)
+            Ok(Ok(mut stream)) => {
+                let mut out = ScanResult::new(job.target_ip, Protocol::Tcp, ScanStatus::Open)
                     .with_port(port)
                     .with_latency_ms(start.elapsed().as_millis() as u64)
                     .with_meta("attempt", attempt.to_string())
                     .with_meta("engine", "async");
+                let mut buf = vec![0u8; 512];
+                if let Ok(Ok(n)) = timeout(
+                    Duration::from_millis(CONNECT_BANNER_READ_MS.min(job.timeout_ms.max(1))),
+                    stream.read(&mut buf),
+                )
+                .await
+                    && n > 0
+                {
+                    buf.truncate(n);
+                    out = out.with_response(buf);
+                }
+                // Release the initial connect socket before optional active probing to avoid
+                // head-of-line blocking on single-threaded services.
+                drop(stream);
+                if out.response.is_none()
+                    && let Some(engine) = probe_engine
+                {
+                    let candidates = select_tcp_probe_candidates(engine, port);
+                    if let Some((probe_name, resp)) =
+                        active_probe_tcp_response(addr, job.timeout_ms, &candidates).await
+                    {
+                        out = out.with_response(resp).with_meta("probe", probe_name);
+                    }
+                }
+                return out;
             }
             Ok(Err(e)) => {
                 if attempt == job.retries {
@@ -320,6 +405,8 @@ mod tests {
     use super::*;
     use crate::cores::engine::engine_trait::ScanEngine;
     use crate::services::service_probe::ServiceProbeEngine;
+    use tokio::io::AsyncReadExt;
+    use tokio::io::AsyncWriteExt;
 
     #[tokio::test]
     async fn async_engine_connect_open_port() {
@@ -405,6 +492,80 @@ match http m|^HTTP/1\.[01] \d\d\d|
         drop(engine);
 
         let res = rx.recv().await.unwrap();
+        assert!(
+            res.metadata
+                .iter()
+                .any(|(k, v)| k == "service" && v == "http")
+        );
+    }
+
+    #[tokio::test]
+    async fn async_engine_connect_captures_banner_response() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            if let Ok((mut stream, _)) = listener.accept().await {
+                let _ = stream.write_all(b"SSH-2.0-rscan\r\n").await;
+            }
+        });
+
+        let mut engine = AsyncConnectEngine::new(16, 2);
+        let mut rx = engine.take_results().unwrap();
+        let job = ScanJob::new(
+            "127.0.0.1".parse().unwrap(),
+            Protocol::Tcp,
+            ScanType::Connect,
+        )
+        .with_port(port)
+        .with_timeout_ms(800);
+        engine.submit(job).unwrap();
+        drop(engine);
+
+        let res = rx.recv().await.unwrap();
+        assert_eq!(res.status, ScanStatus::Open);
+        assert_eq!(res.port, Some(port));
+        assert!(
+            res.response
+                .as_ref()
+                .is_some_and(|bytes| bytes.starts_with(b"SSH-2.0"))
+        );
+    }
+
+    #[tokio::test]
+    async fn async_engine_connect_active_probe_enriches_http_service() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            while let Ok((mut stream, _)) = listener.accept().await {
+                let mut buf = [0u8; 256];
+                if let Ok(n) = stream.read(&mut buf).await
+                    && n > 0
+                    && buf[..n].starts_with(b"GET / HTTP/1.0")
+                {
+                    let _ = stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").await;
+                }
+            }
+        });
+
+        let probe_text = r#"
+Probe TCP GetRequest q|GET / HTTP/1.0\r\n\r\n|
+match http m|^HTTP/1\.[01] \d\d\d|
+"#;
+        let probe = Arc::new(ServiceProbeEngine::from_nmap_text(probe_text).unwrap());
+        let mut engine = AsyncConnectEngine::new_with_probe(16, 2, Some(probe));
+        let mut rx = engine.take_results().unwrap();
+        let job = ScanJob::new(
+            "127.0.0.1".parse().unwrap(),
+            Protocol::Tcp,
+            ScanType::Connect,
+        )
+        .with_port(port)
+        .with_timeout_ms(800);
+        engine.submit(job).unwrap();
+        drop(engine);
+
+        let res = rx.recv().await.unwrap();
+        assert_eq!(res.status, ScanStatus::Open);
         assert!(
             res.metadata
                 .iter()

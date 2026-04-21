@@ -27,9 +27,9 @@ pub(super) fn draw_header(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         .count();
     let spinner = spinner_char(ctx.ui_tick);
     let key_hint = if ctx.zellij_managed {
-        " 1-6 panes  l layout  :task  L/W/A native  zrun  q quit"
+        " 1-2 panes  :cmd  v aux  q quit"
     } else {
-        " 1-6 panes  l layout  :cmd  g terminal  q quit"
+        " 1-2 panes  :cmd  g term  v aux  q quit"
     };
     let line1 = Line::from(vec![
         Span::styled("rscan", Style::default().add_modifier(Modifier::BOLD)),
@@ -54,33 +54,40 @@ pub(super) fn draw_header(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
             ctx.main_layout.label(),
             Style::default().fg(Color::LightYellow),
         ),
-        Span::raw(" | task-filter="),
-        Span::styled(ctx.filter.label(), Style::default().fg(Color::Yellow)),
-        Span::raw(" | task-tab="),
-        Span::styled(
-            task_tab_label(ctx.task_tab),
-            Style::default().fg(Color::Green),
-        ),
-        Span::raw(" | result-filter="),
-        Span::styled(
-            ctx.result_kind_filter.label(),
-            Style::default().fg(Color::LightMagenta),
-        ),
-        Span::raw(" | sort="),
-        Span::styled(
-            if ctx.result_failed_first {
-                "failed-first"
-            } else {
-                "created-desc"
-            },
-            Style::default().fg(Color::LightGreen),
-        ),
         Span::raw(" | queue="),
         Span::styled(
             format!("R{} F{} S{} {}", running, failed, succeeded, spinner),
             Style::default().fg(Color::LightGreen),
         ),
     ];
+    if matches!(ctx.pane, crate::tui::models::MainPane::Tasks) {
+        line2.push(Span::raw(" | task-filter="));
+        line2.push(Span::styled(
+            ctx.filter.label(),
+            Style::default().fg(Color::Yellow),
+        ));
+        line2.push(Span::raw(" | task-tab="));
+        line2.push(Span::styled(
+            task_tab_label(ctx.task_tab),
+            Style::default().fg(Color::Green),
+        ));
+    }
+    if matches!(ctx.pane, crate::tui::models::MainPane::Results) {
+        line2.push(Span::raw(" | result-filter="));
+        line2.push(Span::styled(
+            ctx.result_kind_filter.label(),
+            Style::default().fg(Color::LightMagenta),
+        ));
+        line2.push(Span::raw(" | sort="));
+        line2.push(Span::styled(
+            if ctx.result_failed_first {
+                "failed-first"
+            } else {
+                "created-desc"
+            },
+            Style::default().fg(Color::LightGreen),
+        ));
+    }
     if ctx.script_running {
         line2.push(Span::raw(" | script=run"));
     }
@@ -96,7 +103,6 @@ pub(super) fn draw_header(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         InputMode::NoteInput => Some("note"),
         InputMode::CommandInput => Some("cmd"),
         InputMode::TerminalInput => Some("terminal"),
-        InputMode::ScriptEdit => Some("script-edit"),
         InputMode::ScriptNewInput => Some("script-new"),
         InputMode::ProjectNewInput => Some("proj-new"),
         InputMode::ProjectImportInput => Some("proj-import"),

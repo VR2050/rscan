@@ -220,15 +220,15 @@ fn build_logs_follow_command(task: &TaskView) -> String {
     format!(
         "printf 'task=%s kind=%s status=%s\\n' {id} {kind} {status}; \
 printf 'cwd=%s\\n\\n' {cwd}; \
-files=''; \
+set --; \
 for f in events.jsonl stdout.log stderr.log; do \
-  if [ -e \"$f\" ]; then files=\"$files $f\"; fi; \
+  if [ -e \"$f\" ]; then set -- \"$@\" \"$f\"; fi; \
 done; \
-if [ -z \"$files\" ]; then \
+if [ \"$#\" -eq 0 ]; then \
   echo 'no event/log file yet; dropping to shell'; \
   exec {shell} -i; \
 else \
-  exec tail -n 80 -F $files; \
+  exec tail -n 80 -F \"$@\"; \
 fi"
     )
 }
@@ -267,4 +267,38 @@ fn user_shell() -> String {
 
 fn shell_quote(input: &str) -> String {
     format!("'{}'", input.replace('\'', "'\"'\"'"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cores::engine::task::{TaskMeta, TaskStatus};
+    use crate::tui::models::{TaskOrigin, TaskView};
+
+    #[test]
+    fn logs_follow_command_uses_positional_args_for_files() {
+        let task = TaskView {
+            meta: TaskMeta {
+                id: "task-1".to_string(),
+                kind: "host".to_string(),
+                tags: Vec::new(),
+                status: TaskStatus::Running,
+                created_at: 0,
+                started_at: None,
+                ended_at: None,
+                progress: None,
+                note: None,
+                artifacts: Vec::new(),
+                logs: Vec::new(),
+                extra: None,
+            },
+            dir: PathBuf::from("/tmp/task"),
+            origin: TaskOrigin::Task,
+        };
+        let script = build_logs_follow_command(&task);
+        assert!(script.contains("set --;"));
+        assert!(script.contains("set -- \"$@\" \"$f\""));
+        assert!(script.contains("tail -n 80 -F \"$@\""));
+        assert!(!script.contains("tail -n 80 -F $files"));
+    }
 }

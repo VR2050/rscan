@@ -110,7 +110,7 @@ impl AppState {
             script_new_buffer: String::new(),
             script_output: vec![
                 "[script] script pane ready".to_string(),
-                "[script] N:new  i:edit  S:save  R:run".to_string(),
+                "[script] N:new(.rs)  I/H:helix  S:save  R:run".to_string(),
             ],
             script_output_serial: 1,
             script_runner_rx: None,

@@ -13,7 +13,11 @@ mod scripts;
 mod tasks;
 
 pub(super) fn draw_active_pane(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
-    match ctx.pane {
+    draw_pane(f, area, ctx, ctx.pane);
+}
+
+pub(super) fn draw_pane(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>, pane: MainPane) {
+    match pane {
         MainPane::Dashboard => dashboard::draw_dashboard(f, area, ctx),
         MainPane::Tasks => tasks::draw_tasks(f, area, ctx),
         MainPane::Launcher => launcher::draw_launcher(f, area, ctx),

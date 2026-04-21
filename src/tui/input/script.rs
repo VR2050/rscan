@@ -3,49 +3,7 @@ use crossterm::event::KeyCode;
 use super::NonNormalInputCtx;
 use crate::errors::RustpenError;
 use crate::tui::models::InputMode;
-use crate::tui::script_runtime::{
-    create_script_file, load_script_files, read_script_text, save_current_script,
-};
-
-pub(super) fn handle_script_edit_input(key: KeyCode, ctx: &mut NonNormalInputCtx<'_>) {
-    match key {
-        KeyCode::Esc => {
-            *ctx.input_mode = InputMode::Normal;
-        }
-        KeyCode::Enter => {
-            ctx.script_buffer.push('\n');
-            *ctx.script_dirty = true;
-        }
-        KeyCode::Backspace => {
-            ctx.script_buffer.pop();
-            *ctx.script_dirty = true;
-        }
-        KeyCode::Tab => {
-            ctx.script_buffer.push('\t');
-            *ctx.script_dirty = true;
-        }
-        KeyCode::Char('S') => {
-            if ctx.scripts.is_empty() {
-                *ctx.status_line = "没有可保存的脚本".to_string();
-            } else {
-                match save_current_script(ctx.scripts, *ctx.script_selected, ctx.script_buffer) {
-                    Ok(msg) => {
-                        *ctx.script_dirty = false;
-                        *ctx.status_line = msg;
-                    }
-                    Err(e) => {
-                        *ctx.status_line = format!("save failed: {}", e);
-                    }
-                }
-            }
-        }
-        KeyCode::Char(c) => {
-            ctx.script_buffer.push(c);
-            *ctx.script_dirty = true;
-        }
-        _ => {}
-    }
-}
+use crate::tui::script_runtime::{create_script_file, load_script_files, read_script_text};
 
 pub(super) fn handle_script_new_input(
     key: KeyCode,

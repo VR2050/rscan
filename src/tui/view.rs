@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use crate::cores::engine::task::{EventKind, TaskStatus};
 
 use super::models::{InputMode, MainPane, MiniConsoleLayout, MiniConsoleTab, TaskTab, TaskView};
-use super::task_store::{load_events, load_log_tail, load_text_artifact_snippets};
+use super::task_store::{load_events, load_log_tail};
 
 pub(crate) fn mini_console_dock_rect(
     area: Rect,
@@ -107,37 +107,23 @@ pub(crate) fn build_mini_console_lines(
             MiniConsoleTab::Problems => "Problems",
         },
     ))];
-    let controls = if zellij_managed {
-        concat!(
-            "controls: v=toggle b=layout z=dock p=popup 0=reset [/]=tab ",
-            "g=ctrl-shell zrun=work zfocus=tab zlogs/zshell/zart j/k=scroll",
-        )
-    } else {
-        "controls: v=toggle b=layout z=dock p=popup 0=reset [/]=tab j/k=scroll"
-    };
-    out.push(line_s(controls));
-    out.push(line_s("floating: Ctrl+Arrows=move Alt+Arrows=resize"));
+    out.push(line_s(
+        "mini: v=toggle  [/] tab  j/k=scroll  b/z/p/0=layout",
+    ));
     out.push(line_s(""));
 
     if tab == MiniConsoleTab::Terminal {
         if zellij_managed {
-            out.push(line_s("zellij runtime:"));
+            out.push(line_s("zellij runtime: compact view"));
             if let Some(session) = zellij_session {
                 out.push(line_s(&format!("session={session}")));
             }
             out.push(line_s(&format!("managed tabs={}", zellij_tabs.join(" | "))));
-            out.push(line_s("g -> focus Control bottom shell pane"));
-            out.push(line_s(":cmd -> start structured background task"));
             out.push(line_s(
-                "L/W/A in Tasks|Results -> logs / shell / artifact pane",
+                "ops: g=control-shell  zrun=<work pane>  L/W/A=<native panes>",
             ));
-            out.push(line_s("zrun <cmd> -> open real terminal pane in Work tab"));
             out.push(line_s(
-                "zfocus <tab> -> focus Control / Work / Inspect / Reverse",
-            ));
-            out.push(line_s("zlogs|zshell|zart <task_id> -> native task panes"));
-            out.push(line_s(
-                "tip: zellij Normal mode may swallow keys; Ctrl-g toggles Locked",
+                "tip: zellij Normal mode may swallow keys; Ctrl-g -> Locked",
             ));
             out.push(line_s(""));
             out.push(line_s("recent control log:"));
@@ -188,14 +174,16 @@ pub(crate) fn build_mini_console_lines(
                 }
             }
         } else {
-            out.push(line_s("script output tail:"));
-            if script_output.is_empty() {
-                out.push(line_s("- <empty>"));
-            } else {
-                for line in script_output.iter().rev().take(8).rev() {
-                    out.push(line_s(line));
-                }
-            }
+            out.push(line_s("scripts pane summary:"));
+            out.push(line_s("- 主面板已显示 Run Log (tail)，这里不重复展开日志"));
+            out.push(line_s("- I/H 打开 Helix，R 运行脚本"));
+            let last = script_output
+                .iter()
+                .rev()
+                .find(|line| !line.trim().is_empty())
+                .cloned()
+                .unwrap_or_else(|| "<no status yet>".to_string());
+            out.push(line_s(&format!("- last: {}", last)));
         }
         return out;
     }
@@ -258,44 +246,31 @@ pub(crate) fn build_mini_console_lines(
         return out;
     }
 
-    out.push(line_s("events:"));
-    let events = load_events(&task.dir, 4);
-    if events.is_empty() {
-        out.push(line_s("- <empty>"));
+    out.push(line_s("quick status (full detail in main pane):"));
+    out.push(line_s(&format!(
+        "- progress={}",
+        task.meta
+            .progress
+            .map(|v| format!("{v:.0}%"))
+            .unwrap_or_else(|| "-".to_string())
+    )));
+    let latest_event = load_events(&task.dir, 1);
+    if let Some(ev) = latest_event.first() {
+        out.push(line_s(&format!(
+            "- last-event [{}] {}",
+            ev.level,
+            ev.message.clone().unwrap_or_default()
+        )));
     } else {
-        for ev in events {
-            out.push(line_s(&format!(
-                "- [{}] {}",
-                ev.level,
-                ev.message.unwrap_or_default()
-            )));
-        }
+        out.push(line_s("- last-event <empty>"));
     }
-    out.push(line_s("stdout/stderr:"));
-    let stdout = load_log_tail(&task.dir, "stdout.log", 2);
-    let stderr = load_log_tail(&task.dir, "stderr.log", 2);
-    let artifact_snippets = load_text_artifact_snippets(task, 3, 1);
-    if stdout.is_empty() && stderr.is_empty() && artifact_snippets.is_empty() {
-        out.push(line_s("- <empty>"));
+    let stderr = load_log_tail(&task.dir, "stderr.log", 1);
+    if let Some(line) = stderr.first() {
+        out.push(line_s(&format!("- last-err {}", line)));
     } else {
-        for (path, lines) in artifact_snippets {
-            out.push(line_s(&format!(
-                "art> [{}]",
-                path.file_name()
-                    .and_then(|v| v.to_str())
-                    .unwrap_or("artifact")
-            )));
-            for line in lines {
-                out.push(line_s(&format!("art> {}", line)));
-            }
-        }
-        for line in stdout {
-            out.push(line_s(&format!("out> {}", line)));
-        }
-        for line in stderr {
-            out.push(line_s(&format!("err> {}", line)));
-        }
+        out.push(line_s("- last-err <empty>"));
     }
+    out.push(line_s("- 详细事件/日志请看主面板；Problems tab 只看异常"));
     out
 }
 
@@ -447,7 +422,7 @@ mod tests {
     }
 
     #[test]
-    fn mini_console_output_includes_artifact_snippet() {
+    fn mini_console_output_is_compact_without_artifact_snippet_duplication() {
         let (base, task) = make_task(
             "artifact_snippet",
             "host",
@@ -474,8 +449,10 @@ mod tests {
             .map(|line| line.to_string())
             .collect::<Vec<_>>()
             .join("\n");
-        assert!(rendered.contains("art> [host-result.txt]"));
-        assert!(rendered.contains("art> 22 tcp ssh"));
+        assert!(rendered.contains("quick status (full detail in main pane):"));
+        assert!(rendered.contains("last-event <empty>"));
+        assert!(rendered.contains("last-err <empty>"));
+        assert!(!rendered.contains("art> [host-result.txt]"));
 
         let _ = std::fs::remove_dir_all(base);
     }

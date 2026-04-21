@@ -21,8 +21,9 @@ const ACTIVE_PROJECT_HINT_FILE: &str = "active_project.txt";
 const ACTIVE_TARGET_HINT_FILE: &str = "selected_target.txt";
 const VIEWER_REQUEST_HINT_FILE: &str = "open_viewer.txt";
 const MAX_REVERSE_PROJECT_ATTEMPTS: usize = 32;
-const FILEPICKER_PLUGIN_WAIT_TIMEOUT: Duration = Duration::from_millis(750);
 const FILEPICKER_PLUGIN_WAIT_STEP: Duration = Duration::from_millis(25);
+const FILEPICKER_WAIT_TIMEOUT: Duration = Duration::from_secs(90);
+const FILEPICKER_HIDDEN_ABORT_GRACE: Duration = Duration::from_millis(500);
 
 #[derive(Clone, Debug)]
 pub(crate) struct ReverseBrowserEntry {
@@ -302,7 +303,9 @@ pub(crate) fn load_reverse_browser_entries(
             });
             continue;
         }
-        if !is_probable_reverse_input(&child, &metadata) {
+        // In filesystem/unrestricted mode, keep regular visible files selectable.
+        // In project-restricted mode, keep the stricter reverse-input heuristic.
+        if restrict_to_project && !is_probable_reverse_input(&child, &metadata) {
             continue;
         }
         let ext = child
@@ -515,9 +518,30 @@ pub(crate) fn run_zellij_filepicker(
     title: &str,
 ) -> Result<PathBuf, String> {
     let mut handle = spawn_zellij_filepicker(preferred_start, title)?;
+    let started = std::time::Instant::now();
+    let mut seen_visible_once = false;
+    let mut hidden_since: Option<std::time::Instant> = None;
     loop {
         if let Some(result) = poll_zellij_filepicker(&mut handle)? {
             return result;
+        }
+        if started.elapsed() >= FILEPICKER_WAIT_TIMEOUT {
+            let _ = abort_zellij_filepicker(&mut handle);
+            return Err("zellij filepicker 等待超时，已自动取消".to_string());
+        }
+        match zellij_filepicker_is_visible(&handle) {
+            Ok(true) => {
+                seen_visible_once = true;
+                hidden_since = None;
+            }
+            Ok(false) if seen_visible_once => {
+                let since = hidden_since.get_or_insert_with(std::time::Instant::now);
+                if since.elapsed() >= FILEPICKER_HIDDEN_ABORT_GRACE {
+                    let _ = abort_zellij_filepicker(&mut handle);
+                    return Err("zellij filepicker 已关闭/取消".to_string());
+                }
+            }
+            _ => {}
         }
         thread::sleep(FILEPICKER_PLUGIN_WAIT_STEP);
     }
@@ -533,7 +557,6 @@ pub(crate) fn spawn_zellij_filepicker(
     if std::env::var("ZELLIJ").is_err() && session_name.is_none() {
         return Err("当前不在 zellij session 内".to_string());
     }
-    let floating_panes_hidden = zellij_current_tab_hides_floating_panes(session_name.as_deref())?;
     let picker_root = std::env::var("RSCAN_REVERSE_FILEPICKER_ROOT")
         .ok()
         .map(PathBuf::from)
@@ -545,7 +568,7 @@ pub(crate) fn spawn_zellij_filepicker(
     // 发起，让插件自己 block/unblock CLI pipe input 并回传 stdout。
     let config = format!("cwd={}", picker_root.display());
     let mut command = zellij_command_for_session(session_name.as_deref());
-    let mut child = command
+    let child = command
         .args(["pipe", "-p", "filepicker", "-c", config.as_str(), "--", ""])
         .env_remove("ZELLIJ")
         .env_remove("ZELLIJ_PANE_ID")
@@ -558,18 +581,10 @@ pub(crate) fn spawn_zellij_filepicker(
         .spawn()
         .map_err(|e| format!("zellij pipe(filepicker) 调用失败: {e}"))?;
 
-    let mut revealed_hidden_floating = false;
-    if floating_panes_hidden
-        && wait_for_focused_tab_floating_pane(session_name.as_deref(), &mut child)?
-        && toggle_zellij_floating_panes(session_name.as_deref()).is_ok()
-    {
-        revealed_hidden_floating = true;
-    }
-
     Ok(ZellijFilepickerHandle {
         child: Some(child),
         session_name,
-        revealed_hidden_floating,
+        revealed_hidden_floating: false,
     })
 }
 
@@ -637,16 +652,46 @@ fn parse_filepicker_output(output: std::process::Output) -> Result<PathBuf, Stri
     if !output.status.success() {
         return Err("zellij filepicker 返回失败".to_string());
     }
-    let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if selected.is_empty() {
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut candidates: Vec<String> = stdout
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|line| {
+            let lower = line.to_ascii_lowercase();
+            if lower.starts_with("path:") {
+                line[5..].trim().to_string()
+            } else {
+                line.to_string()
+            }
+        })
+        .collect();
+    if candidates.is_empty() {
         return Err("未选择任何文件".to_string());
     }
-    let path = PathBuf::from(selected);
-    if path.is_file() {
-        Ok(path)
-    } else {
-        Err(format!("选择结果不是普通文件: {}", path.display()))
+    candidates.reverse();
+    for selected in candidates {
+        let selected = selected.trim_matches('"').trim_matches('\'').to_string();
+        let path = PathBuf::from(&selected);
+        if path.is_file() {
+            return Ok(path);
+        }
     }
+    let fallback = PathBuf::from(
+        stdout
+            .lines()
+            .rev()
+            .find_map(|line| {
+                let line = line.trim();
+                if line.is_empty() {
+                    None
+                } else {
+                    Some(line.trim_matches('"').trim_matches('\'').to_string())
+                }
+            })
+            .unwrap_or_default(),
+    );
+    Err(format!("选择结果不是普通文件: {}", fallback.display()))
 }
 
 fn zellij_command_for_session(session_name: Option<&str>) -> Command {
@@ -670,53 +715,6 @@ fn toggle_zellij_floating_panes(session_name: Option<&str>) -> Result<(), String
     } else {
         Err("zellij toggle-floating-panes 返回失败".to_string())
     }
-}
-
-fn zellij_current_tab_hides_floating_panes(session_name: Option<&str>) -> Result<bool, String> {
-    let output = zellij_command_for_session(session_name)
-        .args(["action", "dump-layout"])
-        .output()
-        .map_err(|e| format!("zellij dump-layout 失败: {e}"))?;
-    if !output.status.success() {
-        return Err("zellij dump-layout 返回失败".to_string());
-    }
-    Ok(parse_focused_tab_hides_floating_panes(
-        &String::from_utf8_lossy(&output.stdout),
-    ))
-}
-
-fn wait_for_focused_tab_floating_pane(
-    session_name: Option<&str>,
-    child: &mut std::process::Child,
-) -> Result<bool, String> {
-    let start = std::time::Instant::now();
-    while start.elapsed() < FILEPICKER_PLUGIN_WAIT_TIMEOUT {
-        if child
-            .try_wait()
-            .map_err(|e| format!("等待 filepicker 进程状态失败: {e}"))?
-            .is_some()
-        {
-            return Ok(false);
-        }
-        if focused_tab_has_floating_panes(session_name)? {
-            return Ok(true);
-        }
-        thread::sleep(FILEPICKER_PLUGIN_WAIT_STEP);
-    }
-    Ok(false)
-}
-
-fn focused_tab_has_floating_panes(session_name: Option<&str>) -> Result<bool, String> {
-    let output = zellij_command_for_session(session_name)
-        .args(["action", "dump-layout"])
-        .output()
-        .map_err(|e| format!("zellij dump-layout 失败: {e}"))?;
-    if !output.status.success() {
-        return Err("zellij dump-layout 返回失败".to_string());
-    }
-    Ok(parse_focused_tab_has_floating_panes(
-        &String::from_utf8_lossy(&output.stdout),
-    ))
 }
 
 fn parse_focused_tab_hides_floating_panes(layout: &str) -> bool {
@@ -836,6 +834,10 @@ fn shell_quote(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    use std::os::unix::process::ExitStatusExt;
+    #[cfg(windows)]
+    use std::os::windows::process::ExitStatusExt;
 
     #[test]
     fn active_project_hint_roundtrip() {
@@ -983,6 +985,49 @@ mod tests {
         let unrestricted = load_reverse_browser_entries(&project, &root, "", 32, false);
         assert!(unrestricted.iter().any(|entry| entry.path == outside));
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn browser_entries_allow_regular_files_when_unrestricted() {
+        let root = std::env::temp_dir().join(format!(
+            "rscan_browser_file_unrestricted_{}",
+            unix_now_secs()
+        ));
+        let project = root.join("projects").join("default");
+        let outside = root.join("outside");
+        let note = outside.join("notes.txt");
+        fs::create_dir_all(project.join("binaries")).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(&note, b"plain text").unwrap();
+
+        let restricted = load_reverse_browser_entries(&project, &outside, "", 32, true);
+        assert!(!restricted.iter().any(|entry| entry.path == note));
+
+        let unrestricted = load_reverse_browser_entries(&project, &outside, "", 32, false);
+        assert!(unrestricted.iter().any(|entry| entry.path == note));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn parse_filepicker_output_accepts_last_nonempty_path_line() {
+        let tmp = std::env::temp_dir().join(format!("rscan_picker_parse_path_{}", unix_now_secs()));
+        fs::create_dir_all(&tmp).unwrap();
+        let picked = tmp.join("picked.bin");
+        fs::write(&picked, b"\x7fELF").unwrap();
+        let output = std::process::Output {
+            status: std::process::ExitStatus::from_raw(0),
+            stdout: format!("header line\n{}\n", picked.display()).into_bytes(),
+            stderr: Vec::new(),
+        };
+        let parsed = parse_filepicker_output(output).unwrap();
+        assert_eq!(canonical_or_clone(&parsed), canonical_or_clone(&picked));
+        let _ = fs::remove_dir_all(tmp);
+    }
+
+    #[test]
+    fn filepicker_hidden_abort_grace_is_reasonable() {
+        assert!(FILEPICKER_HIDDEN_ABORT_GRACE >= Duration::from_millis(200));
+        assert!(FILEPICKER_WAIT_TIMEOUT > FILEPICKER_HIDDEN_ABORT_GRACE);
     }
 
     #[test]

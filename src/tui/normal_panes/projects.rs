@@ -107,8 +107,7 @@ pub(super) fn handle_projects_key(
                 *ctx.tasks = apply_filter(ctx.all_tasks, *ctx.filter);
                 *ctx.scripts = load_script_files(ctx.scripts_dir)?;
                 *ctx.task_selected = (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
-                *ctx.result_selected =
-                    (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+                *ctx.result_selected = 0;
                 *ctx.script_selected =
                     (*ctx.script_selected).min(ctx.scripts.len().saturating_sub(1));
                 if !*ctx.script_dirty {

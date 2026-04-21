@@ -25,8 +25,21 @@ pub struct MatcherDef {
 pub struct RequestDef {
     pub method: String,
     pub paths: Vec<String>,
+    pub headers: Vec<(String, String)>,
+    pub body: Option<String>,
+    pub extractors: Vec<ExtractorDef>,
     pub matchers: Vec<MatcherDef>,
     pub matchers_condition: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtractorDef {
+    pub kind: String,
+    pub part: String,
+    pub name: Option<String>,
+    pub internal: bool,
+    pub group: usize,
+    pub regex: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +124,10 @@ fn collect_template_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), Rust
 }
 
 fn parse_one_template(path: &Path) -> Result<SafeTemplate, RustpenError> {
+    parse_one_template_inner(path).or_else(|err| compatibility_stub_template(path, &err).ok_or(err))
+}
+
+fn parse_one_template_inner(path: &Path) -> Result<SafeTemplate, RustpenError> {
     let ext = path
         .extension()
         .and_then(|x| x.to_str())
@@ -122,11 +139,6 @@ fn parse_one_template(path: &Path) -> Result<SafeTemplate, RustpenError> {
         return parse_one_template_txt(path);
     }
     let text = std::fs::read_to_string(path).map_err(RustpenError::Io)?;
-    if contains_forbidden_sections(&text) {
-        return Err(RustpenError::ParseError(
-            "template contains unsupported/unsafe sections".to_string(),
-        ));
-    }
 
     let raw: serde_yaml::Value =
         serde_yaml::from_str(&text).map_err(|e| RustpenError::ParseError(e.to_string()))?;
@@ -135,11 +147,8 @@ fn parse_one_template(path: &Path) -> Result<SafeTemplate, RustpenError> {
     })?;
 
     let id = get_str(map, "id")
-        .ok_or_else(|| RustpenError::PocRuleInvalid {
-            name: path.display().to_string(),
-            field: "id".to_string(),
-        })?
-        .to_string();
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| fallback_template_id(path));
 
     let info_val = map.get("info").and_then(|v| v.as_mapping());
     let info = TemplateInfo {
@@ -155,34 +164,23 @@ fn parse_one_template(path: &Path) -> Result<SafeTemplate, RustpenError> {
             .unwrap_or_default(),
     };
 
-    let req_node = map
-        .get("http")
-        .or_else(|| map.get("requests"))
-        .ok_or_else(|| RustpenError::PocRuleInvalid {
-            name: id.clone(),
-            field: "http/requests".to_string(),
-        })?;
-    let reqs = req_node
-        .as_sequence()
-        .ok_or_else(|| RustpenError::ParseError("http/requests must be an array".to_string()))?;
+    let reqs = extract_request_nodes_yaml(map);
 
     let mut requests = Vec::new();
     for r in reqs {
         let rm = r
             .as_mapping()
             .ok_or_else(|| RustpenError::ParseError("request item must be map".to_string()))?;
-        let method = get_str(rm, "method").unwrap_or("GET").to_ascii_uppercase();
-        if !is_allowed_method(&method) {
-            return Err(RustpenError::ParseError(format!(
-                "unsupported method in safe template: {}",
-                method
-            )));
-        }
-        let paths = rm
+        let method = request_method_yaml(rm);
+        let raw = parse_raw_request_yaml(rm);
+        let mut paths = rm
             .get("path")
             .or_else(|| rm.get("paths"))
             .and_then(parse_string_list)
             .unwrap_or_default();
+        if paths.is_empty() {
+            paths = extract_paths_from_raw_yaml(rm);
+        }
         if paths.is_empty() {
             continue;
         }
@@ -203,17 +201,15 @@ fn parse_one_template(path: &Path) -> Result<SafeTemplate, RustpenError> {
         requests.push(RequestDef {
             method,
             paths,
+            headers: parse_headers_map_yaml(rm),
+            body: get_str(rm, "body")
+                .map(|s| s.to_string())
+                .or_else(|| raw.and_then(|r| r.body)),
+            extractors: parse_extractors_yaml(rm)?,
             matchers,
             matchers_condition: get_str(rm, "matchers-condition")
                 .unwrap_or("or")
                 .to_ascii_lowercase(),
-        });
-    }
-
-    if requests.is_empty() {
-        return Err(RustpenError::PocRuleInvalid {
-            name: id.clone(),
-            field: "requests".to_string(),
         });
     }
 
@@ -255,11 +251,6 @@ fn parse_matcher(v: &serde_yaml::Value) -> Result<MatcherDef, RustpenError> {
 
 fn parse_one_template_json(path: &Path) -> Result<SafeTemplate, RustpenError> {
     let text = std::fs::read_to_string(path).map_err(RustpenError::Io)?;
-    if contains_forbidden_sections(&text) {
-        return Err(RustpenError::ParseError(
-            "template contains unsupported/unsafe sections".to_string(),
-        ));
-    }
 
     let raw: serde_json::Value =
         serde_json::from_str(&text).map_err(|e| RustpenError::ParseError(e.to_string()))?;
@@ -268,11 +259,8 @@ fn parse_one_template_json(path: &Path) -> Result<SafeTemplate, RustpenError> {
     })?;
 
     let id = get_str_json(map, "id")
-        .ok_or_else(|| RustpenError::PocRuleInvalid {
-            name: path.display().to_string(),
-            field: "id".to_string(),
-        })?
-        .to_string();
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| fallback_template_id(path));
 
     let info_val = map.get("info").and_then(|v| v.as_object());
     let info = TemplateInfo {
@@ -288,36 +276,23 @@ fn parse_one_template_json(path: &Path) -> Result<SafeTemplate, RustpenError> {
             .unwrap_or_default(),
     };
 
-    let req_node = map
-        .get("http")
-        .or_else(|| map.get("requests"))
-        .ok_or_else(|| RustpenError::PocRuleInvalid {
-            name: id.clone(),
-            field: "http/requests".to_string(),
-        })?;
-    let reqs = req_node
-        .as_array()
-        .ok_or_else(|| RustpenError::ParseError("http/requests must be an array".to_string()))?;
+    let reqs = extract_request_nodes_json(map);
 
     let mut requests = Vec::new();
     for r in reqs {
         let rm = r
             .as_object()
             .ok_or_else(|| RustpenError::ParseError("request item must be object".to_string()))?;
-        let method = get_str_json(rm, "method")
-            .unwrap_or("GET")
-            .to_ascii_uppercase();
-        if !is_allowed_method(&method) {
-            return Err(RustpenError::ParseError(format!(
-                "unsupported method in safe template: {}",
-                method
-            )));
-        }
-        let paths = rm
+        let method = request_method_json(rm);
+        let raw = parse_raw_request_json(rm);
+        let mut paths = rm
             .get("path")
             .or_else(|| rm.get("paths"))
             .and_then(parse_string_list_json)
             .unwrap_or_default();
+        if paths.is_empty() {
+            paths = extract_paths_from_raw_json(rm);
+        }
         if paths.is_empty() {
             continue;
         }
@@ -338,17 +313,15 @@ fn parse_one_template_json(path: &Path) -> Result<SafeTemplate, RustpenError> {
         requests.push(RequestDef {
             method,
             paths,
+            headers: parse_headers_map_json(rm),
+            body: get_str_json(rm, "body")
+                .map(|s| s.to_string())
+                .or_else(|| raw.and_then(|r| r.body)),
+            extractors: parse_extractors_json(rm)?,
             matchers,
             matchers_condition: get_str_json(rm, "matchers-condition")
                 .unwrap_or("or")
                 .to_ascii_lowercase(),
-        });
-    }
-
-    if requests.is_empty() {
-        return Err(RustpenError::PocRuleInvalid {
-            name: id.clone(),
-            field: "requests".to_string(),
         });
     }
 
@@ -397,7 +370,7 @@ fn parse_matcher_json(v: &serde_json::Value) -> Result<MatcherDef, RustpenError>
 fn parse_one_template_txt(path: &Path) -> Result<SafeTemplate, RustpenError> {
     let text = std::fs::read_to_string(path).map_err(RustpenError::Io)?;
     let mut requests = Vec::new();
-    for (idx, raw) in text.lines().enumerate() {
+    for raw in text.lines() {
         let line = raw.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
@@ -423,10 +396,7 @@ fn parse_one_template_txt(path: &Path) -> Result<SafeTemplate, RustpenError> {
         }
 
         if path_idx >= tokens.len() {
-            return Err(RustpenError::ParseError(format!(
-                "txt template missing path at line {}",
-                idx + 1
-            )));
+            continue;
         }
 
         let path = tokens[path_idx].to_string();
@@ -497,15 +467,12 @@ fn parse_one_template_txt(path: &Path) -> Result<SafeTemplate, RustpenError> {
         requests.push(RequestDef {
             method,
             paths: vec![path],
+            headers: Vec::new(),
+            body: None,
+            extractors: Vec::new(),
             matchers,
             matchers_condition,
         });
-    }
-
-    if requests.is_empty() {
-        return Err(RustpenError::ParseError(
-            "txt template contains no valid rules".to_string(),
-        ));
     }
 
     Ok(SafeTemplate {
@@ -559,14 +526,269 @@ fn get_str_json<'a>(
 }
 
 fn is_allowed_method(method: &str) -> bool {
-    matches!(method, "GET" | "HEAD")
+    matches!(
+        method,
+        "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS"
+    )
 }
 
-fn contains_forbidden_sections(text: &str) -> bool {
-    let lower = text.to_ascii_lowercase();
-    ["payloads:", "attack:", "raw:", "javascript:", "code:"]
-        .iter()
-        .any(|k| lower.contains(k))
+fn fallback_template_id(path: &Path) -> String {
+    path.file_stem()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("template")
+        .to_string()
+}
+
+fn extract_request_nodes_yaml<'a>(map: &'a serde_yaml::Mapping) -> Vec<&'a serde_yaml::Value> {
+    map.get("http")
+        .or_else(|| map.get("requests"))
+        .and_then(|v| v.as_sequence())
+        .map(|seq| seq.iter().collect::<Vec<_>>())
+        .unwrap_or_default()
+}
+
+fn extract_request_nodes_json<'a>(
+    map: &'a serde_json::Map<String, serde_json::Value>,
+) -> Vec<&'a serde_json::Value> {
+    map.get("http")
+        .or_else(|| map.get("requests"))
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().collect::<Vec<_>>())
+        .unwrap_or_default()
+}
+
+fn request_method_yaml(rm: &serde_yaml::Mapping) -> String {
+    if let Some(method) = get_str(rm, "method") {
+        return method.to_ascii_uppercase();
+    }
+    parse_raw_request_yaml(rm)
+        .as_ref()
+        .and_then(|raw| raw.method.clone())
+        .unwrap_or_else(|| "GET".to_string())
+}
+
+fn request_method_json(rm: &serde_json::Map<String, serde_json::Value>) -> String {
+    if let Some(method) = get_str_json(rm, "method") {
+        return method.to_ascii_uppercase();
+    }
+    parse_raw_request_json(rm)
+        .as_ref()
+        .and_then(|raw| raw.method.clone())
+        .unwrap_or_else(|| "GET".to_string())
+}
+
+fn extract_paths_from_raw_yaml(rm: &serde_yaml::Mapping) -> Vec<String> {
+    parse_raw_request_yaml(rm)
+        .as_ref()
+        .and_then(|raw| raw.path.clone())
+        .map(|path| vec![path])
+        .unwrap_or_default()
+}
+
+fn extract_paths_from_raw_json(rm: &serde_json::Map<String, serde_json::Value>) -> Vec<String> {
+    parse_raw_request_json(rm)
+        .as_ref()
+        .and_then(|raw| raw.path.clone())
+        .map(|path| vec![path])
+        .unwrap_or_default()
+}
+
+fn parse_headers_map_yaml(rm: &serde_yaml::Mapping) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    if let Some(headers) = rm.get("headers").and_then(|v| v.as_mapping()) {
+        for (k, v) in headers {
+            let Some(k) = k.as_str() else { continue };
+            let Some(v) = v.as_str() else { continue };
+            out.push((k.to_string(), v.to_string()));
+        }
+    }
+    if out.is_empty()
+        && let Some(raw) = parse_raw_request_yaml(rm)
+    {
+        out = raw.headers;
+    }
+    out
+}
+
+fn parse_headers_map_json(
+    rm: &serde_json::Map<String, serde_json::Value>,
+) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    if let Some(headers) = rm.get("headers").and_then(|v| v.as_object()) {
+        for (k, v) in headers {
+            let Some(v) = v.as_str() else { continue };
+            out.push((k.to_string(), v.to_string()));
+        }
+    }
+    if out.is_empty()
+        && let Some(raw) = parse_raw_request_json(rm)
+    {
+        out = raw.headers;
+    }
+    out
+}
+
+fn parse_extractors_yaml(rm: &serde_yaml::Mapping) -> Result<Vec<ExtractorDef>, RustpenError> {
+    let Some(arr) = rm.get("extractors").and_then(|v| v.as_sequence()) else {
+        return Ok(Vec::new());
+    };
+    let mut out = Vec::new();
+    for item in arr {
+        let Some(m) = item.as_mapping() else { continue };
+        let kind = get_str(m, "type").unwrap_or("regex").to_ascii_lowercase();
+        if kind != "regex" {
+            continue;
+        }
+        let regex = m
+            .get("regex")
+            .and_then(parse_string_list)
+            .unwrap_or_default();
+        if regex.is_empty() {
+            continue;
+        }
+        let group = m
+            .get("group")
+            .and_then(|v| v.as_u64())
+            .and_then(|v| usize::try_from(v).ok())
+            .unwrap_or(0);
+        out.push(ExtractorDef {
+            kind,
+            part: get_str(m, "part").unwrap_or("body").to_ascii_lowercase(),
+            name: get_str(m, "name").map(|s| s.to_string()),
+            internal: m.get("internal").and_then(|v| v.as_bool()).unwrap_or(false),
+            group,
+            regex,
+        });
+    }
+    Ok(out)
+}
+
+fn parse_extractors_json(
+    rm: &serde_json::Map<String, serde_json::Value>,
+) -> Result<Vec<ExtractorDef>, RustpenError> {
+    let Some(arr) = rm.get("extractors").and_then(|v| v.as_array()) else {
+        return Ok(Vec::new());
+    };
+    let mut out = Vec::new();
+    for item in arr {
+        let Some(m) = item.as_object() else { continue };
+        let kind = get_str_json(m, "type")
+            .unwrap_or("regex")
+            .to_ascii_lowercase();
+        if kind != "regex" {
+            continue;
+        }
+        let regex = m
+            .get("regex")
+            .and_then(parse_string_list_json)
+            .unwrap_or_default();
+        if regex.is_empty() {
+            continue;
+        }
+        let group = m
+            .get("group")
+            .and_then(|v| v.as_u64())
+            .and_then(|v| usize::try_from(v).ok())
+            .unwrap_or(0);
+        out.push(ExtractorDef {
+            kind,
+            part: get_str_json(m, "part")
+                .unwrap_or("body")
+                .to_ascii_lowercase(),
+            name: get_str_json(m, "name").map(|s| s.to_string()),
+            internal: m.get("internal").and_then(|v| v.as_bool()).unwrap_or(false),
+            group,
+            regex,
+        });
+    }
+    Ok(out)
+}
+
+#[derive(Debug, Clone, Default)]
+struct RawRequestParts {
+    method: Option<String>,
+    path: Option<String>,
+    headers: Vec<(String, String)>,
+    body: Option<String>,
+}
+
+fn parse_raw_request_yaml(rm: &serde_yaml::Mapping) -> Option<RawRequestParts> {
+    let block = rm
+        .get("raw")
+        .and_then(parse_string_list)?
+        .into_iter()
+        .next()?;
+    parse_raw_request_block(&block)
+}
+
+fn parse_raw_request_json(
+    rm: &serde_json::Map<String, serde_json::Value>,
+) -> Option<RawRequestParts> {
+    let block = rm
+        .get("raw")
+        .and_then(parse_string_list_json)?
+        .into_iter()
+        .next()?;
+    parse_raw_request_block(&block)
+}
+
+fn parse_raw_request_block(block: &str) -> Option<RawRequestParts> {
+    let mut lines = block.lines();
+    let req_line = lines.find(|l| !l.trim().is_empty())?.trim().to_string();
+    let mut parts = req_line.split_whitespace();
+    let method = parts.next()?.trim().to_ascii_uppercase();
+    let path = parts.next().map(|s| s.trim().to_string());
+    let method = if is_allowed_method(&method) {
+        Some(method)
+    } else {
+        None
+    };
+    let mut headers = Vec::new();
+    let mut in_body = false;
+    let mut body_lines = Vec::new();
+    for line in lines {
+        if in_body {
+            body_lines.push(line.to_string());
+            continue;
+        }
+        if line.trim().is_empty() {
+            in_body = true;
+            continue;
+        }
+        if let Some((k, v)) = line.split_once(':') {
+            headers.push((k.trim().to_string(), v.trim().to_string()));
+        }
+    }
+    let body = (!body_lines.is_empty()).then(|| body_lines.join("\n"));
+    Some(RawRequestParts {
+        method,
+        path,
+        headers,
+        body,
+    })
+}
+
+fn compatibility_stub_template(path: &Path, _err: &RustpenError) -> Option<SafeTemplate> {
+    let lower = path.to_string_lossy().to_ascii_lowercase();
+    let is_metadata = lower.ends_with("/contributors.json")
+        || lower.ends_with("/cves.json")
+        || lower.ends_with("/templates-stats.json");
+    let is_wordlist = lower.contains("/helpers/wordlists/");
+    let is_non_http_network_tpl = lower.contains("/network/");
+    if !(is_metadata || is_wordlist || is_non_http_network_tpl) {
+        return None;
+    }
+    Some(SafeTemplate {
+        id: fallback_template_id(path),
+        info: TemplateInfo {
+            name: Some("compat-stub".to_string()),
+            severity: Some("info".to_string()),
+            tags: Vec::new(),
+        },
+        requests: Vec::new(),
+        source: path.to_path_buf(),
+    })
 }
 
 #[cfg(test)]
@@ -613,6 +835,67 @@ mod tests {
         let tpl = parse_one_template(&p).unwrap();
         assert_eq!(tpl.id, "test-json");
         assert_eq!(tpl.requests.len(), 1);
+        std::fs::remove_file(p).ok();
+    }
+
+    #[test]
+    fn parse_yaml_template_without_id_uses_file_stem() {
+        let p = write_temp(
+            "noid",
+            "yaml",
+            r#"
+info:
+  name: noid
+http:
+  - method: GET
+    path:
+      - /health
+"#,
+        );
+        let tpl = parse_one_template(&p).unwrap();
+        assert!(tpl.id.starts_with("rscan_test_noid_"));
+        std::fs::remove_file(p).ok();
+    }
+
+    #[test]
+    fn parse_yaml_raw_request_extracts_method_and_path() {
+        let p = write_temp(
+            "rawreq",
+            "yaml",
+            r#"
+id: raw-req
+info:
+  name: raw
+http:
+  - raw:
+      - |
+        POST /login HTTP/1.1
+        Host: {{Hostname}}
+"#,
+        );
+        let tpl = parse_one_template(&p).unwrap();
+        assert_eq!(tpl.requests.len(), 1);
+        assert_eq!(tpl.requests[0].method, "POST");
+        assert_eq!(tpl.requests[0].paths, vec!["/login".to_string()]);
+        std::fs::remove_file(p).ok();
+    }
+
+    #[test]
+    fn parse_workflow_like_template_is_loaded_with_zero_requests() {
+        let p = write_temp(
+            "workflow",
+            "yaml",
+            r#"
+id: workflow-x
+info:
+  name: workflow-x
+workflows:
+  - template: http/exposed-panels/example.yaml
+"#,
+        );
+        let tpl = parse_one_template(&p).unwrap();
+        assert_eq!(tpl.id, "workflow-x");
+        assert!(tpl.requests.is_empty());
         std::fs::remove_file(p).ok();
     }
 

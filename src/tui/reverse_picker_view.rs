@@ -136,19 +136,19 @@ fn draw_footer(f: &mut Frame<'_>, area: Rect, state: &ReversePickerState) {
         .map(|path| relative_or_full(&state.active_project, &path))
         .unwrap_or_else(|| "<dir>".to_string());
     let action_line = if state.launcher_mode == PickerLauncherMode::ZellijNative {
-        "Enter/F4=import+index via filepicker  o=open only  f=full  i=index  a=analyze"
+        "Enter=act on selected  Alt+f=filepicker  p=close panel  o=open only  f=full  i=index  a=analyze"
     } else {
         "Enter=import+index+viewer  o=open only  f=full  i=index  a=analyze"
     };
     let nav_line = if state.launcher_mode == PickerLauncherMode::ZellijNative {
-        "j/k=move  h=parent  r=refresh  R=project/fs root  b=local  Z=native  q=quit"
+        "j/k=move  h=parent  r=refresh  R=project/fs root  b=local  Z=native  Esc/q=quit"
     } else {
-        "j/k=move  h=parent  g/G=top/bottom  r=refresh  R=project/fs root  q=quit"
+        "j/k=move  h=parent  g/G=top/bottom  r=refresh  R=project/fs root  Esc/q=quit"
     };
     let hint_line = if state.launcher_mode == PickerLauncherMode::ZellijNative {
         "popup 里复用 Strider 键位: arrows/jk move  Tab/Right choose path  Enter confirm path  Backspace up  Ctrl-e hidden"
     } else {
-        "F2|p|:=path  F4=zellij filepicker  Tab=filepicker(path mode)  q=quit"
+        "直接键入=过滤  /进入过滤  F2|:=path  Alt+f=zellij filepicker  p=close panel  Tab=filepicker(path mode)"
     };
     let lines = vec![
         Line::from(action_line),

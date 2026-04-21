@@ -19,7 +19,7 @@ pub enum HostActions {
         /// Enable service fingerprint enrichment on responses
         #[arg(short = 's', long, default_value_t = false)]
         service_detect: bool,
-        /// nmap-service-probes file path used when --service-detect is set
+        /// optional nmap-service-probes path for --service-detect (auto-discovered by default)
         #[arg(short = 'P', long)]
         probes_file: Option<PathBuf>,
         /// scan profile tuning: low-noise|balanced|aggressive

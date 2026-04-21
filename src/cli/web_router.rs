@@ -399,9 +399,23 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
             out,
         } => {
             with_task(&cli, "web", urls.clone(), |events| async move {
+                let mut eff_urls = Vec::new();
+                for raw in urls {
+                    for part in raw.split(',') {
+                        let trimmed = part.trim();
+                        if !trimmed.is_empty() {
+                            eff_urls.push(trimmed.to_string());
+                        }
+                    }
+                }
+                if eff_urls.is_empty() {
+                    return Err(RustpenError::ParseError(
+                        "web live requires at least one url via --urls".to_string(),
+                    ));
+                }
                 report_log(
                     &events,
-                    format!("live check urls={} method={}", urls.len(), method),
+                    format!("live check urls={} method={}", eff_urls.len(), method),
                 );
                 report_progress(&events, 8.0, "web.live: start");
                 let method = parse_http_method(&method)?;
@@ -410,8 +424,8 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
                     .build()
                     .map_err(|e| RustpenError::NetworkError(e.to_string()))?;
                 let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(concurrency.max(1)));
-                let mut tasks = Vec::with_capacity(urls.len());
-                for url in urls {
+                let mut tasks = Vec::with_capacity(eff_urls.len());
+                for url in eff_urls {
                     let sem = std::sync::Arc::clone(&sem);
                     let client = client.clone();
                     let method = method.clone();
@@ -425,20 +439,26 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
                 let total = tasks.len().max(1);
                 let mut done = 0usize;
                 for t in tasks {
-                    if let Ok((url, res)) = t.await {
-                        match res {
+                    done += 1;
+                    match t.await {
+                        Ok((url, res)) => match res {
                             Ok(msg) => rows.push((url, Ok(msg))),
                             Err(e) => rows.push((url, Err(e.to_string()))),
-                        }
-                        done += 1;
-                        let pct = 15.0 + ((done as f32) / (total as f32)) * 75.0;
-                        report_progress(
-                            &events,
-                            pct,
-                            format!("web.live: processed {done}/{total}"),
-                        );
+                        },
+                        Err(e) => rows.push((
+                            "<join-error>".to_string(),
+                            Err(format!("live worker join error: {e}")),
+                        )),
                     }
+                    let pct = 15.0 + ((done as f32) / (total as f32)) * 75.0;
+                    report_progress(&events, pct, format!("web.live: processed {done}/{total}"));
                 }
+                let all_failed = !rows.is_empty() && rows.iter().all(|(_, res)| res.is_err());
+                let first_error = rows
+                    .iter()
+                    .find_map(|(_, res)| res.as_ref().err())
+                    .cloned()
+                    .unwrap_or_else(|| "unknown error".to_string());
                 let s = if output.eq_ignore_ascii_case("json") {
                     let json_rows: Vec<_> = rows
                         .iter()
@@ -453,7 +473,7 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
                     let color = color_enabled();
                     let mut out = Vec::new();
                     out.push(format!("{:>4} {:<7} {}", "LIVE", "METHOD", "URL"));
-                    for (url, res) in rows {
+                    for (url, res) in &rows {
                         match res {
                             Ok(msg) => {
                                 let tag = colorize("OK", "32", color);
@@ -470,6 +490,13 @@ pub(super) async fn handle_web_command(cli: &Cli, action: WebActions) -> Result<
                 let _ = write_task_output(&events, out.as_ref(), "web-live-result", &output, &s)
                     .await?;
                 report_progress(&events, 98.0, "web.live: output done");
+                if all_failed {
+                    return Err(RustpenError::NetworkError(format!(
+                        "live check failed for all urls (total={}): {}",
+                        rows.len(),
+                        first_error
+                    )));
+                }
                 Ok(())
             })
             .await?;

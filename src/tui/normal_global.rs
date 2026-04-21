@@ -75,36 +75,24 @@ pub(crate) fn handle_global_normal_key(
         KeyCode::Char('q') => return Ok(GlobalNormalAction::Quit),
         KeyCode::Char('1') => {
             *ctx.pane = MainPane::Dashboard;
+            *ctx.main_layout = MainLayout::Single;
             *ctx.detail_scroll = 0;
             return Ok(GlobalNormalAction::Handled);
         }
         KeyCode::Char('2') => {
-            *ctx.pane = MainPane::Tasks;
-            *ctx.detail_scroll = 0;
-            return Ok(GlobalNormalAction::Handled);
-        }
-        KeyCode::Char('3') => {
-            *ctx.pane = MainPane::Launcher;
-            *ctx.detail_scroll = 0;
-            return Ok(GlobalNormalAction::Handled);
-        }
-        KeyCode::Char('4') => {
-            *ctx.pane = MainPane::Scripts;
-            *ctx.detail_scroll = 0;
-            return Ok(GlobalNormalAction::Handled);
-        }
-        KeyCode::Char('5') => {
-            *ctx.pane = MainPane::Results;
-            *ctx.effect_scroll = 0;
-            return Ok(GlobalNormalAction::Handled);
-        }
-        KeyCode::Char('6') => {
             *ctx.pane = MainPane::Projects;
+            *ctx.main_layout = MainLayout::Single;
+            return Ok(GlobalNormalAction::Handled);
+        }
+        KeyCode::Char('3') | KeyCode::Char('4') | KeyCode::Char('5') | KeyCode::Char('6') => {
+            *ctx.status_line =
+                "Control 已精简为 1=dashboard / 2=projects；任务与脚本请到 Work/Inspect"
+                    .to_string();
             return Ok(GlobalNormalAction::Handled);
         }
         KeyCode::Char('l') => {
-            *ctx.main_layout = ctx.main_layout.next();
-            *ctx.status_line = format!("main layout: {}", ctx.main_layout.label());
+            *ctx.main_layout = MainLayout::Single;
+            *ctx.status_line = "Control 仅保留 single layout".to_string();
             return Ok(GlobalNormalAction::Handled);
         }
         KeyCode::Char('[') if *ctx.mini_console_visible => {
@@ -358,8 +346,7 @@ pub(crate) fn handle_global_normal_key(
             *ctx.tasks = apply_filter(ctx.all_tasks, ctx.filter);
             *ctx.scripts = load_script_files(ctx.scripts_dir)?;
             *ctx.task_selected = (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
-            *ctx.result_selected =
-                (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+            *ctx.result_selected = 0;
             *ctx.script_selected = (*ctx.script_selected).min(ctx.scripts.len().saturating_sub(1));
             if let Some(path) = ctx.scripts.get(*ctx.script_selected)
                 && !ctx.script_dirty

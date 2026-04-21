@@ -143,6 +143,7 @@ fn spawn_task_process(workspace: &PathBuf, head: &str, parts: &[&str]) -> Comman
     let stdout_file = match fs::File::create(&stdout_path) {
         Ok(f) => f,
         Err(e) => {
+            cleanup_placeholder_task_dir(&task_dir);
             return CommandExecResult {
                 status_line: format!("启动失败: 创建 stdout.log 失败: {}", e),
                 task_id: None,
@@ -152,6 +153,7 @@ fn spawn_task_process(workspace: &PathBuf, head: &str, parts: &[&str]) -> Comman
     let stderr_file = match fs::File::create(&stderr_path) {
         Ok(f) => f,
         Err(e) => {
+            cleanup_placeholder_task_dir(&task_dir);
             return CommandExecResult {
                 status_line: format!("启动失败: 创建 stderr.log 失败: {}", e),
                 task_id: None,
@@ -159,8 +161,10 @@ fn spawn_task_process(workspace: &PathBuf, head: &str, parts: &[&str]) -> Comman
         }
     };
 
-    if let Err(e) = write_placeholder_task_meta(workspace, &task_dir, &task_id, head, cmd_for_note(parts))
+    if let Err(e) =
+        write_placeholder_task_meta(workspace, &task_dir, &task_id, head, cmd_for_note(parts))
     {
+        cleanup_placeholder_task_dir(&task_dir);
         return CommandExecResult {
             status_line: format!("启动失败: 写入任务占位 meta 失败: {}", e),
             task_id: None,
@@ -189,10 +193,19 @@ fn spawn_task_process(workspace: &PathBuf, head: &str, parts: &[&str]) -> Comman
             },
             task_id: Some(task_id),
         },
-        Err(e) => CommandExecResult {
-            status_line: format!("启动失败: {e}"),
-            task_id: None,
-        },
+        Err(e) => {
+            cleanup_placeholder_task_dir(&task_dir);
+            CommandExecResult {
+                status_line: format!("启动失败: {e}"),
+                task_id: None,
+            }
+        }
+    }
+}
+
+fn cleanup_placeholder_task_dir(task_dir: &PathBuf) {
+    if task_dir.exists() {
+        let _ = fs::remove_dir_all(task_dir);
     }
 }
 
@@ -221,7 +234,8 @@ fn write_placeholder_task_meta(
     attach_task_runtime(
         &mut meta,
         TaskRuntimeBinding {
-            backend: if std::env::var("ZELLIJ").is_ok() || std::env::var("ZELLIJ_SESSION_NAME").is_ok()
+            backend: if std::env::var("ZELLIJ").is_ok()
+                || std::env::var("ZELLIJ_SESSION_NAME").is_ok()
             {
                 "zellij-tui-launcher".to_string()
             } else {
@@ -243,25 +257,35 @@ fn classify_task_kind(head: &str) -> &'static str {
         "host" | "h.quick" | "h.tcp" | "h.udp" | "h.syn" | "h.arp" => "host",
         "web" | "w.dir" | "w.fuzz" | "w.dns" | "w.crawl" | "w.live" => "web",
         "vuln" | "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa" => "vuln",
-        "reverse"
-        | "r.analyze"
-        | "r.plan"
-        | "r.run"
-        | "r.jobs"
-        | "r.status"
-        | "r.logs"
-        | "r.artifacts"
-        | "r.funcs"
-        | "r.show"
-        | "r.search"
-        | "r.clear"
-        | "r.prune"
-        | "r.doctor"
-        | "r.debug" => "reverse",
+        "reverse" | "r.analyze" | "r.plan" | "r.run" | "r.jobs" | "r.status" | "r.logs"
+        | "r.artifacts" | "r.funcs" | "r.show" | "r.search" | "r.clear" | "r.prune"
+        | "r.doctor" | "r.debug" => "reverse",
         _ => "task",
     }
 }
 
 fn cmd_for_note(parts: &[&str]) -> String {
     parts.join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cleanup_placeholder_task_dir_removes_directory_tree() {
+        let root = std::env::temp_dir().join(format!(
+            "rscan_cleanup_task_dir_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+        ));
+        let task_dir = root.join("tasks").join("task-test");
+        fs::create_dir_all(&task_dir).unwrap();
+        fs::write(task_dir.join("meta.json"), "{}").unwrap();
+        cleanup_placeholder_task_dir(&task_dir);
+        assert!(!task_dir.exists());
+        let _ = fs::remove_dir_all(root);
+    }
 }

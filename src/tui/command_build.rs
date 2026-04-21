@@ -237,7 +237,11 @@ pub(crate) fn build_task_spawn_args(
                         "--target".to_string(),
                         parts[2].to_string(),
                     ]);
-                    append_vuln_targeted_extra_args(&mut args, &parts[3..], VulnTargetedKind::Stealth)?;
+                    append_vuln_targeted_extra_args(
+                        &mut args,
+                        &parts[3..],
+                        VulnTargetedKind::Stealth,
+                    )?;
                 }
                 "fragment-audit" => {
                     if parts.len() < 3 {
@@ -1081,6 +1085,10 @@ fn append_vuln_scan_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Resul
                 args.extend(["--timeout-ms".to_string(), value.to_string()]);
                 idx += 2;
             }
+            "--findings-only" | "--success-only" => {
+                args.push(extras[idx].to_string());
+                idx += 1;
+            }
             unknown => return Err(format!("未知 vuln scan 扩展参数: {unknown}")),
         }
     }
@@ -1263,9 +1271,15 @@ fn append_reverse_run_args(
     }
     let extra_start = if mode == "function" {
         function_idx + 1
-    } else if parts.get(mode_idx).is_some_and(|value| !value.starts_with("--")) {
+    } else if parts
+        .get(mode_idx)
+        .is_some_and(|value| !value.starts_with("--"))
+    {
         mode_idx + 1
-    } else if parts.get(engine_idx).is_some_and(|value| !value.starts_with("--")) {
+    } else if parts
+        .get(engine_idx)
+        .is_some_and(|value| !value.starts_with("--"))
+    {
         engine_idx + 1
     } else {
         input_idx + 1
@@ -1363,10 +1377,7 @@ fn append_reverse_job_logs_extra_args(
             "--stream" | "-s" => {
                 let value = expect_value(extras, idx, "--stream 需要取值")?;
                 if !matches!(value, "stdout" | "stderr" | "both") {
-                    return Err(format!(
-                        "stream 不支持: {}，可选 stdout|stderr|both",
-                        value
-                    ));
+                    return Err(format!("stream 不支持: {}，可选 stdout|stderr|both", value));
                 }
                 args.extend(["--stream".to_string(), value.to_string()]);
                 idx += 2;
@@ -1527,7 +1538,10 @@ mod tests {
         let args = build_task_spawn_args(&ws, "host", &parts).unwrap();
         assert!(args.windows(2).any(|w| w == ["--profile", "low-noise"]));
         assert!(args.iter().any(|arg| arg == "--service-detect"));
-        assert!(args.windows(2).any(|w| w == ["--probes-file", "/tmp/probes.txt"]));
+        assert!(
+            args.windows(2)
+                .any(|w| w == ["--probes-file", "/tmp/probes.txt"])
+        );
         assert!(args.windows(2).any(|w| w == ["--syn-mode", "strict"]));
     }
 
@@ -1545,7 +1559,10 @@ mod tests {
         ];
         let args = build_task_spawn_args(&ws, "h.udp", &parts).unwrap();
         assert!(args.windows(2).any(|w| w == ["--profile", "aggressive"]));
-        assert!(args.windows(2).any(|w| w == ["--probes-file", "/tmp/probes.txt"]));
+        assert!(
+            args.windows(2)
+                .any(|w| w == ["--probes-file", "/tmp/probes.txt"])
+        );
     }
 
     #[test]
@@ -1572,7 +1589,10 @@ mod tests {
         assert!(args.windows(2).any(|w| w == ["--profile", "aggressive"]));
         assert!(args.windows(2).any(|w| w == ["--concurrency", "24"]));
         assert!(args.windows(2).any(|w| w == ["--timeout-ms", "3000"]));
-        assert!(args.windows(2).any(|w| w == ["--header", "Authorization: Bearer x"]));
+        assert!(
+            args.windows(2)
+                .any(|w| w == ["--header", "Authorization: Bearer x"])
+        );
         assert!(args.iter().any(|arg| arg == "--recursive"));
         assert!(args.windows(2).any(|w| w == ["--recursive-depth", "3"]));
     }
@@ -1591,6 +1611,8 @@ mod tests {
             "16",
             "--timeout-ms",
             "4500",
+            "--findings-only",
+            "--success-only",
         ];
         let args = build_task_spawn_args(&ws, "v.scan", &parts).unwrap();
         assert!(args.windows(2).any(|w| w == ["--severity", "high"]));
@@ -1599,6 +1621,8 @@ mod tests {
         assert!(args.windows(2).any(|w| w == ["--tag", "rce"]));
         assert!(args.windows(2).any(|w| w == ["--concurrency", "16"]));
         assert!(args.windows(2).any(|w| w == ["--timeout-ms", "4500"]));
+        assert!(args.iter().any(|arg| arg == "--findings-only"));
+        assert!(args.iter().any(|arg| arg == "--success-only"));
     }
 
     #[test]

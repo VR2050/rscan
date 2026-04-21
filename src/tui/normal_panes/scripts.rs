@@ -4,13 +4,40 @@ use super::{PaneNormalAction, PaneNormalCtx};
 use crate::errors::RustpenError;
 use crate::tui::models::InputMode;
 use crate::tui::script_runtime::{
-    save_current_script, start_script_runner, start_script_task, switch_script_selection,
+    open_script_in_helix, save_current_script, start_script_runner, start_script_task,
+    switch_script_selection,
 };
 
 pub(super) fn handle_scripts_key(
     key: KeyCode,
     ctx: &mut PaneNormalCtx<'_>,
 ) -> Result<PaneNormalAction, RustpenError> {
+    fn open_in_helix(ctx: &mut PaneNormalCtx<'_>) -> PaneNormalAction {
+        if ctx.scripts.is_empty() {
+            *ctx.status_line = "没有可编辑的脚本".to_string();
+            return PaneNormalAction::Handled;
+        }
+        if *ctx.script_dirty {
+            match save_current_script(ctx.scripts, *ctx.script_selected, ctx.script_buffer) {
+                Ok(msg) => {
+                    *ctx.script_dirty = false;
+                    *ctx.status_line = msg;
+                }
+                Err(e) => {
+                    *ctx.status_line = format!("自动保存失败，已取消打开 Helix: {}", e);
+                    return PaneNormalAction::Handled;
+                }
+            }
+        }
+        if let Some(path) = ctx.scripts.get(*ctx.script_selected) {
+            match open_script_in_helix(path, ctx.current_project) {
+                Ok(msg) => *ctx.status_line = msg,
+                Err(err) => *ctx.status_line = format!("打开 Helix 失败: {}", err),
+            }
+        }
+        PaneNormalAction::Handled
+    }
+
     match key {
         KeyCode::Up => {
             if !ctx.scripts.is_empty() {
@@ -40,20 +67,13 @@ pub(super) fn handle_scripts_key(
             }
             Ok(PaneNormalAction::Handled)
         }
-        KeyCode::Char('N') => {
+        KeyCode::Char('N') | KeyCode::Char('n') => {
             ctx.script_new_buffer.clear();
             *ctx.input_mode = InputMode::ScriptNewInput;
             Ok(PaneNormalAction::Handled)
         }
-        KeyCode::Char('i') => {
-            if ctx.scripts.is_empty() {
-                *ctx.status_line = "先按 N 创建脚本".to_string();
-            } else {
-                *ctx.input_mode = InputMode::ScriptEdit;
-            }
-            Ok(PaneNormalAction::Handled)
-        }
-        KeyCode::Char('S') => {
+        KeyCode::Char('i') | KeyCode::Char('I') => Ok(open_in_helix(ctx)),
+        KeyCode::Char('S') | KeyCode::Char('s') => {
             if ctx.scripts.is_empty() {
                 *ctx.status_line = "没有可保存的脚本".to_string();
             } else {
@@ -69,7 +89,7 @@ pub(super) fn handle_scripts_key(
             }
             Ok(PaneNormalAction::Handled)
         }
-        KeyCode::Char('R') => {
+        KeyCode::Char('R') | KeyCode::Char('r') => {
             if *ctx.script_running {
                 *ctx.status_line = "已有脚本正在运行".to_string();
                 return Ok(PaneNormalAction::Handled);
@@ -98,6 +118,7 @@ pub(super) fn handle_scripts_key(
             }
             Ok(PaneNormalAction::Handled)
         }
+        KeyCode::Char('H') | KeyCode::Char('h') => Ok(open_in_helix(ctx)),
         _ => Ok(PaneNormalAction::Unhandled),
     }
 }

@@ -76,11 +76,27 @@ pub(super) fn handle_tasks_key(
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::PageDown => {
-            *ctx.detail_scroll = ctx.detail_scroll.saturating_add(5);
+            *ctx.detail_scroll = ctx.detail_scroll.saturating_add(12);
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::PageUp => {
-            *ctx.detail_scroll = ctx.detail_scroll.saturating_sub(5);
+            *ctx.detail_scroll = ctx.detail_scroll.saturating_sub(12);
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('d') => {
+            *ctx.detail_scroll = ctx.detail_scroll.saturating_add(3);
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('u') => {
+            *ctx.detail_scroll = ctx.detail_scroll.saturating_sub(3);
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Home => {
+            *ctx.detail_scroll = 0;
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::End => {
+            *ctx.detail_scroll = u16::MAX;
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::Up => {

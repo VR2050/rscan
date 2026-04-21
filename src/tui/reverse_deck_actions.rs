@@ -144,20 +144,20 @@ fn build_logs_follow_command(job: &ReverseJobMeta, mode: DeckLogMode) -> String 
     let mut script = format!(
         "printf 'reverse-job=%s kind=%s status=%s mode=%s\\n' {id} {kind} {status} {mode_label}; \
 printf 'target=%s\\n\\n' {target}; \
-files='';"
+set --;"
     );
     if matches!(mode, DeckLogMode::Both | DeckLogMode::Stdout) {
-        script.push_str("if [ -e stdout.log ]; then files=\"$files stdout.log\"; fi;");
+        script.push_str("if [ -e stdout.log ]; then set -- \"$@\" stdout.log; fi;");
     }
     if matches!(mode, DeckLogMode::Both | DeckLogMode::Stderr) {
-        script.push_str("if [ -e stderr.log ]; then files=\"$files stderr.log\"; fi;");
+        script.push_str("if [ -e stderr.log ]; then set -- \"$@\" stderr.log; fi;");
     }
     script.push_str(&format!(
-        "if [ -z \"$files\" ]; then \
+        "if [ \"$#\" -eq 0 ]; then \
 echo 'no stdout/stderr log yet; dropping to shell'; \
 exec {shell} -i; \
 else \
-exec tail -n 80 -F $files; \
+exec tail -n 80 -F \"$@\"; \
 fi"
     ));
     script
@@ -246,4 +246,42 @@ fn user_shell() -> String {
 
 fn shell_quote(input: &str) -> String {
     format!("'{}'", input.replace('\'', "'\"'\"'"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::reverse::ReverseJobStatus;
+
+    fn fake_job() -> ReverseJobMeta {
+        ReverseJobMeta {
+            id: "job-1".to_string(),
+            kind: "reverse".to_string(),
+            backend: "ghidra".to_string(),
+            mode: Some("index".to_string()),
+            function: None,
+            target: PathBuf::from("/tmp/bin"),
+            workspace: PathBuf::from("/tmp/ws"),
+            status: ReverseJobStatus::Running,
+            created_at: 0,
+            started_at: None,
+            ended_at: None,
+            exit_code: None,
+            program: "rscan".to_string(),
+            args: Vec::new(),
+            note: String::new(),
+            artifacts: Vec::new(),
+            error: None,
+        }
+    }
+
+    #[test]
+    fn reverse_logs_follow_command_uses_positional_args_for_files() {
+        let script = build_logs_follow_command(&fake_job(), DeckLogMode::Both);
+        assert!(script.contains("set --;"));
+        assert!(script.contains("set -- \"$@\" stdout.log;"));
+        assert!(script.contains("set -- \"$@\" stderr.log;"));
+        assert!(script.contains("tail -n 80 -F \"$@\""));
+        assert!(!script.contains("tail -n 80 -F $files"));
+    }
 }

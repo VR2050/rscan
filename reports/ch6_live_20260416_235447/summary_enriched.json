@@ -1,0 +1,95 @@
+{
+  "target": "192.168.8.145",
+  "out_dir": "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260416_235447",
+  "cases": [
+    {
+      "name": "host_quick_json",
+      "rc": 0,
+      "ms": 42,
+      "open_ports": [
+        21,
+        22,
+        25,
+        80,
+        445,
+        3306,
+        3389
+      ]
+    },
+    {
+      "name": "host_tcp_common_json",
+      "rc": 0,
+      "ms": 39,
+      "open_ports": [
+        21,
+        22,
+        25,
+        80,
+        139,
+        445,
+        3306,
+        3389
+      ]
+    },
+    {
+      "name": "host_tcp_1_1024_json",
+      "rc": 0,
+      "ms": 209,
+      "open_ports": [
+        21,
+        22,
+        25,
+        80,
+        88,
+        139,
+        389,
+        445,
+        464,
+        749
+      ]
+    },
+    {
+      "name": "host_udp_common_json",
+      "rc": 0,
+      "ms": 6028,
+      "open_ports": []
+    },
+    {
+      "name": "web_live_http_https",
+      "rc": 0,
+      "ms": 30389,
+      "hits_preview": [
+        "  OK GET http://192.168.8.145 the url: http://192.168.8.145 alive"
+      ]
+    },
+    {
+      "name": "web_dir_small",
+      "rc": 0,
+      "ms": 93,
+      "hits_preview": []
+    },
+    {
+      "name": "web_dir_small",
+      "rc": 0,
+      "ms": null,
+      "line_count": 2,
+      "url_count": 1,
+      "hits_preview": [],
+      "raw_preview": [
+        "2026-04-16T15:55:24.632704Z  INFO rscan::cli::app: Starting rscan, log_level=info",
+        "CLIENT 404    146B http://192.168.8.145/,/robots.txt,/admin,/login,/phpinfo.php,/index.php"
+      ]
+    },
+    {
+      "name": "web_crawl_small",
+      "rc": 0,
+      "ms": null,
+      "line_count": 1,
+      "url_count": 0,
+      "hits_preview": [],
+      "raw_preview": [
+        "2026-04-16T15:55:40.872136Z  INFO rscan::cli::app: Starting rscan, log_level=info"
+      ]
+    }
+  ]
+}

@@ -27,6 +27,8 @@ pub(super) async fn handle_vuln_command(
             concurrency,
             timeout_ms,
             output,
+            findings_only,
+            success_only,
             out,
         } => {
             with_task(&cli, "vuln", targets.clone(), |events| async move {
@@ -72,7 +74,10 @@ pub(super) async fn handle_vuln_command(
                         report.errors.len()
                     ),
                 );
-                let s = if output.eq_ignore_ascii_case("json") {
+                let only_findings = findings_only || success_only;
+                let s = if only_findings {
+                    format_vuln_findings_only(&report, &output, color_enabled())
+                } else if output.eq_ignore_ascii_case("json") {
                     to_json_or_raw(&report, &output)?
                 } else {
                     format_vuln_report_pretty(&report, color_enabled())

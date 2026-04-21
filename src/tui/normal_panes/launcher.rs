@@ -26,16 +26,7 @@ pub(super) fn handle_launcher_key(
                 *ctx.all_tasks = load_tasks(ctx.current_project.clone())?;
                 *ctx.tasks = apply_filter(ctx.all_tasks, *ctx.filter);
                 if let Some(task_id) = exec.task_id.as_deref() {
-                    if let Some(pos) = ctx
-                        .all_tasks
-                        .iter()
-                        .position(|task| task.meta.id == task_id)
-                    {
-                        *ctx.result_selected = pos;
-                    } else {
-                        *ctx.result_selected =
-                            (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
-                    }
+                    *ctx.result_selected = 0;
                     if let Some(pos) = ctx.tasks.iter().position(|task| task.meta.id == task_id) {
                         *ctx.task_selected = pos;
                     } else {
@@ -45,8 +36,7 @@ pub(super) fn handle_launcher_key(
                 } else {
                     *ctx.task_selected =
                         (*ctx.task_selected).min(ctx.tasks.len().saturating_sub(1));
-                    *ctx.result_selected =
-                        (*ctx.result_selected).min(ctx.all_tasks.len().saturating_sub(1));
+                    *ctx.result_selected = 0;
                 }
             }
             Ok(PaneNormalAction::Handled)

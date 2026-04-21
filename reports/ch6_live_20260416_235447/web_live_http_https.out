@@ -1,0 +1,4 @@
+2026-04-16T15:54:54.238763Z  INFO rscan::cli::app: Starting rscan, log_level=info
+LIVE METHOD  URL
+  OK GET http://192.168.8.145 the url: http://192.168.8.145 alive
+ ERR GET https://192.168.8.145 error sending request for url (https://192.168.8.145/)

@@ -226,28 +226,8 @@ pub(crate) fn bootstrap_layout(
 }
 
 pub(crate) fn focus_control_shell_pane(cwd: &PathBuf) -> Result<String, String> {
-    let cfg = config();
-    match ensure_session(&cfg)? {
-        EnsureResult::Spawned => match bootstrap_layout(cwd, None)? {
-            BootstrapResult::Continue | BootstrapResult::Launched => {}
-        },
-        EnsureResult::Inside | EnsureResult::Existing => {
-            ensure_managed_tabs(&cfg, cwd, None)?;
-        }
-    }
-
-    focus_tab(&cfg, CONTROL_TAB)?;
-    let status = Command::new("zellij")
-        .args(["--session", &cfg.session, "action", "move-focus", "down"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|e| format!("zellij 聚焦 Control shell 失败: {e}"))?;
-    if !status.success() {
-        return Err("zellij 聚焦 Control shell 失败".to_string());
-    }
-    Ok("zellij -> Control/workspace-shell".to_string())
+    open_shell_pane_in_tab(CONTROL_TAB, cwd, cwd, Some("control-workspace".to_string()))
+        .map(|msg| format!("{msg} | Control shell 已打开"))
 }
 
 fn ensure_managed_tabs(
@@ -293,7 +273,56 @@ fn ensure_managed_tabs_with_assets(
             let _ = refresh_ms;
         }
     }
+    ensure_control_surface_present(cfg, workspace, refresh_ms)?;
     Ok(())
+}
+
+fn ensure_control_surface_present(
+    cfg: &ZellijConfig,
+    workspace: &Path,
+    refresh_ms: Option<u64>,
+) -> Result<(), String> {
+    if resolve_named_pane_tab(workspace, &cfg.session, "rscan-control").is_some() {
+        return Ok(());
+    }
+    focus_tab(cfg, CONTROL_TAB)?;
+    let exe = std::env::current_exe()
+        .unwrap_or_else(|_| PathBuf::from("rscan"))
+        .display()
+        .to_string();
+    let refresh = refresh_ms.unwrap_or(220);
+    let ws = shell_quote(&workspace.display().to_string());
+    let cmd = format!(
+        "RSCAN_ZELLIJ_BOOTSTRAP=1 RSCAN_ZELLIJ_ACTIVE_TAB={} {} tui --refresh-ms {} --workspace {}",
+        CONTROL_TAB,
+        shell_quote(&exe),
+        refresh,
+        ws
+    );
+    let status = Command::new("zellij")
+        .args([
+            "--session",
+            &cfg.session,
+            "action",
+            "new-pane",
+            "--cwd",
+            &workspace.display().to_string(),
+            "--name",
+            "rscan-control",
+            "--",
+        ])
+        .arg(default_shell())
+        .args(["-lc", &cmd])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map_err(|e| format!("zellij 重建 Control pane 失败: {e}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err("zellij 重建 Control pane 失败".to_string())
+    }
 }
 
 fn attach_session(cfg: &ZellijConfig) -> Result<(), String> {
@@ -351,6 +380,10 @@ fn normalize_managed_tab_name(input: &str) -> Option<&'static str> {
         "reverse" | "rev" | "r" => Some(REVERSE_TAB),
         _ => None,
     }
+}
+
+fn shell_quote(input: &str) -> String {
+    format!("'{}'", input.replace('\'', "'\"'\"'"))
 }
 
 #[cfg(test)]

@@ -126,25 +126,27 @@ pub(crate) fn run_reverse_deck(
     let mut state = ReverseDeckState::new(root_ws, project)?;
     let mut terminal = enter_alt_terminal()?;
 
-    let res = loop {
-        state.refresh(false)?;
-        terminal
-            .draw(|f| draw_deck(f, &state))
-            .map_err(RustpenError::Io)?;
+    let res = (|| -> Result<(), RustpenError> {
+        loop {
+            state.refresh(false)?;
+            terminal
+                .draw(|f| draw_deck(f, &state))
+                .map_err(RustpenError::Io)?;
 
-        if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
-            continue;
+            if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
+                continue;
+            }
+            let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
+                continue;
+            };
+            if key.kind != KeyEventKind::Press {
+                continue;
+            }
+            if state.handle_key(key.code)? {
+                return Ok(());
+            }
         }
-        let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
-            continue;
-        };
-        if key.kind != KeyEventKind::Press {
-            continue;
-        }
-        if state.handle_key(key.code)? {
-            break Ok(());
-        }
-    };
+    })();
 
     leave_alt_terminal(&mut terminal).ok();
     res

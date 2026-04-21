@@ -129,7 +129,11 @@ pub(crate) fn draw_frame(f: &mut Frame<'_>, ctx: &RenderCtx<'_>) {
                 )
                 .split(outer[1]);
             panes::draw_tasks_pane(f, body[0], ctx);
-            panes::draw_active_pane(f, body[1], ctx);
+            let center = match ctx.pane {
+                MainPane::Tasks | MainPane::Results => MainPane::Dashboard,
+                pane => pane,
+            };
+            panes::draw_pane(f, body[1], ctx, center);
             panes::draw_results_pane(f, body[2], ctx);
         }
     }

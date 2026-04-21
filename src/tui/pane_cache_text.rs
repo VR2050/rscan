@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use ratatui::style::{Color, Modifier, Style};
@@ -8,8 +9,8 @@ use crate::cores::engine::task::TaskStatus;
 
 use super::models::{ProjectEntry, ProjectTemplate, TaskView};
 use super::task_store::{
-    load_log_tail, load_path_tail, load_text_artifact_snippets, task_has_displayable_result,
-    task_has_log_output, task_has_previewable_artifact,
+    ResultState, load_log_tail, load_path_tail, load_text_artifact_snippets,
+    task_has_displayable_result, task_previewable_artifact_count, task_result_state,
 };
 use super::view::line_s;
 
@@ -43,21 +44,10 @@ pub(crate) fn build_result_list_items(
             let task = &all_tasks[idx];
             let (status_label, status_color) = result_status_badge(task);
             let summary = task_result_summary(task);
+            let previewable_count = task_previewable_artifact_count(task);
             let artifact_count = task.meta.artifacts.len();
-            let result_state = if task_has_previewable_artifact(task) {
-                "artifact"
-            } else if task_has_log_output(task) {
-                "logs"
-            } else {
-                "empty"
-            };
-            let result_color = if task_has_previewable_artifact(task) {
-                Color::LightGreen
-            } else if task_has_log_output(task) {
-                Color::Yellow
-            } else {
-                Color::LightRed
-            };
+            let result_state = task_result_state(task);
+            let result_color = result_state_color(result_state);
             let runtime = if task.runtime_binding().is_some() {
                 "bound"
             } else {
@@ -84,19 +74,20 @@ pub(crate) fn build_result_list_items(
                     )),
                 ]),
                 Line::from(vec![
+                    Span::styled(summary, Style::default().fg(Color::White)),
+                    Span::raw("  "),
                     Span::styled(
-                        format!("art:{artifact_count:<2} "),
+                        format!("art:{previewable_count}/{artifact_count:<2} "),
                         Style::default().fg(Color::LightBlue),
                     ),
                     Span::styled(
-                        format!("res:{result_state:<8} "),
+                        format!("res:{} ", result_state.label()),
                         Style::default().fg(result_color),
                     ),
                     Span::styled(
                         format!("rt:{runtime:<5} "),
                         Style::default().fg(Color::DarkGray),
                     ),
-                    Span::raw(summary),
                 ]),
             ])
         })
@@ -104,10 +95,16 @@ pub(crate) fn build_result_list_items(
 }
 
 fn result_status_badge(task: &TaskView) -> (&'static str, Color) {
-    if task.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(task) {
-        ("EMPTY", Color::LightRed)
-    } else {
-        status_badge(&task.meta.status)
+    status_badge(&task.meta.status)
+}
+
+fn result_state_color(state: ResultState) -> Color {
+    match state {
+        ResultState::ArtifactReady => Color::LightGreen,
+        ResultState::LogsOnly => Color::Yellow,
+        ResultState::Launching => Color::LightBlue,
+        ResultState::NonPreviewableArtifact => Color::LightMagenta,
+        ResultState::Empty => Color::LightRed,
     }
 }
 
@@ -143,7 +140,7 @@ pub(crate) fn build_dashboard_recent_items(
 
 pub(crate) fn build_script_file_items(scripts: &[PathBuf]) -> Vec<ListItem<'static>> {
     if scripts.is_empty() {
-        return vec![ListItem::new("<empty> (N 创建新脚本)")];
+        return vec![ListItem::new("<empty> (N 创建 .rs 脚本)")];
     }
 
     scripts
@@ -381,13 +378,32 @@ fn task_result_summary(task: &TaskView) -> String {
         return summary.chars().take(42).collect();
     }
 
-    if task.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(task) {
-        return "completed but no result payload".to_string();
+    if task_result_state(task) == ResultState::NonPreviewableArtifact {
+        let artifact_names = task
+            .meta
+            .artifacts
+            .iter()
+            .filter_map(|path| {
+                path.file_name()
+                    .map(|name| name.to_string_lossy().to_string())
+            })
+            .take(2)
+            .collect::<Vec<_>>();
+        if !artifact_names.is_empty() {
+            return format!("artifact only: {}", artifact_names.join(", "))
+                .chars()
+                .take(42)
+                .collect();
+        }
     }
 
     let note = task.meta.note.as_deref().unwrap_or("").trim();
     if !note.is_empty() {
         return note.chars().take(42).collect();
+    }
+
+    if task.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(task) {
+        return "completed but no previewable result".to_string();
     }
 
     let artifact_names = task
@@ -440,6 +456,9 @@ fn structured_result_summary(task: &TaskView) -> Option<String> {
 
 fn host_result_summary(task: &TaskView) -> Option<String> {
     for path in &task.meta.artifacts {
+        if let Some(summary) = summarize_host_structured_artifact(path) {
+            return Some(summary);
+        }
         let lines = load_path_tail(path, 20);
         for line in &lines {
             if let Some(rest) = line.split("open=").nth(1) {
@@ -450,6 +469,10 @@ fn host_result_summary(task: &TaskView) -> Option<String> {
                 }
                 return Some(format!("open={open_count} ports={}", ports.join(",")));
             }
+        }
+        let ports = extract_port_rows(&lines);
+        if !ports.is_empty() {
+            return Some(format!("ports={}", ports.join(",")));
         }
     }
 
@@ -463,35 +486,169 @@ fn host_result_summary(task: &TaskView) -> Option<String> {
         .find_map(|line| line.contains("open=").then(|| condense_line(line)))
 }
 
+fn summarize_host_structured_artifact(path: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(path).ok()?;
+    let value = serde_json::from_str::<serde_json::Value>(&text).ok()?;
+    summarize_host_json_value(&value)
+}
+
+fn summarize_host_json_value(value: &serde_json::Value) -> Option<String> {
+    let mut open_ports = BTreeSet::new();
+    let mut services = BTreeSet::new();
+
+    match value {
+        serde_json::Value::Array(rows) => {
+            for row in rows {
+                let is_open = row
+                    .get("status")
+                    .and_then(|v| v.as_str())
+                    .is_some_and(|status| status.eq_ignore_ascii_case("open"));
+                if is_open && let Some(port) = row.get("port").and_then(|v| v.as_u64()) {
+                    open_ports.insert(port as u16);
+                }
+                if let Some(meta_pairs) = row.get("metadata").and_then(|v| v.as_array()) {
+                    for item in meta_pairs {
+                        let Some(pair) = item.as_array() else {
+                            continue;
+                        };
+                        if pair.len() != 2 {
+                            continue;
+                        }
+                        let Some(key) = pair[0].as_str() else {
+                            continue;
+                        };
+                        if key != "service" {
+                            continue;
+                        }
+                        if let Some(service) = pair[1].as_str()
+                            && !service.trim().is_empty()
+                        {
+                            services.insert(service.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        serde_json::Value::Object(map) => {
+            if let Some(ports) = map.get("open_ports").and_then(|v| v.as_array()) {
+                for p in ports.iter().filter_map(|v| v.as_u64()) {
+                    open_ports.insert(p as u16);
+                }
+            }
+            if let Some(details) = map.get("details").and_then(|v| v.as_array()) {
+                for detail in details {
+                    if let Some(port) = detail.get("port").and_then(|v| v.as_u64()) {
+                        open_ports.insert(port as u16);
+                    }
+                    if let Some(service) = detail.get("service").and_then(|v| v.as_str())
+                        && !service.trim().is_empty()
+                    {
+                        services.insert(service.to_string());
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+
+    if open_ports.is_empty() && services.is_empty() {
+        return None;
+    }
+
+    let mut parts = Vec::new();
+    if !open_ports.is_empty() {
+        parts.push(format!(
+            "ports={}",
+            open_ports
+                .iter()
+                .take(6)
+                .map(|port| port.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        ));
+    }
+    if !services.is_empty() {
+        parts.push(format!(
+            "services={}",
+            services
+                .iter()
+                .take(4)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(",")
+        ));
+    }
+    Some(parts.join(" "))
+}
+
 fn extract_port_rows(lines: &[String]) -> Vec<String> {
     lines
         .iter()
         .filter_map(|line| {
             let trimmed = line.trim();
-            if trimmed.is_empty() || !trimmed.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
-                return None;
-            }
-            let cols = trimmed.split_whitespace().collect::<Vec<_>>();
-            let port = cols.first().copied()?;
-            let service = cols.get(2).copied().filter(|col| !col.ends_with(')'));
+            let (port, service) = parse_port_row(trimmed)?;
             Some(match service {
-                Some(svc) if !svc.chars().all(|ch| ch.is_ascii_digit()) => format!("{port}/{svc}"),
-                _ => port.to_string(),
+                Some(svc) => format!("{port}/{svc}"),
+                None => port,
             })
         })
         .take(4)
         .collect()
 }
 
+fn parse_port_row(trimmed: &str) -> Option<(String, Option<String>)> {
+    if trimmed.is_empty() || trimmed.starts_with("IP ") || trimmed.contains(" PORT ") {
+        return None;
+    }
+    let cols = trimmed.split_whitespace().collect::<Vec<_>>();
+    if cols.len() < 2 {
+        return None;
+    }
+    let port = if cols.first()?.chars().all(|ch| ch.is_ascii_digit()) {
+        cols.first()?.to_string()
+    } else if cols[0].parse::<std::net::IpAddr>().is_ok()
+        && cols[1].chars().all(|ch| ch.is_ascii_digit())
+    {
+        cols[1].to_string()
+    } else {
+        return None;
+    };
+    let service = parse_service_from_meta(trimmed);
+    Some((port, service))
+}
+
+fn parse_service_from_meta(line: &str) -> Option<String> {
+    let marker = "(\"service\", \"";
+    let (_, rest) = line.split_once(marker)?;
+    let (svc, _) = rest.split_once("\")")?;
+    let svc = svc.trim();
+    if svc.is_empty() {
+        None
+    } else {
+        Some(svc.to_string())
+    }
+}
+
 fn web_result_summary(task: &TaskView) -> Option<String> {
-    let artifact_hits = load_text_artifact_snippets(task, 24, 3)
+    let artifact_lines = load_text_artifact_snippets(task, 24, 3)
         .into_iter()
         .flat_map(|(_, lines)| lines.into_iter())
-        .filter_map(|line| summarize_web_hit(&line))
+        .collect::<Vec<_>>();
+
+    let artifact_hits = artifact_lines
+        .iter()
+        .filter_map(|line| summarize_web_hit(line))
         .take(3)
         .collect::<Vec<_>>();
     if !artifact_hits.is_empty() {
         return Some(artifact_hits.join(" | "));
+    }
+    let artifact_errors = artifact_lines
+        .iter()
+        .filter_map(|line| summarize_web_error(line))
+        .collect::<Vec<_>>();
+    if !artifact_errors.is_empty() {
+        return Some(format_web_error_summary(&artifact_errors));
     }
 
     let stdout = load_log_tail(&task.dir, "stdout.log", 24);
@@ -502,6 +659,13 @@ fn web_result_summary(task: &TaskView) -> Option<String> {
         .collect::<Vec<_>>();
     if !hits.is_empty() {
         return Some(hits.join(" | "));
+    }
+    let errors = stdout
+        .iter()
+        .filter_map(|line| summarize_web_error(line))
+        .collect::<Vec<_>>();
+    if !errors.is_empty() {
+        return Some(format_web_error_summary(&errors));
     }
     stdout
         .iter()
@@ -577,6 +741,29 @@ fn summarize_web_hit(line: &str) -> Option<String> {
         return Some(condense_line(trimmed));
     }
     Some(format!("{first} {second} {url}"))
+}
+
+fn summarize_web_error(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    if lower.starts_with("error ")
+        || lower.starts_with("err ")
+        || lower.contains("networkerror")
+        || lower.contains("error:")
+        || lower.contains("error sending request")
+        || lower.contains("timeout")
+    {
+        return Some(condense_line(trimmed));
+    }
+    None
+}
+
+fn format_web_error_summary(errors: &[String]) -> String {
+    let first = errors.first().cloned().unwrap_or_default();
+    format!("errors={} {first}", errors.len())
 }
 
 fn summarize_vuln_line(line: &str) -> Option<String> {
@@ -689,8 +876,46 @@ mod tests {
 
         let items = build_result_list_items(std::slice::from_ref(&task), &[0]);
         let rendered = format!("{:?}", items[0]);
-        assert!(rendered.contains("art:1"));
+        assert!(rendered.contains("art:1/1"));
+        assert!(rendered.contains("artifact-ready"));
         assert!(rendered.contains("https://example.com/admin"));
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn host_result_summary_reads_ports_and_services_from_json_artifact() {
+        let dir = temp_task_dir("host_json_summary");
+        std::fs::create_dir_all(&dir).unwrap();
+        let artifact = dir.join("host-port-result.json");
+        std::fs::write(
+            &artifact,
+            r#"[{"target_ip":"127.0.0.1","port":80,"protocol":"Tcp","status":"Open","metadata":[["service","http"]]},{"target_ip":"127.0.0.1","port":443,"protocol":"Tcp","status":"Open","metadata":[["service","https"]]}]"#,
+        )
+        .unwrap();
+        let task = build_task("host", artifact, "127.0.0.1");
+
+        let summary = host_result_summary(&task).unwrap();
+        assert!(summary.contains("ports=80,443"));
+        assert!(summary.contains("services=http,https"));
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn host_result_summary_parses_ip_port_style_raw_rows() {
+        let dir = temp_task_dir("host_raw_ip_port");
+        std::fs::create_dir_all(&dir).unwrap();
+        let artifact = dir.join("host-tcp-result.txt");
+        std::fs::write(
+            &artifact,
+            "             IP   PORT PROTO    STATUS    LAT(ms) META\n      127.0.0.1     80   tcp      open          1 [(\"service\", \"http\")]\n",
+        )
+        .unwrap();
+        let task = build_task("host", artifact, "127.0.0.1");
+
+        let summary = host_result_summary(&task).unwrap();
+        assert!(summary.contains("ports=80/http"));
 
         let _ = std::fs::remove_dir_all(dir);
     }
@@ -710,6 +935,25 @@ mod tests {
 
         let summary = web_result_summary(&task).unwrap();
         assert!(summary.contains("https://example.com/fallback"));
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn web_result_summary_reports_error_count_when_no_hits() {
+        let dir = temp_task_dir("web_error_summary");
+        std::fs::create_dir_all(&dir).unwrap();
+        let artifact = dir.join("web-dir-result.txt");
+        std::fs::write(
+            &artifact,
+            "ERROR network timeout on request\nERR dial tcp 127.0.0.1: connection refused\n",
+        )
+        .unwrap();
+        let task = build_task("web", artifact, "https://example.com");
+
+        let summary = web_result_summary(&task).unwrap();
+        assert!(summary.contains("errors=2"));
+        assert!(summary.to_ascii_lowercase().contains("timeout") || summary.contains("ERR"));
 
         let _ = std::fs::remove_dir_all(dir);
     }

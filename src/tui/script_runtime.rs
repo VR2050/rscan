@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, TryRecvError};
@@ -12,6 +12,7 @@ use crate::cores::engine::task::{
     new_task_id, now_epoch_secs, write_task_meta,
 };
 use crate::errors::RustpenError;
+use crate::tui::zellij;
 
 #[derive(Clone)]
 pub(crate) struct ScriptTaskCtx {
@@ -39,9 +40,8 @@ pub(crate) fn load_script_files(dir: &PathBuf) -> Result<Vec<PathBuf>, RustpenEr
         if !p.is_file() {
             continue;
         }
-        match p.extension().and_then(|s| s.to_str()) {
-            Some("py") | Some("rs") => out.push(p),
-            _ => {}
+        if matches!(p.extension().and_then(|s| s.to_str()), Some("rs")) {
+            out.push(p);
         }
     }
     out.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
@@ -75,17 +75,24 @@ pub(crate) fn switch_script_selection(
     *script_dirty = false;
 }
 
-fn script_template_for(name: &str) -> String {
-    if name.ends_with(".rs") {
-        return "fn main() {\n    println!(\"hello from rscan script\");\n}\n".to_string();
-    }
-    "print(\"hello from rscan script\")\n".to_string()
+fn script_template_for(_name: &str) -> String {
+    "fn main() {\n    println!(\"hello from rscan script\");\n}\n".to_string()
 }
 
 pub(crate) fn create_script_file(dir: &PathBuf, name: &str) -> Result<PathBuf, RustpenError> {
     let mut final_name = name.trim().to_string();
-    if !final_name.ends_with(".py") && !final_name.ends_with(".rs") {
-        final_name.push_str(".py");
+    if final_name.is_empty() {
+        return Err(RustpenError::ParseError(
+            "script name cannot be empty".to_string(),
+        ));
+    }
+    if final_name.ends_with(".py") {
+        return Err(RustpenError::ParseError(
+            "仅支持 Rust 脚本，请使用 .rs".to_string(),
+        ));
+    }
+    if !final_name.ends_with(".rs") {
+        final_name.push_str(".rs");
     }
     let path = dir.join(final_name.clone());
     if path.exists() {
@@ -110,6 +117,79 @@ pub(crate) fn save_current_script(
     };
     fs::write(path, script_buffer).map_err(RustpenError::Io)?;
     Ok(format!("saved: {}", path.display()))
+}
+
+fn command_available(cmd: &str) -> bool {
+    Command::new(cmd)
+        .arg("--version")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+fn resolve_helix_command() -> Option<String> {
+    if let Ok(custom) = std::env::var("RSCAN_SCRIPT_EDITOR") {
+        let custom = custom.trim();
+        if !custom.is_empty() {
+            return Some(custom.to_string());
+        }
+    }
+    if command_available("hx") {
+        return Some("hx".to_string());
+    }
+    if command_available("helix") {
+        return Some("helix".to_string());
+    }
+    None
+}
+
+fn shell_quote_for_sh(raw: &str) -> String {
+    let escaped = raw.replace('\'', "'\"'\"'");
+    format!("'{escaped}'")
+}
+
+pub(crate) fn open_script_in_helix(
+    path: &PathBuf,
+    workspace: &PathBuf,
+) -> Result<String, RustpenError> {
+    if !path.exists() {
+        return Err(RustpenError::ParseError(format!(
+            "script file not found: {}",
+            path.display()
+        )));
+    }
+    let editor = resolve_helix_command().ok_or_else(|| {
+        RustpenError::ParseError(
+            "未找到 helix，可安装 hx/helix 或设置 RSCAN_SCRIPT_EDITOR".to_string(),
+        )
+    })?;
+    if zellij::is_managed_runtime() {
+        let cmd = format!(
+            "{} {}",
+            editor,
+            shell_quote_for_sh(&path.display().to_string())
+        );
+        let pane_name = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(|name| format!("script-edit:{name}"))
+            .unwrap_or_else(|| "script-edit".to_string());
+        zellij::open_command_pane_in_tab(
+            zellij::WORK_TAB,
+            workspace,
+            &cmd,
+            workspace,
+            Some(pane_name),
+        )
+        .map_err(RustpenError::ParseError)?;
+        return Ok(format!("helix 已在 Work pane 打开: {}", path.display()));
+    }
+    Err(RustpenError::ParseError(
+        "当前不是 zellij 托管模式，无法在独立 pane 打开 helix".to_string(),
+    ))
 }
 
 fn update_script_task_progress(

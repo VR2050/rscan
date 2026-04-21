@@ -30,11 +30,27 @@ pub(super) fn handle_results_key(
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::PageDown => {
-            *ctx.effect_scroll = ctx.effect_scroll.saturating_add(5);
+            *ctx.effect_scroll = ctx.effect_scroll.saturating_add(12);
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::PageUp => {
-            *ctx.effect_scroll = ctx.effect_scroll.saturating_sub(5);
+            *ctx.effect_scroll = ctx.effect_scroll.saturating_sub(12);
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('d') => {
+            *ctx.effect_scroll = ctx.effect_scroll.saturating_add(3);
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Char('u') => {
+            *ctx.effect_scroll = ctx.effect_scroll.saturating_sub(3);
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::Home => {
+            *ctx.effect_scroll = 0;
+            Ok(PaneNormalAction::Handled)
+        }
+        KeyCode::End => {
+            *ctx.effect_scroll = u16::MAX;
             Ok(PaneNormalAction::Handled)
         }
         KeyCode::Char('f') => {

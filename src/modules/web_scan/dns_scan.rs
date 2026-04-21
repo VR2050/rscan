@@ -169,7 +169,7 @@ async fn build_probe_candidates(
 
 fn status_in_scope(status: u16, cfg: &ModuleScanConfig) -> bool {
     let min_ok = cfg.status_min.unwrap_or(200);
-    let max_ok = cfg.status_max.unwrap_or(399);
+    let max_ok = cfg.status_max.unwrap_or(403);
     status >= min_ok && status <= max_ok
 }
 
@@ -195,25 +195,50 @@ async fn probe_candidate(
     fetcher: &Fetcher,
     cfg: &ModuleScanConfig,
     cand: ProbeCandidate,
-) -> Option<ModuleScanResult> {
+) -> Result<Option<ModuleScanResult>, RustpenError> {
     match cand {
-        ProbeCandidate::Local { request, .. } => match fetcher.fetch_with_request(request).await {
-            Ok(resp) if status_in_scope(resp.status, cfg) => Some(to_module_result(resp)),
-            _ => None,
-        },
+        ProbeCandidate::Local { fqdn, request } => {
+            match fetcher.fetch_with_request(request).await {
+                Ok(resp) if status_in_scope(resp.status, cfg) => Ok(Some(ModuleScanResult {
+                    // Local vhost mode uses a marker URL only for connection routing;
+                    // expose the discovered vhost URL in results for cleaner output.
+                    url: format!("http://{fqdn}"),
+                    status: resp.status,
+                    content_len: Some(resp.body.len() as u64),
+                })),
+                Ok(_) => Ok(None),
+                Err(err) => Err(RustpenError::NetworkError(format!(
+                    "dns probe failed for {fqdn}: {err}"
+                ))),
+            }
+        }
         ProbeCandidate::Remote { fqdn, word, port } => {
             let req_http = build_dns_http_request("http", &fqdn, port, &word, cfg);
             match fetcher.fetch_with_request(req_http).await {
-                Ok(resp) if status_in_scope(resp.status, cfg) => Some(to_module_result(resp)),
-                Ok(_) => None,
+                Ok(resp) if status_in_scope(resp.status, cfg) => Ok(Some(to_module_result(resp))),
+                Ok(_) => {
+                    // Fallback to HTTPS even when HTTP is out-of-scope, so HTTPS-only hosts
+                    // still have a chance to be discovered.
+                    let req_https = build_dns_http_request("https", &fqdn, port, &word, cfg);
+                    match fetcher.fetch_with_request(req_https).await {
+                        Ok(resp) if status_in_scope(resp.status, cfg) => {
+                            Ok(Some(to_module_result(resp)))
+                        }
+                        Ok(_) => Ok(None),
+                        Err(_) => Ok(None),
+                    }
+                }
                 Err(_) => {
                     // Fallback to HTTPS when HTTP connection fails.
                     let req_https = build_dns_http_request("https", &fqdn, port, &word, cfg);
                     match fetcher.fetch_with_request(req_https).await {
                         Ok(resp) if status_in_scope(resp.status, cfg) => {
-                            Some(to_module_result(resp))
+                            Ok(Some(to_module_result(resp)))
                         }
-                        _ => None,
+                        Ok(_) => Ok(None),
+                        Err(https_err) => Err(RustpenError::NetworkError(format!(
+                            "dns probe failed for {fqdn} via http+https: {https_err}"
+                        ))),
                     }
                 }
             }
@@ -259,11 +284,30 @@ pub async fn run_subdomain_burst(
         .buffer_unordered(cfg.concurrency.max(1))
         .collect::<Vec<_>>()
         .await;
-    for item in results.into_iter().flatten() {
-        if cfg.dedupe_results && !seen.insert(item.url.clone()) {
-            continue;
+    let mut err_count = 0usize;
+    let mut first_error = None::<String>;
+    for item in results {
+        match item {
+            Ok(Some(row)) => {
+                if cfg.dedupe_results && !seen.insert(row.url.clone()) {
+                    continue;
+                }
+                alive.push(row);
+            }
+            Ok(None) => {}
+            Err(err) => {
+                err_count += 1;
+                if first_error.is_none() {
+                    first_error = Some(err.to_string());
+                }
+            }
         }
-        alive.push(item);
+    }
+    if alive.is_empty() && err_count > 0 {
+        return Err(RustpenError::NetworkError(format!(
+            "dns scan failed for all probe candidates (errors={err_count}): {}",
+            first_error.unwrap_or_else(|| "unknown error".to_string())
+        )));
     }
     Ok(alive)
 }
@@ -317,12 +361,62 @@ pub fn run_subdomain_burst_stream(
             .buffer_unordered(cfg.concurrency.max(1))
             .collect::<Vec<_>>()
             .await;
-        for item in results.into_iter().flatten() {
-            if cfg.dedupe_results && !seen.insert(item.url.clone()) {
-                continue;
+        let mut ok_count = 0usize;
+        let mut err_count = 0usize;
+        let mut first_error = None::<String>;
+        for item in results {
+            match item {
+                Ok(Some(row)) => {
+                    if cfg.dedupe_results && !seen.insert(row.url.clone()) {
+                        continue;
+                    }
+                    ok_count += 1;
+                    let _ = tx.send(Ok(row)).await;
+                }
+                Ok(None) => {}
+                Err(err) => {
+                    err_count += 1;
+                    if first_error.is_none() {
+                        first_error = Some(err.to_string());
+                    }
+                    let _ = tx.send(Err(err)).await;
+                }
             }
-            let _ = tx.send(Ok(item)).await;
+        }
+        if ok_count == 0 && err_count > 0 {
+            let _ = tx
+                .send(Err(RustpenError::NetworkError(format!(
+                    "dns scan failed for all probe candidates (errors={err_count}): {}",
+                    first_error.unwrap_or_else(|| "unknown error".to_string())
+                ))))
+                .await;
         }
     });
     rx
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dns_status_scope_defaults_include_403() {
+        let cfg = ModuleScanConfig::default();
+        assert!(status_in_scope(200, &cfg));
+        assert!(status_in_scope(301, &cfg));
+        assert!(status_in_scope(401, &cfg));
+        assert!(status_in_scope(403, &cfg));
+        assert!(!status_in_scope(404, &cfg));
+    }
+
+    #[test]
+    fn dns_status_scope_honors_custom_range() {
+        let cfg = ModuleScanConfig {
+            status_min: Some(200),
+            status_max: Some(399),
+            ..Default::default()
+        };
+        assert!(status_in_scope(301, &cfg));
+        assert!(!status_in_scope(401, &cfg));
+    }
 }

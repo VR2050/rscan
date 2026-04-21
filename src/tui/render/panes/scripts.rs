@@ -1,6 +1,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, List, ListState, Paragraph};
 
 use super::{RenderCtx, pane_border_style};
@@ -9,7 +10,7 @@ use crate::tui::models::MainPane;
 pub(super) fn draw_scripts(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
     let body = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(28), Constraint::Percentage(72)].as_ref())
+        .constraints([Constraint::Percentage(24), Constraint::Percentage(76)].as_ref())
         .split(area);
 
     let mut state = ListState::default();
@@ -36,14 +37,16 @@ pub(super) fn draw_scripts(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
 
     let right = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)].as_ref())
+        .constraints([Constraint::Min(8), Constraint::Length(7)].as_ref())
         .split(body[1]);
 
-    let mut title = "Editor".to_string();
+    let mut title = "Edit".to_string();
     if let Some(path) = ctx.scripts.get(ctx.script_selected) {
         title = format!(
-            "Editor: {}{}",
-            path.display(),
+            "Edit: {}{}",
+            path.file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("<unknown>"),
             if ctx.script_dirty { " *" } else { "" }
         );
     }
@@ -55,11 +58,25 @@ pub(super) fn draw_scripts(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
     );
     f.render_widget(editor, right[0]);
 
-    let out = Paragraph::new(ctx.script_output_lines.to_vec()).block(
+    let tail = if ctx.script_output_lines.is_empty() {
+        vec![
+            Line::from("N:new(.rs)  I/H:helix  S:save  R:run"),
+            Line::from("日志为空"),
+        ]
+    } else {
+        ctx.script_output_lines
+            .iter()
+            .rev()
+            .take(5)
+            .rev()
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    let out = Paragraph::new(tail).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(pane_border_style(ctx, MainPane::Scripts))
-            .title("Output / Logs"),
+            .title("Run Log (tail)"),
     );
     f.render_widget(out, right[1]);
 }

@@ -204,6 +204,11 @@ impl ServiceProbeEngine {
                     result = result.with_meta("service_version", v);
                 }
                 result = result.with_meta("service_confidence", fp.confidence.to_string());
+            } else if let Some(guess) = infer_service_from_banner(resp) {
+                result = result
+                    .with_meta("service", guess.to_string())
+                    .with_meta("service_confidence", "35")
+                    .with_meta("service_inferred", "banner-heuristic");
             }
             if let Some(banner) = p.banner {
                 result = result.with_meta("banner_text", banner);
@@ -211,6 +216,59 @@ impl ServiceProbeEngine {
         }
         result
     }
+}
+
+fn infer_service_from_banner(data: &[u8]) -> Option<&'static str> {
+    let trimmed = trim_ascii_space(data);
+    if trimmed.is_empty() {
+        return None;
+    }
+    if starts_with_ascii_nocase(trimmed, b"HTTP/1.") || starts_with_ascii_nocase(trimmed, b"HTTP/2")
+    {
+        return Some("http");
+    }
+    if starts_with_ascii_nocase(trimmed, b"SSH-") {
+        return Some("ssh");
+    }
+    if starts_with_ascii_nocase(trimmed, b"+OK") && contains_ascii_nocase(trimmed, b"POP3") {
+        return Some("pop3");
+    }
+    if starts_with_ascii_nocase(trimmed, b"* OK") && contains_ascii_nocase(trimmed, b"IMAP") {
+        return Some("imap");
+    }
+    if starts_with_ascii_nocase(trimmed, b"220")
+        && (contains_ascii_nocase(trimmed, b"SMTP") || contains_ascii_nocase(trimmed, b"ESMTP"))
+    {
+        return Some("smtp");
+    }
+    None
+}
+
+fn trim_ascii_space(data: &[u8]) -> &[u8] {
+    let mut start = 0usize;
+    let mut end = data.len();
+    while start < end && data[start].is_ascii_whitespace() {
+        start += 1;
+    }
+    while end > start && data[end - 1].is_ascii_whitespace() {
+        end -= 1;
+    }
+    &data[start..end]
+}
+
+fn starts_with_ascii_nocase(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack
+        .get(..needle.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(needle))
+}
+
+fn contains_ascii_nocase(haystack: &[u8], needle: &[u8]) -> bool {
+    if needle.is_empty() || haystack.len() < needle.len() {
+        return false;
+    }
+    haystack
+        .windows(needle.len())
+        .any(|window| window.eq_ignore_ascii_case(needle))
 }
 
 impl Default for ServiceProbeEngine {
@@ -464,6 +522,9 @@ fn unescape_nmap_payload(s: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cores::engine::scan_result::{ScanResult, ScanStatus};
+    use crate::cores::host::Protocol;
+    use std::net::IpAddr;
 
     #[test]
     fn parse_probe_and_match_minimal() {
@@ -537,5 +598,30 @@ match ok m|^HELLO$| p/ok/
         let engine = ServiceProbeEngine::from_nmap_text(text).unwrap();
         let fp = engine.identify(b"HELLO").unwrap();
         assert_eq!(fp.service, "ok");
+    }
+
+    #[test]
+    fn enrich_scan_result_falls_back_to_banner_heuristic() {
+        let engine = ServiceProbeEngine::new();
+        let result = ScanResult::new(
+            "127.0.0.1".parse::<IpAddr>().unwrap(),
+            Protocol::Tcp,
+            ScanStatus::Open,
+        )
+        .with_port(8080)
+        .with_response(b"HTTP/1.1 200 OK\r\nServer: demo\r\n\r\n".to_vec());
+        let enriched = engine.enrich_scan_result(result);
+        assert!(
+            enriched
+                .metadata
+                .iter()
+                .any(|(k, v)| k == "service" && v == "http")
+        );
+        assert!(
+            enriched
+                .metadata
+                .iter()
+                .any(|(k, v)| k == "service_inferred" && v == "banner-heuristic")
+        );
     }
 }

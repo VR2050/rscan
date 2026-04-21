@@ -177,7 +177,7 @@ async fn cli_concurrent_run_from_args_initialization_is_safe() {
 }
 
 #[tokio::test]
-async fn cli_service_detect_requires_probes_file() {
+async fn cli_service_detect_no_longer_requires_explicit_probes_file_flag() {
     let args = vec![
         "rscan",
         "host",
@@ -188,8 +188,10 @@ async fn cli_service_detect_requires_probes_file() {
         "53",
         "--service-detect",
     ];
-    let err = run_from_args(args).await.unwrap_err();
-    assert!(format!("{err}").contains("--service-detect requires --probes-file"));
+    let outcome = run_from_args(args).await;
+    if let Err(err) = outcome {
+        assert!(!format!("{err}").contains("--service-detect requires --probes-file"));
+    }
 }
 
 #[tokio::test]
@@ -258,6 +260,144 @@ async fn cli_fuzz_summary_writes_cluster_lines() {
     assert!(s.contains("summary clusters=2 shown=2 errors=0"));
     assert!(s.contains("cluster status=404 content_len=100 count=2"));
     assert!(s.contains("cluster status=200 content_len=20 count=1"));
+    let _ = fs::remove_file(&tmp);
+}
+
+#[tokio::test]
+async fn cli_fuzz_summary_json_keeps_json_lines() {
+    let tmp = env::temp_dir().join("rscan_cli_fuzz_summary.jsonl");
+    let (tx, rx) = tokio::sync::mpsc::channel(8);
+    tx.send(Err(RustpenError::NetworkError("boom".to_string())))
+        .await
+        .unwrap();
+    drop(tx);
+
+    consume_module_stream_with_summary(
+        rx,
+        Some(tmp.clone()),
+        OutputFormat::Json,
+        None,
+        Some(1),
+        "web.fuzz",
+        2,
+    )
+    .await
+    .unwrap_err();
+
+    let s = tokio::fs::read_to_string(&tmp).await.unwrap();
+    let value: serde_json::Value = serde_json::from_str(&s).unwrap();
+    let rows = value.as_array().unwrap();
+    assert!(rows.len() >= 2);
+    assert!(
+        rows.iter()
+            .any(|row| row.get("type").and_then(|v| v.as_str()) == Some("summary"))
+    );
+    let _ = fs::remove_file(&tmp);
+}
+
+#[tokio::test]
+async fn cli_consume_module_stream_fails_when_all_items_are_errors() {
+    let tmp = env::temp_dir().join("rscan_cli_stream_all_err.out");
+    let (tx, rx) = tokio::sync::mpsc::channel(8);
+    tx.send(Err(RustpenError::NetworkError("dial failed".to_string())))
+        .await
+        .unwrap();
+    drop(tx);
+
+    let err = consume_module_stream(
+        rx,
+        Some(tmp.clone()),
+        OutputFormat::Raw,
+        None,
+        Some(1),
+        "web.dir",
+    )
+    .await
+    .unwrap_err();
+    assert!(matches!(err, RustpenError::NetworkError(_)));
+
+    let body = tokio::fs::read_to_string(&tmp).await.unwrap();
+    assert!(body.contains("ERROR"));
+    let _ = fs::remove_file(&tmp);
+}
+
+#[tokio::test]
+async fn cli_consume_module_stream_json_writes_array() {
+    let tmp = env::temp_dir().join("rscan_cli_stream_json_array.out");
+    let (tx, rx) = tokio::sync::mpsc::channel(8);
+    tx.send(Ok(ModuleScanResult {
+        url: "http://x/a".to_string(),
+        status: 200,
+        content_len: Some(11),
+    }))
+    .await
+    .unwrap();
+    tx.send(Err(RustpenError::NetworkError("boom".to_string())))
+        .await
+        .unwrap();
+    drop(tx);
+
+    consume_module_stream(
+        rx,
+        Some(tmp.clone()),
+        OutputFormat::Json,
+        None,
+        Some(2),
+        "web.dir",
+    )
+    .await
+    .unwrap();
+
+    let value: serde_json::Value =
+        serde_json::from_str(&tokio::fs::read_to_string(&tmp).await.unwrap()).unwrap();
+    let rows = value.as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert!(rows.iter().any(|row| row.get("url").is_some()));
+    assert!(rows.iter().any(|row| row.get("error").is_some()));
+    let _ = fs::remove_file(&tmp);
+}
+
+#[tokio::test]
+async fn cli_web_live_all_errors_returns_failure() {
+    let tmp = env::temp_dir().join("rscan_cli_web_live_all_err.out");
+    let tmp_str = tmp.to_str().unwrap().to_string();
+    let args = vec![
+        "rscan",
+        "web",
+        "live",
+        "--urls",
+        "http://127.0.0.1:1",
+        "--output",
+        "raw",
+        "--out",
+        &tmp_str,
+    ];
+    let err = run_from_args(args).await.unwrap_err();
+    assert!(matches!(err, RustpenError::NetworkError(_)));
+    let s = tokio::fs::read_to_string(&tmp).await.unwrap();
+    assert!(s.contains("ERR GET http://127.0.0.1:1"));
+    let _ = fs::remove_file(&tmp);
+}
+
+#[tokio::test]
+async fn cli_web_live_accepts_csv_urls_and_keeps_partial_success() {
+    use warp::Filter;
+
+    let route = warp::any().map(|| warp::reply::with_status("ok", warp::http::StatusCode::OK));
+    let (addr, server) = warp::serve(route).bind_ephemeral(([127, 0, 0, 1], 0));
+    tokio::spawn(server);
+
+    let tmp = env::temp_dir().join(format!("rscan_cli_web_live_csv_{}.out", addr.port()));
+    let tmp_str = tmp.to_str().unwrap().to_string();
+    let urls = format!("http://{},http://127.0.0.1:1", addr);
+    let args = vec![
+        "rscan", "web", "live", "--urls", &urls, "--output", "raw", "--out", &tmp_str,
+    ];
+    run_from_args(args).await.unwrap();
+    let s = tokio::fs::read_to_string(&tmp).await.unwrap();
+    assert!(s.contains(&format!("OK GET http://{}", addr)));
+    assert!(s.contains("ERR GET http://127.0.0.1:1"));
+    assert!(!s.contains("builder error"));
     let _ = fs::remove_file(&tmp);
 }
 

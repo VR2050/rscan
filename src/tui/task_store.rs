@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, VecDeque};
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 
 use crate::cores::engine::task::{
@@ -13,6 +13,27 @@ use super::models::{ResultKindFilter, StatusFilter, TaskOrigin, TaskView};
 use super::zellij;
 
 pub(crate) const REVERSE_JOB_RUNTIME_FILE: &str = "task-runtime.json";
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum ResultState {
+    Launching,
+    ArtifactReady,
+    LogsOnly,
+    NonPreviewableArtifact,
+    Empty,
+}
+
+impl ResultState {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            ResultState::Launching => "launching",
+            ResultState::ArtifactReady => "artifact-ready",
+            ResultState::LogsOnly => "logs-only",
+            ResultState::NonPreviewableArtifact => "non-previewable-artifact",
+            ResultState::Empty => "empty",
+        }
+    }
+}
 
 pub(crate) fn load_tasks(workspace: PathBuf) -> Result<Vec<TaskView>, RustpenError> {
     let mut metas = load_structured_tasks(workspace.join("tasks"))?;
@@ -37,6 +58,41 @@ pub(crate) fn task_has_previewable_artifact(task: &TaskView) -> bool {
 pub(crate) fn task_has_displayable_result(task: &TaskView) -> bool {
     task_has_previewable_artifact(task) || task_has_log_output(task)
 }
+
+pub(crate) fn task_is_terminal(task: &TaskView) -> bool {
+    matches!(
+        task.meta.status,
+        TaskStatus::Succeeded | TaskStatus::Failed | TaskStatus::Canceled
+    )
+}
+
+pub(crate) fn task_previewable_artifact_count(task: &TaskView) -> usize {
+    previewable_artifact_paths(task).len()
+}
+
+fn task_has_existing_artifact(task: &TaskView) -> bool {
+    task.meta.artifacts.iter().any(|path| path.exists())
+}
+
+pub(crate) fn task_result_state(task: &TaskView) -> ResultState {
+    if task_has_previewable_artifact(task) {
+        ResultState::ArtifactReady
+    } else if task_has_log_output(task) {
+        ResultState::LogsOnly
+    } else if task_has_existing_artifact(task) {
+        ResultState::NonPreviewableArtifact
+    } else if task_is_terminal(task) {
+        ResultState::Empty
+    } else {
+        ResultState::Launching
+    }
+}
+
+pub(crate) fn task_should_appear_in_results(task: &TaskView) -> bool {
+    task_is_terminal(task)
+}
+
+const PREVIEW_ARTIFACT_DEPTH: usize = 3;
 
 fn load_structured_tasks(dir: PathBuf) -> Result<Vec<TaskView>, RustpenError> {
     if !dir.exists() {
@@ -330,8 +386,10 @@ pub(crate) fn build_result_indices(
         .iter()
         .enumerate()
         .filter_map(|(idx, t)| {
-            (task_matches_result_filter(t, filter) && task_matches_result_query(t, query))
-                .then_some(idx)
+            (task_should_appear_in_results(t)
+                && task_matches_result_filter(t, filter)
+                && task_matches_result_query(t, query))
+            .then_some(idx)
         })
         .collect();
     if failed_first {
@@ -408,7 +466,7 @@ fn previewable_artifact_paths(task: &TaskView) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
     for artifact in &task.meta.artifacts {
-        collect_previewable_paths(artifact, 1, &mut seen, &mut out);
+        collect_previewable_paths(artifact, PREVIEW_ARTIFACT_DEPTH, &mut seen, &mut out);
     }
     out
 }
@@ -465,16 +523,63 @@ fn is_previewable_text_artifact(path: &Path) -> bool {
     if !path.is_file() {
         return false;
     }
-    matches!(
+    if matches!(
         path.extension()
             .and_then(|value| value.to_str())
             .map(|value| value.to_ascii_lowercase()),
         Some(ext)
             if matches!(
                 ext.as_str(),
-                "txt" | "log" | "json" | "jsonl" | "csv" | "tsv" | "md" | "html" | "htm" | "xml" | "yaml" | "yml"
+                "txt"
+                    | "log"
+                    | "out"
+                    | "json"
+                    | "jsonl"
+                    | "ndjson"
+                    | "csv"
+                    | "tsv"
+                    | "md"
+                    | "html"
+                    | "htm"
+                    | "xml"
+                    | "yaml"
+                    | "yml"
             )
-    )
+    ) {
+        return true;
+    }
+
+    filename_has_text_hint(path) && is_probably_text_file(path)
+}
+
+fn filename_has_text_hint(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|v| v.to_str()) else {
+        return false;
+    };
+    let name = name.to_ascii_lowercase();
+    [
+        "result", "report", "scan", "output", "stdout", "stderr", "artifact", "finding",
+    ]
+    .iter()
+    .any(|hint| name.contains(hint))
+}
+
+fn is_probably_text_file(path: &Path) -> bool {
+    let Ok(mut file) = fs::File::open(path) else {
+        return false;
+    };
+    let mut buf = [0u8; 1024];
+    let Ok(read) = file.read(&mut buf) else {
+        return false;
+    };
+    if read == 0 {
+        return false;
+    }
+    let sample = &buf[..read];
+    if sample.contains(&0) {
+        return false;
+    }
+    std::str::from_utf8(sample).is_ok()
 }
 
 #[cfg(test)]
@@ -765,6 +870,159 @@ mod tests {
         assert_eq!(snippets.len(), 2);
         assert!(snippets[0].0.ends_with("a.txt"));
         assert!(snippets[1].0.ends_with("b.txt"));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn load_text_artifact_snippets_reads_nested_result_file() {
+        let ws = temp_workspace("artifact_nested");
+        let task_dir = ws.join("tasks").join("task-web");
+        let nested = task_dir.join("artifacts").join("scan").join("session");
+        std::fs::create_dir_all(&nested).unwrap();
+        let deep_file = nested.join("web-fuzz-result.txt");
+        std::fs::write(&deep_file, "OK 200 https://example.com/deep\n").unwrap();
+
+        let meta = TaskMeta {
+            id: "task-web".to_string(),
+            kind: "web".to_string(),
+            tags: vec!["https://example.com".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![task_dir.join("artifacts")],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        let snippets = load_text_artifact_snippets(&tasks[0], 8, 2);
+        assert_eq!(snippets.len(), 1);
+        assert!(snippets[0].0.ends_with("web-fuzz-result.txt"));
+        assert!(snippets[0].1.iter().any(|line| line.contains("/deep")));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn preview_text_artifact_accepts_extensionless_result_file() {
+        let ws = temp_workspace("artifact_noext");
+        let task_dir = ws.join("tasks").join("task-host");
+        let artifact_dir = task_dir.join("artifacts");
+        std::fs::create_dir_all(&artifact_dir).unwrap();
+        let no_ext = artifact_dir.join("scan_result");
+        std::fs::write(&no_ext, "open=1 scanned=10\n").unwrap();
+
+        let meta = TaskMeta {
+            id: "task-host".to_string(),
+            kind: "host".to_string(),
+            tags: vec!["127.0.0.1".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![artifact_dir],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        assert!(task_has_previewable_artifact(&tasks[0]));
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn task_result_state_distinguishes_non_previewable_artifacts() {
+        let ws = temp_workspace("non_previewable");
+        let task_dir = ws.join("tasks").join("task-bin");
+        std::fs::create_dir_all(&task_dir).unwrap();
+        let artifact = task_dir.join("artifact.bin");
+        std::fs::write(&artifact, [0u8, 159, 146, 150]).unwrap();
+
+        let meta = TaskMeta {
+            id: "task-bin".to_string(),
+            kind: "reverse".to_string(),
+            tags: vec!["sample".to_string()],
+            status: TaskStatus::Succeeded,
+            created_at: 1,
+            started_at: Some(1),
+            ended_at: Some(2),
+            progress: Some(100.0),
+            note: None,
+            artifacts: vec![artifact],
+            logs: vec![task_dir.join("stdout.log"), task_dir.join("stderr.log")],
+            extra: None,
+        };
+        write_task_meta_file(&task_dir, &meta);
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        assert_eq!(
+            task_result_state(&tasks[0]),
+            ResultState::NonPreviewableArtifact
+        );
+
+        let _ = std::fs::remove_dir_all(ws);
+    }
+
+    #[test]
+    fn build_result_indices_excludes_running_tasks() {
+        let ws = temp_workspace("result_indices_terminal");
+        let running_dir = ws.join("tasks").join("task-running");
+        let done_dir = ws.join("tasks").join("task-done");
+        std::fs::create_dir_all(&running_dir).unwrap();
+        std::fs::create_dir_all(&done_dir).unwrap();
+        std::fs::write(done_dir.join("stdout.log"), "finished\n").unwrap();
+
+        write_task_meta_file(
+            &running_dir,
+            &TaskMeta {
+                id: "task-running".to_string(),
+                kind: "web".to_string(),
+                tags: vec!["example.com".to_string()],
+                status: TaskStatus::Running,
+                created_at: 2,
+                started_at: Some(2),
+                ended_at: None,
+                progress: Some(35.0),
+                note: Some("running".to_string()),
+                artifacts: Vec::new(),
+                logs: vec![
+                    running_dir.join("stdout.log"),
+                    running_dir.join("stderr.log"),
+                ],
+                extra: None,
+            },
+        );
+        write_task_meta_file(
+            &done_dir,
+            &TaskMeta {
+                id: "task-done".to_string(),
+                kind: "web".to_string(),
+                tags: vec!["example.com".to_string()],
+                status: TaskStatus::Succeeded,
+                created_at: 1,
+                started_at: Some(1),
+                ended_at: Some(2),
+                progress: Some(100.0),
+                note: Some("done".to_string()),
+                artifacts: Vec::new(),
+                logs: vec![done_dir.join("stdout.log"), done_dir.join("stderr.log")],
+                extra: None,
+            },
+        );
+
+        let tasks = load_tasks(ws.clone()).unwrap();
+        let indices = build_result_indices(&tasks, ResultKindFilter::All, false, "");
+        assert_eq!(indices.len(), 1);
+        assert_eq!(tasks[indices[0]].meta.id, "task-done");
 
         let _ = std::fs::remove_dir_all(ws);
     }

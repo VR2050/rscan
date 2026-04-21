@@ -123,22 +123,19 @@ fn build_layout_text(workspace: &Path, refresh_ms: Option<u64>) -> String {
         }}
     }}
     tab name="{CONTROL_TAB}" focus=true split_direction="vertical" {{
-        pane name="rscan-control" size="70%" command="{shell}" {{
+        pane name="rscan-control" command="{shell}" {{
             args "-lc" "{control_cmd}"
         }}
-        pane name="workspace-shell" size="30%"
     }}
     tab name="{WORK_TAB}" split_direction="vertical" {{
-        pane name="work-hub" size="42%" command="{shell}" {{
+        pane name="work-hub" command="{shell}" {{
             args "-lc" "{work_hub_cmd}"
         }}
-        pane name="work-shell" size="58%"
     }}
     tab name="{INSPECT_TAB}" split_direction="vertical" {{
-        pane name="inspect-hub" size="44%" command="{shell}" {{
+        pane name="inspect-hub" command="{shell}" {{
             args "-lc" "{inspect_hub_cmd}"
         }}
-        pane name="inspect-shell" size="56%"
     }}
     tab name="{REVERSE_TAB}" {{
         pane name="reverse-surface" command="{shell}" {{
@@ -152,13 +149,7 @@ fn build_layout_text(workspace: &Path, refresh_ms: Option<u64>) -> String {
 }
 
 fn build_config_text() -> String {
-    r#"keybinds {
-    pane {
-        bind "F4" { ToggleFloatingPanes; SwitchToMode "locked"; }
-    }
-}
-"#
-    .to_string()
+    String::new()
 }
 
 fn build_single_tab_layout_text(workspace: &Path, tab: &str, refresh_ms: Option<u64>) -> String {
@@ -186,10 +177,9 @@ fn build_single_tab_layout_text(workspace: &Path, tab: &str, refresh_ms: Option<
         }}
     }}
     tab name="{CONTROL_TAB}" focus=true split_direction="vertical" {{
-        pane name="rscan-control" size="70%" command="{shell}" {{
+        pane name="rscan-control" command="{shell}" {{
             args "-lc" "{control_cmd}"
         }}
-        pane name="workspace-shell" size="30%"
     }}
 }}
 "#,
@@ -245,10 +235,9 @@ fn build_single_tab_layout_text(workspace: &Path, tab: &str, refresh_ms: Option<
         }}
     }}
     tab name="{WORK_TAB}" focus=true split_direction="vertical" {{
-        pane name="work-hub" size="42%" command="{shell}" {{
+        pane name="work-hub" command="{shell}" {{
             args "-lc" "{work_hub_cmd}"
         }}
-        pane name="work-shell" size="58%"
     }}
 }}
 "#,
@@ -275,10 +264,9 @@ fn build_single_tab_layout_text(workspace: &Path, tab: &str, refresh_ms: Option<
         }}
     }}
     tab name="{INSPECT_TAB}" focus=true split_direction="vertical" {{
-        pane name="inspect-hub" size="44%" command="{shell}" {{
+        pane name="inspect-hub" command="{shell}" {{
             args "-lc" "{inspect_hub_cmd}"
         }}
-        pane name="inspect-shell" size="56%"
     }}
 }}
 "#,
@@ -317,10 +305,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn generated_config_binds_f4_to_toggle_picker_visibility() {
+    fn generated_config_does_not_include_legacy_f4_binding() {
         let text = build_config_text();
-        assert!(text.contains("bind \"F4\""));
-        assert!(text.contains("ToggleFloatingPanes"));
-        assert!(text.contains("SwitchToMode \"locked\""));
+        assert!(!text.contains("bind \"F4\""));
+        assert!(!text.contains("ToggleFloatingPanes"));
+    }
+
+    #[test]
+    fn generated_layout_does_not_include_default_shell_panes() {
+        let text = build_layout_text(Path::new("/tmp/ws"), Some(220));
+        assert!(!text.contains("workspace-shell"));
+        assert!(!text.contains("work-shell"));
+        assert!(!text.contains("inspect-shell"));
     }
 }

@@ -62,7 +62,6 @@ pub(crate) fn handle_non_normal_input(
     match *ctx.input_mode {
         InputMode::CommandInput => command::handle_command_input(key, ctx)?,
         InputMode::NoteInput => note::handle_note_input(key.code, ctx),
-        InputMode::ScriptEdit => script::handle_script_edit_input(key.code, ctx),
         InputMode::ScriptNewInput => script::handle_script_new_input(key.code, ctx)?,
         InputMode::ProjectNewInput => project::handle_project_new_input(key.code, ctx)?,
         InputMode::ProjectImportInput => project::handle_project_import_input(key.code, ctx)?,

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use ratatui::style::{Color, Modifier, Style};
@@ -9,7 +9,7 @@ use crate::tui::zellij_registry;
 
 use super::models::{InputMode, ResultKindFilter, TaskTab, TaskView};
 use super::task_store::{
-    task_has_displayable_result, task_has_log_output, task_has_previewable_artifact,
+    ResultState, task_has_displayable_result, task_is_terminal, task_result_state,
 };
 use super::view::{build_event_lines, build_logs_lines, build_notes_lines, line_s};
 
@@ -152,9 +152,6 @@ pub(crate) fn build_result_panel_lines(
         },
         Color::Yellow,
     ));
-    lines.push(line_s(
-        "快捷键: f=模块过滤  o=失败优先排序  /=搜索  x=清空搜索",
-    ));
     lines
 }
 
@@ -279,16 +276,12 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
     lines.push(line_s(""));
     lines.push(section_line("Module Signals"));
     lines.extend(module_signal_lines(cur, &events, &stdout, &stderr));
-    let result_state = if task_has_previewable_artifact(cur) {
-        "artifact-ready"
-    } else if task_has_log_output(cur) {
-        "logs-only"
-    } else if matches!(cur.meta.status, TaskStatus::Queued | TaskStatus::Running) {
-        "launching"
-    } else {
-        "empty"
-    };
-    lines.push(metric_line("result-state", result_state, result_state_color(result_state)));
+    let result_state = task_result_state(cur);
+    lines.push(metric_line(
+        "result-state",
+        result_state.label(),
+        result_state_color(result_state),
+    ));
     let findings = key_findings(cur, &stdout);
     if !findings.is_empty() {
         lines.push(line_s(""));
@@ -296,7 +289,16 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
         for finding in findings {
             lines.push(line_s(&format!("- {finding}")));
         }
-    } else if cur.meta.status == TaskStatus::Succeeded && !task_has_displayable_result(cur) {
+    } else if result_state == ResultState::NonPreviewableArtifact {
+        lines.push(line_s(""));
+        lines.push(section_line("Result Diagnosis"));
+        lines.push(line_s(
+            "- 任务已经产生产物，但当前产物不是可直接预览的文本结果，所以这里显示 non-previewable-artifact",
+        ));
+        lines.push(line_s(
+            "- 这种情况下优先按 A 打开 artifact shell，或让底层命令额外输出 json/txt/csv 结果文件",
+        ));
+    } else if task_is_terminal(cur) && !task_has_displayable_result(cur) {
         lines.push(line_s(""));
         lines.push(section_line("Result Diagnosis"));
         lines.push(line_s(
@@ -305,12 +307,12 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
         lines.push(line_s(
             "- 这通常意味着任务只完成了状态写回，没有把结果正文落到当前 project/tasks/<id>/ 中",
         ));
-    } else if matches!(cur.meta.status, TaskStatus::Queued | TaskStatus::Running)
-        && !task_has_displayable_result(cur)
-    {
+    } else if result_state == ResultState::Launching {
         lines.push(line_s(""));
         lines.push(section_line("Result Diagnosis"));
-        lines.push(line_s("- 任务已进入队列或执行中，结果正文尚未落盘；先看 Recent Events / Stdout Tail"));
+        lines.push(line_s(
+            "- 任务已进入队列或执行中，结果正文尚未落盘；先看 Recent Events / Stdout Tail",
+        ));
     }
     lines.push(line_s(""));
     append_runtime_lines(&mut lines, cur);
@@ -393,12 +395,13 @@ fn build_effect_lines(cur: &TaskView) -> Vec<Line<'static>> {
     lines
 }
 
-fn result_state_color(state: &str) -> Color {
+fn result_state_color(state: ResultState) -> Color {
     match state {
-        "artifact-ready" => Color::Green,
-        "logs-only" => Color::Yellow,
-        "launching" => Color::LightBlue,
-        _ => Color::LightRed,
+        ResultState::ArtifactReady => Color::Green,
+        ResultState::LogsOnly => Color::Yellow,
+        ResultState::Launching => Color::LightBlue,
+        ResultState::NonPreviewableArtifact => Color::LightMagenta,
+        ResultState::Empty => Color::LightRed,
     }
 }
 
@@ -422,6 +425,11 @@ fn key_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {
 fn host_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {
     let mut findings = Vec::new();
     for artifact in &cur.meta.artifacts {
+        let structured = host_findings_from_structured_artifact(artifact);
+        if !structured.is_empty() {
+            findings.extend(structured);
+            break;
+        }
         let lines = super::task_store::load_path_tail(artifact, 24);
         if let Some(header) = lines.iter().find(|line| line.contains("open=")) {
             findings.push(condense_text(header));
@@ -430,11 +438,7 @@ fn host_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {
             .iter()
             .filter_map(|line| {
                 let trimmed = line.trim();
-                if !trimmed.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
-                    return None;
-                }
-                let cols = trimmed.split_whitespace().collect::<Vec<_>>();
-                cols.first().map(|port| (*port).to_string())
+                parse_port_from_host_raw_row(trimmed)
             })
             .take(8)
             .collect::<Vec<_>>();
@@ -455,6 +459,119 @@ fn host_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {
     findings
 }
 
+fn parse_port_from_host_raw_row(trimmed: &str) -> Option<String> {
+    if trimmed.is_empty() || trimmed.starts_with("IP ") || trimmed.contains(" PORT ") {
+        return None;
+    }
+    let cols = trimmed.split_whitespace().collect::<Vec<_>>();
+    if cols.len() < 2 {
+        return None;
+    }
+    if cols.first()?.chars().all(|ch| ch.is_ascii_digit()) {
+        return cols.first().map(|port| (*port).to_string());
+    }
+    if cols[0].parse::<std::net::IpAddr>().is_ok() && cols[1].chars().all(|ch| ch.is_ascii_digit())
+    {
+        return Some(cols[1].to_string());
+    }
+    None
+}
+
+fn host_findings_from_structured_artifact(path: &Path) -> Vec<String> {
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return Vec::new();
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
+        return Vec::new();
+    };
+    extract_host_findings_from_json(&value)
+}
+
+fn extract_host_findings_from_json(value: &serde_json::Value) -> Vec<String> {
+    let mut open_ports = BTreeSet::new();
+    let mut services = BTreeSet::new();
+
+    match value {
+        serde_json::Value::Array(rows) => {
+            for row in rows {
+                let is_open = row
+                    .get("status")
+                    .and_then(|v| v.as_str())
+                    .is_some_and(|status| status.eq_ignore_ascii_case("open"));
+                if is_open && let Some(port) = row.get("port").and_then(|v| v.as_u64()) {
+                    open_ports.insert(port as u16);
+                }
+                if let Some(meta_pairs) = row.get("metadata").and_then(|v| v.as_array()) {
+                    for item in meta_pairs {
+                        let Some(pair) = item.as_array() else {
+                            continue;
+                        };
+                        if pair.len() != 2 {
+                            continue;
+                        }
+                        let Some(key) = pair[0].as_str() else {
+                            continue;
+                        };
+                        if key != "service" {
+                            continue;
+                        }
+                        if let Some(service) = pair[1].as_str()
+                            && !service.trim().is_empty()
+                        {
+                            services.insert(service.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        serde_json::Value::Object(map) => {
+            if let Some(ports) = map.get("open_ports").and_then(|v| v.as_array()) {
+                for p in ports.iter().filter_map(|v| v.as_u64()) {
+                    open_ports.insert(p as u16);
+                }
+            }
+            if let Some(details) = map.get("details").and_then(|v| v.as_array()) {
+                for detail in details {
+                    if let Some(port) = detail.get("port").and_then(|v| v.as_u64()) {
+                        open_ports.insert(port as u16);
+                    }
+                    if let Some(service) = detail.get("service").and_then(|v| v.as_str())
+                        && !service.trim().is_empty()
+                    {
+                        services.insert(service.to_string());
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+
+    let mut findings = Vec::new();
+    if !open_ports.is_empty() {
+        findings.push(format!(
+            "open ports: {}",
+            open_ports
+                .iter()
+                .take(12)
+                .map(|p| p.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    if !services.is_empty() {
+        findings.push(format!(
+            "services: {}",
+            services
+                .iter()
+                .take(6)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    findings
+}
+
 fn web_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {
     let artifact_hits = super::task_store::load_text_artifact_snippets(cur, 24, 3)
         .into_iter()
@@ -466,10 +583,29 @@ fn web_findings(cur: &TaskView, stdout: &[String]) -> Vec<String> {
         return artifact_hits;
     }
 
-    stdout
+    let artifact_errors = super::task_store::load_text_artifact_snippets(cur, 24, 3)
+        .into_iter()
+        .flat_map(|(_, lines)| lines.into_iter())
+        .filter_map(|line| extract_web_error_finding(&line))
+        .take(4)
+        .collect::<Vec<_>>();
+    if !artifact_errors.is_empty() {
+        return artifact_errors;
+    }
+
+    let stdout_hits = stdout
         .iter()
         .filter_map(|line| extract_web_finding(line))
         .take(6)
+        .collect::<Vec<_>>();
+    if !stdout_hits.is_empty() {
+        return stdout_hits;
+    }
+
+    stdout
+        .iter()
+        .filter_map(|line| extract_web_error_finding(line))
+        .take(4)
         .collect()
 }
 
@@ -529,6 +665,18 @@ fn extract_web_finding(line: &str) -> Option<String> {
         return None;
     }
     Some(condense_text(trimmed))
+}
+
+fn extract_web_error_finding(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    if lower.starts_with("error ") || lower.contains(" error:") || lower.contains("networkerror") {
+        return Some(condense_text(trimmed));
+    }
+    None
 }
 
 fn extract_vuln_finding(line: &str) -> Option<String> {
@@ -1309,6 +1457,77 @@ mod tests {
             &["OK 200 https://example.com/stdout-hit".to_string()],
         );
         assert!(findings.iter().any(|line| line.contains("stdout-hit")));
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn host_findings_reads_open_ports_from_json_artifact() {
+        let dir = temp_task_dir("host_json_findings");
+        std::fs::create_dir_all(&dir).unwrap();
+        let artifact = dir.join("host-tcp-result.json");
+        std::fs::write(
+            &artifact,
+            r#"[{"target_ip":"127.0.0.1","port":80,"protocol":"Tcp","status":"Open","latency_ms":1,"response_len":null,"metadata":[["service","http"]]},{"target_ip":"127.0.0.1","port":443,"protocol":"Tcp","status":"Open","latency_ms":1,"response_len":null,"metadata":[["service","https"]]}]"#,
+        )
+        .unwrap();
+        let task = build_task("host", artifact, "127.0.0.1");
+
+        let findings = host_findings(&task, &[]);
+        assert!(
+            findings
+                .iter()
+                .any(|line| line.contains("open ports: 80, 443"))
+        );
+        assert!(
+            findings
+                .iter()
+                .any(|line| line.contains("services: http, https"))
+        );
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn host_findings_reads_ports_from_ip_port_raw_rows() {
+        let dir = temp_task_dir("host_raw_rows_findings");
+        std::fs::create_dir_all(&dir).unwrap();
+        let artifact = dir.join("host-tcp-result.txt");
+        std::fs::write(
+            &artifact,
+            "             IP   PORT PROTO    STATUS    LAT(ms) META\n      127.0.0.1     22   tcp      open          1 []\n      127.0.0.1    443   tcp      open          2 []\n",
+        )
+        .unwrap();
+        let task = build_task("host", artifact, "127.0.0.1");
+
+        let findings = host_findings(&task, &[]);
+        assert!(
+            findings
+                .iter()
+                .any(|line| line.contains("open ports: 22, 443"))
+        );
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn web_findings_reports_error_lines_when_no_urls() {
+        let dir = temp_task_dir("web_error_findings");
+        std::fs::create_dir_all(&dir).unwrap();
+        let artifact = dir.join("web-fuzz-result.txt");
+        std::fs::write(
+            &artifact,
+            "ERROR 网络错误: error sending request for url (http://127.0.0.1:1/a)\n",
+        )
+        .unwrap();
+        let task = build_task("web", artifact, "https://example.com");
+
+        let findings = web_findings(&task, &[]);
+        assert!(
+            findings
+                .iter()
+                .any(|line| line.contains("error sending request"))
+        );
 
         let _ = std::fs::remove_dir_all(dir);
     }

@@ -167,6 +167,11 @@ impl AppState {
 
     pub(crate) fn poll_script_completion(&mut self) -> Result<(), RustpenError> {
         if let Some(done) = poll_script_runner(&mut self.script_runner_rx) {
+            let selected_result_id = selected_result_task_id(
+                &self.all_tasks,
+                &self.result_indices,
+                self.result_selected,
+            );
             self.script_running = false;
             self.status_line = format!(
                 "script finished: {} ({})",
@@ -184,12 +189,20 @@ impl AppState {
             let _ = finalize_script_task(&mut self.script_task, &done);
             self.all_tasks = load_tasks(self.current_project.clone())?;
             self.tasks = apply_filter(&self.all_tasks, self.filter);
+            self.result_indices = build_result_indices(
+                &self.all_tasks,
+                self.result_kind_filter,
+                self.result_failed_first,
+                &self.result_query,
+            );
             if self.task_selected >= self.tasks.len() {
                 self.task_selected = self.tasks.len().saturating_sub(1);
             }
-            if self.result_selected >= self.all_tasks.len() {
-                self.result_selected = self.all_tasks.len().saturating_sub(1);
-            }
+            self.result_selected = resolve_result_selection(
+                &self.all_tasks,
+                &self.result_indices,
+                selected_result_id.as_deref(),
+            );
         }
         Ok(())
     }
@@ -332,14 +345,24 @@ impl AppState {
         }
         self.last_task_refresh = Instant::now();
         self.task_poll_serial = self.task_poll_serial.wrapping_add(1);
+        let selected_result_id =
+            selected_result_task_id(&self.all_tasks, &self.result_indices, self.result_selected);
         self.all_tasks = load_tasks(self.current_project.clone())?;
         self.tasks = apply_filter(&self.all_tasks, self.filter);
+        self.result_indices = build_result_indices(
+            &self.all_tasks,
+            self.result_kind_filter,
+            self.result_failed_first,
+            &self.result_query,
+        );
         if self.task_selected >= self.tasks.len() {
             self.task_selected = self.tasks.len().saturating_sub(1);
         }
-        if self.result_selected >= self.all_tasks.len() {
-            self.result_selected = self.all_tasks.len().saturating_sub(1);
-        }
+        self.result_selected = resolve_result_selection(
+            &self.all_tasks,
+            &self.result_indices,
+            selected_result_id.as_deref(),
+        );
         Ok(())
     }
 
@@ -366,9 +389,6 @@ impl AppState {
             }
             InputMode::ResultSearchInput => {
                 format!("results.search> {}", self.result_search_buffer)
-            }
-            InputMode::ScriptEdit => {
-                "script edit: Esc退出  Enter换行  Backspace删除  S保存".to_string()
             }
             InputMode::Normal => self.status_line.clone(),
         }
@@ -518,4 +538,32 @@ fn task_live_serial(task: Option<&TaskView>, task_poll_serial: u64) -> u64 {
     } else {
         0
     }
+}
+
+fn selected_result_task_id(
+    all_tasks: &[TaskView],
+    result_indices: &[usize],
+    result_selected: usize,
+) -> Option<String> {
+    result_indices
+        .get(result_selected)
+        .and_then(|idx| all_tasks.get(*idx))
+        .map(|task| task.meta.id.clone())
+}
+
+fn resolve_result_selection(
+    all_tasks: &[TaskView],
+    result_indices: &[usize],
+    selected_id: Option<&str>,
+) -> usize {
+    if result_indices.is_empty() {
+        return 0;
+    }
+    selected_id
+        .and_then(|id| {
+            result_indices
+                .iter()
+                .position(|idx| all_tasks.get(*idx).is_some_and(|task| task.meta.id == id))
+        })
+        .unwrap_or(0)
 }

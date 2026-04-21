@@ -30,11 +30,7 @@ pub(super) fn draw_tasks(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         Constraint::Length(12),
         Constraint::Min(10),
     ];
-    let tasks_title = if ctx.zellij_managed {
-        "Tasks [s=filter t=tab n=note L=logs W=shell A=artifacts]"
-    } else {
-        "Tasks"
-    };
+    let tasks_title = "Tasks";
     let table = Table::new(ctx.task_table_rows.to_vec(), &widths)
         .header(Row::new(vec!["ID", "模块", "状态", "进度", "创建", "备注"]).bottom_margin(0))
         .block(

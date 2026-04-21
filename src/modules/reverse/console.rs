@@ -1277,6 +1277,10 @@ enum BackgroundDecompileResult {
     FunctionOverlay(FunctionOverlayResult),
 }
 
+fn should_load_job_rows(status: &super::ReverseJobStatus) -> bool {
+    matches!(status, super::ReverseJobStatus::Succeeded)
+}
+
 #[derive(Debug, Clone)]
 struct FunctionOverlayResult {
     requested_function: String,
@@ -1415,6 +1419,38 @@ impl TuiState {
             if prev_job.as_deref() != Some(job_id.as_str()) {
                 self.invalidate_global_strings_cache();
             }
+            let current_job = self.jobs.get(self.job_index).cloned();
+            if let Some(job) = current_job {
+                if !should_load_job_rows(&job.status) {
+                    self.load_notes_for_job(&job_id);
+                    match job.status {
+                        super::ReverseJobStatus::Failed => {
+                            if let Some(err) = job.error.as_deref() {
+                                self.log(format!("[rscan] job failed: {}", err));
+                            } else {
+                                self.log("[rscan] job failed");
+                            }
+                            let logs_dir = self.workspace.join("jobs").join(&job.id);
+                            self.log(format!(
+                                "[rscan] logs: {} | {}",
+                                logs_dir.join("stdout.log").display(),
+                                logs_dir.join("stderr.log").display()
+                            ));
+                        }
+                        super::ReverseJobStatus::Running => {
+                            self.log("[rscan] job is still running; rows will be available when it succeeds");
+                        }
+                        super::ReverseJobStatus::Queued => {
+                            self.log(
+                                "[rscan] job is queued; rows will be available after execution",
+                            );
+                        }
+                        super::ReverseJobStatus::Succeeded => {}
+                    }
+                    self.apply_filters();
+                    return;
+                }
+            }
             match load_job_pseudocode_rows(&self.workspace, &job_id) {
                 Ok(rows) => {
                     self.rows = rows;
@@ -1458,7 +1494,18 @@ impl TuiState {
                                 }
                             }
                         }
-                        self.load_current_job_rows();
+                        if should_load_job_rows(&report.job.status) {
+                            self.load_current_job_rows();
+                        } else {
+                            if let Some(err) = report.job.error.as_deref() {
+                                self.log(format!("[rscan] job failed: {}", err));
+                            }
+                            self.log(format!(
+                                "[rscan] logs: {} | {}",
+                                report.stdout_log.display(),
+                                report.stderr_log.display()
+                            ));
+                        }
                     }
                     Ok(BackgroundDecompileResult::FunctionOverlay(result)) => {
                         self.merge_function_overlay(result);
@@ -5228,4 +5275,18 @@ fn now_epoch_secs() -> u64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_load_job_rows;
+    use crate::modules::reverse::jobs::ReverseJobStatus;
+
+    #[test]
+    fn should_load_job_rows_only_for_succeeded_jobs() {
+        assert!(should_load_job_rows(&ReverseJobStatus::Succeeded));
+        assert!(!should_load_job_rows(&ReverseJobStatus::Failed));
+        assert!(!should_load_job_rows(&ReverseJobStatus::Running));
+        assert!(!should_load_job_rows(&ReverseJobStatus::Queued));
+    }
 }

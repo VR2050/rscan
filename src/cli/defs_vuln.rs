@@ -34,6 +34,12 @@ pub enum VulnActions {
         timeout_ms: u64,
         #[arg(short = 'o', long, default_value = "json")]
         output: String,
+        /// print only successful findings to stdout/file (without scan summary)
+        #[arg(long, default_value_t = false)]
+        findings_only: bool,
+        /// alias of --findings-only
+        #[arg(long, default_value_t = false)]
+        success_only: bool,
         #[arg(short = 'f', long)]
         out: Option<PathBuf>,
     },

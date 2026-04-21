@@ -207,6 +207,27 @@ mod tests {
         assert!(res[0].url.contains("long"));
         assert_eq!(res[0].content_len, Some(120));
     }
+
+    #[tokio::test]
+    async fn fuzz_scan_requires_fuzz_placeholder() {
+        let cfg = crate::modules::web_scan::ModuleScanConfig::default();
+        let err = run_fuzz_scan("http://127.0.0.1/no-placeholder", &["admin"], cfg)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RustpenError::ParseError(_)));
+    }
+
+    #[tokio::test]
+    async fn fuzz_scan_stream_requires_fuzz_placeholder() {
+        let cfg = crate::modules::web_scan::ModuleScanConfig::default();
+        let mut rx = run_fuzz_scan_stream(
+            "http://127.0.0.1/no-placeholder",
+            vec!["admin".to_string()],
+            cfg,
+        );
+        let first = rx.recv().await.unwrap().unwrap_err();
+        assert!(matches!(first, RustpenError::ParseError(_)));
+    }
 }
 /// 尝试将 keywords 插入到包含 FUZZ 的 URL 中并发出请求
 use crate::modules::web_scan::ModuleScanConfig;
@@ -229,6 +250,11 @@ pub async fn run_fuzz_scan(
     keywords: &[&str],
     cfg: ModuleScanConfig,
 ) -> Result<Vec<crate::modules::web_scan::ModuleScanResult>, RustpenError> {
+    if !url_with_fuzz.contains("FUZZ") {
+        return Err(RustpenError::ParseError(
+            "fuzz url must include FUZZ placeholder".to_string(),
+        ));
+    }
     let mut fetch_cfg = cfg.fetcher.clone();
     if let Some(v) = cfg.per_host_concurrency_override {
         fetch_cfg.per_host_concurrency = v;
@@ -273,6 +299,7 @@ pub async fn run_fuzz_scan(
         vec![reqs.as_slice()]
     };
     for chunk in chunks {
+        let mut responded_urls = std::collections::HashSet::new();
         if cfg.adaptive_rate && adaptive_delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
         }
@@ -288,6 +315,7 @@ pub async fn run_fuzz_scan(
         for r in results {
             match r {
                 Ok(resp) => {
+                    responded_urls.insert(resp.url.clone());
                     observed += 1;
                     if resp.status == 429 || resp.status >= 500 {
                         throttle_hits += 1;
@@ -356,7 +384,9 @@ pub async fn run_fuzz_scan(
         }
         if let Some(st) = resume_state.as_mut() {
             for req in chunk {
-                st.mark_done(&req.url);
+                if responded_urls.contains(&req.url) {
+                    st.mark_done(&req.url);
+                }
             }
             if let Some(path) = maybe_resume_path(&cfg.resume_file) {
                 save(path, st)?;
@@ -388,6 +418,12 @@ pub fn run_fuzz_scan_stream(
     cfg: ModuleScanConfig,
 ) -> tokio::sync::mpsc::Receiver<Result<crate::modules::web_scan::ModuleScanResult, RustpenError>> {
     let (tx, rx) = tokio::sync::mpsc::channel(100);
+    if !url_with_fuzz.contains("FUZZ") {
+        let _ = tx.try_send(Err(RustpenError::ParseError(
+            "fuzz url must include FUZZ placeholder".to_string(),
+        )));
+        return rx;
+    }
     let cfg = cfg.clone();
     let url_template = url_with_fuzz.to_string();
 
@@ -445,6 +481,7 @@ pub fn run_fuzz_scan_stream(
             vec![reqs.as_slice()]
         };
         for chunk in chunks {
+            let mut responded_urls = std::collections::HashSet::new();
             if cfg.adaptive_rate && adaptive_delay_ms > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
             }
@@ -460,6 +497,7 @@ pub fn run_fuzz_scan_stream(
             for r in results {
                 match r {
                     Ok(resp) => {
+                        responded_urls.insert(resp.url.clone());
                         observed += 1;
                         if resp.status == 429 || resp.status >= 500 {
                             throttle_hits += 1;
@@ -527,7 +565,9 @@ pub fn run_fuzz_scan_stream(
             }
             if let Some(st) = resume_state.as_mut() {
                 for req in chunk {
-                    st.mark_done(&req.url);
+                    if responded_urls.contains(&req.url) {
+                        st.mark_done(&req.url);
+                    }
                 }
                 if let Some(path) = maybe_resume_path(&cfg.resume_file) {
                     let _ = save(path, st);

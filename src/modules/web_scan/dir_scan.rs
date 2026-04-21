@@ -116,6 +116,7 @@ pub async fn run_dir_scan(
         vec![reqs.as_slice()]
     };
     for chunk in chunks {
+        let mut responded_urls = std::collections::HashSet::new();
         if cfg.adaptive_rate && adaptive_delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
         }
@@ -131,6 +132,7 @@ pub async fn run_dir_scan(
         for r in results {
             match r {
                 Ok(resp) => {
+                    responded_urls.insert(resp.url.clone());
                     observed += 1;
                     if resp.status == 429 || resp.status >= 500 {
                         throttle_hits += 1;
@@ -193,7 +195,9 @@ pub async fn run_dir_scan(
         }
         if let Some(st) = resume_state.as_mut() {
             for req in chunk {
-                st.mark_done(&req.url);
+                if responded_urls.contains(&req.url) {
+                    st.mark_done(&req.url);
+                }
             }
             if let Some(path) = maybe_resume_path(&cfg.resume_file) {
                 save(path, st)?;
@@ -288,6 +292,7 @@ pub fn run_dir_scan_stream(
             vec![reqs.as_slice()]
         };
         for chunk in chunks {
+            let mut responded_urls = std::collections::HashSet::new();
             if cfg.adaptive_rate && adaptive_delay_ms > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(adaptive_delay_ms)).await;
             }
@@ -303,6 +308,7 @@ pub fn run_dir_scan_stream(
             for r in results {
                 match r {
                     Ok(resp) => {
+                        responded_urls.insert(resp.url.clone());
                         observed += 1;
                         if resp.status == 429 || resp.status >= 500 {
                             throttle_hits += 1;
@@ -363,7 +369,9 @@ pub fn run_dir_scan_stream(
             }
             if let Some(st) = resume_state.as_mut() {
                 for req in chunk {
-                    st.mark_done(&req.url);
+                    if responded_urls.contains(&req.url) {
+                        st.mark_done(&req.url);
+                    }
                 }
                 if let Some(path) = maybe_resume_path(&cfg.resume_file) {
                     let _ = save(path, st);

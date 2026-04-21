@@ -49,54 +49,56 @@ pub fn run_tui(workspace: Option<PathBuf>, refresh_ms: Option<u64>) -> Result<()
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(RustpenError::Io)?;
 
-    let res = loop {
-        state.poll_terminal_output()?;
-        state.poll_perf_refresh()?;
-        state.poll_script_completion()?;
-        state.poll_task_refresh()?;
-        state.push_status_line();
-        state.refresh_render_caches()?;
-        state.advance_ui_tick();
-        let footer_text = state.footer_text();
+    let res = (|| -> Result<(), RustpenError> {
+        loop {
+            state.poll_terminal_output()?;
+            state.poll_perf_refresh()?;
+            state.poll_script_completion()?;
+            state.poll_task_refresh()?;
+            state.push_status_line();
+            state.refresh_render_caches()?;
+            state.advance_ui_tick();
+            let footer_text = state.footer_text();
 
-        if state.should_draw_frame(&footer_text) {
-            terminal
-                .draw(|f| {
-                    let render_ctx = state.render_ctx(&footer_text);
-                    draw_frame(f, &render_ctx);
-                })
-                .ok();
-        }
+            if state.should_draw_frame(&footer_text) {
+                terminal
+                    .draw(|f| {
+                        let render_ctx = state.render_ctx(&footer_text);
+                        draw_frame(f, &render_ctx);
+                    })
+                    .ok();
+            }
 
-        let tick = if state.terminal_active() {
-            Duration::from_millis(16)
-        } else if state.has_live_activity() {
-            active_tick
-        } else {
-            base_tick
-        };
-        if !event::poll(tick).map_err(RustpenError::Io)? {
-            continue;
+            let tick = if state.terminal_active() {
+                Duration::from_millis(16)
+            } else if state.has_live_activity() {
+                active_tick
+            } else {
+                base_tick
+            };
+            if !event::poll(tick).map_err(RustpenError::Io)? {
+                continue;
+            }
+            match event::read().map_err(RustpenError::Io)? {
+                Event::Key(key) => match state.handle_key(key)? {
+                    KeyDispatchAction::Quit => return Ok(()),
+                    KeyDispatchAction::ContinueLoop => continue,
+                    KeyDispatchAction::None => {}
+                },
+                Event::Paste(text) => match state.handle_paste(&text)? {
+                    KeyDispatchAction::Quit => return Ok(()),
+                    KeyDispatchAction::ContinueLoop => continue,
+                    KeyDispatchAction::None => {}
+                },
+                Event::Mouse(mouse) => match state.handle_mouse(mouse)? {
+                    KeyDispatchAction::Quit => return Ok(()),
+                    KeyDispatchAction::ContinueLoop => continue,
+                    KeyDispatchAction::None => {}
+                },
+                _ => {}
+            }
         }
-        match event::read().map_err(RustpenError::Io)? {
-            Event::Key(key) => match state.handle_key(key)? {
-                KeyDispatchAction::Quit => break Ok(()),
-                KeyDispatchAction::ContinueLoop => continue,
-                KeyDispatchAction::None => {}
-            },
-            Event::Paste(text) => match state.handle_paste(&text)? {
-                KeyDispatchAction::Quit => break Ok(()),
-                KeyDispatchAction::ContinueLoop => continue,
-                KeyDispatchAction::None => {}
-            },
-            Event::Mouse(mouse) => match state.handle_mouse(mouse)? {
-                KeyDispatchAction::Quit => break Ok(()),
-                KeyDispatchAction::ContinueLoop => continue,
-                KeyDispatchAction::None => {}
-            },
-            _ => {}
-        }
-    };
+    })();
 
     disable_raw_mode().map_err(RustpenError::Io)?;
     crossterm::execute!(

@@ -1,6 +1,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, List, ListState, Paragraph};
 
 use super::{RenderCtx, pane_border_style};
@@ -25,11 +26,7 @@ pub(super) fn draw_results(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
                 .min(ctx.result_indices.len().saturating_sub(1)),
         )
     });
-    let list_title = if ctx.zellij_managed {
-        "Execution Stream [f=kind o=order /=search L=logs W=shell A=artifacts]"
-    } else {
-        "Execution Stream"
-    };
+    let list_title = "Results";
     let list = List::new(ctx.result_list_items.to_vec())
         .block(
             Block::default()
@@ -64,10 +61,10 @@ fn is_compact(area: Rect) -> bool {
 }
 
 fn draw_results_compact(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
-    if area.height >= 8 {
+    if area.height >= 6 {
         let body = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(42), Constraint::Percentage(58)].as_ref())
+            .constraints([Constraint::Percentage(45), Constraint::Percentage(55)].as_ref())
             .split(area);
         let mut state = ListState::default();
         state.select(if ctx.result_indices.is_empty() {
@@ -114,16 +111,21 @@ fn draw_results_compact(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         )
     });
     let title = if ctx.result_indices.is_empty() {
-        "Results (compact)"
+        "Results (compact)".to_string()
     } else {
-        "Results (compact, height too small for detail)"
+        let tiny_hint = compact_detail_hint(ctx.result_detail_lines);
+        if tiny_hint.is_empty() {
+            "Results (compact, enlarge terminal for detail pane)".to_string()
+        } else {
+            format!("Results (compact) | {}", truncate_for_title(&tiny_hint, 44))
+        }
     };
     let list = List::new(ctx.result_list_items.to_vec())
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(pane_border_style(ctx, MainPane::Results))
-                .title(title),
+                .title(title.as_str()),
         )
         .highlight_style(
             Style::default()
@@ -133,4 +135,81 @@ fn draw_results_compact(f: &mut Frame<'_>, area: Rect, ctx: &RenderCtx<'_>) {
         )
         .highlight_symbol(">> ");
     f.render_stateful_widget(list, area, &mut state);
+}
+
+fn compact_detail_hint(lines: &[Line<'_>]) -> String {
+    let candidates = lines
+        .iter()
+        .map(line_plain_text)
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>();
+
+    if let Some(hit) = candidates.iter().find(|text| is_key_finding_line(text)) {
+        return hit.clone();
+    }
+
+    candidates
+        .into_iter()
+        .find(|text| !is_section_header_line(text))
+        .unwrap_or_default()
+}
+
+fn line_plain_text(line: &Line<'_>) -> String {
+    line.spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect::<String>()
+}
+
+fn truncate_for_title(input: &str, max_chars: usize) -> String {
+    if input.chars().count() <= max_chars {
+        return input.to_string();
+    }
+    let mut out = input
+        .chars()
+        .take(max_chars.saturating_sub(3))
+        .collect::<String>();
+    out.push_str("...");
+    out
+}
+
+fn is_key_finding_line(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    lower.contains("open ports:")
+        || lower.contains("services:")
+        || lower.contains("ports=")
+        || lower.contains("service=")
+        || lower.contains("http://")
+        || lower.contains("https://")
+        || lower.contains("matched=")
+        || lower.contains("cve-")
+        || lower.contains("errors=")
+        || lower.contains("networkerror")
+        || lower.starts_with("error ")
+        || lower.starts_with("err ")
+}
+
+fn is_section_header_line(text: &str) -> bool {
+    if !text
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == ' ' || ch == '/' || ch == '-')
+    {
+        return false;
+    }
+    matches!(
+        text,
+        "Result View"
+            | "Execution Summary"
+            | "Module Signals"
+            | "Key Findings"
+            | "Recent Events"
+            | "Native Ops"
+            | "Stdout Tail"
+            | "Stderr Tail"
+            | "Artifact Preview"
+            | "Runtime"
+            | "Result Diagnosis"
+            | "Task Summary"
+    )
 }

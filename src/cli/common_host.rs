@@ -321,11 +321,104 @@ pub(in crate::cli::app) fn load_probe_engine_if_requested(
     if !service_detect {
         return Ok(None);
     }
-    let path = probes_file.ok_or_else(|| {
-        RustpenError::ParseError("--service-detect requires --probes-file".to_string())
-    })?;
+    let path = resolve_service_probe_file_path(probes_file)?;
     let engine = ServiceProbeEngine::from_nmap_file(path)?;
     Ok(Some(std::sync::Arc::new(engine)))
+}
+
+fn resolve_service_probe_file_path(probes_file: Option<PathBuf>) -> Result<PathBuf, RustpenError> {
+    let env_probe = std::env::var("RSCAN_NMAP_SERVICE_PROBES").ok();
+    resolve_service_probe_file_path_with(probes_file, env_probe, default_nmap_service_probe_paths())
+}
+
+fn resolve_service_probe_file_path_with(
+    probes_file: Option<PathBuf>,
+    env_probe: Option<String>,
+    candidates: Vec<PathBuf>,
+) -> Result<PathBuf, RustpenError> {
+    if let Some(path) = probes_file {
+        return Ok(path);
+    }
+
+    if let Some(path) = env_probe {
+        let p = PathBuf::from(path);
+        if p.is_file() {
+            return Ok(p);
+        }
+    }
+
+    if let Some(path) = candidates.iter().find(|path| path.is_file()).cloned() {
+        return Ok(path);
+    }
+
+    let searched = candidates
+        .into_iter()
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(RustpenError::ParseError(format!(
+        "--service-detect enabled but nmap-service-probes not found; pass --probes-file or set RSCAN_NMAP_SERVICE_PROBES (searched: {searched})"
+    )))
+}
+
+fn default_nmap_service_probe_paths() -> Vec<PathBuf> {
+    let mut out = vec![
+        PathBuf::from("/usr/share/nmap/nmap-service-probes"),
+        PathBuf::from("/usr/local/share/nmap/nmap-service-probes"),
+        PathBuf::from("/opt/homebrew/share/nmap/nmap-service-probes"),
+        PathBuf::from("/opt/local/share/nmap/nmap-service-probes"),
+        PathBuf::from("/data/data/com.termux/files/usr/share/nmap/nmap-service-probes"),
+    ];
+    if let Ok(home) = std::env::var("HOME") {
+        out.push(
+            PathBuf::from(home)
+                .join(".local")
+                .join("share")
+                .join("nmap")
+                .join("nmap-service-probes"),
+        );
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_service_probe_prefers_explicit_path() {
+        let tmp = std::env::temp_dir().join("rscan_probe_explicit.txt");
+        std::fs::write(&tmp, "Probe TCP NULL q||\n").unwrap();
+        let out = resolve_service_probe_file_path_with(Some(tmp.clone()), None, vec![])
+            .expect("explicit path should be accepted");
+        assert_eq!(out, tmp);
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn resolve_service_probe_uses_env_when_set() {
+        let tmp = std::env::temp_dir().join("rscan_probe_env.txt");
+        std::fs::write(&tmp, "Probe TCP NULL q||\n").unwrap();
+        let out =
+            resolve_service_probe_file_path_with(None, Some(tmp.display().to_string()), vec![])
+                .expect("env path should be accepted");
+        assert_eq!(out, tmp);
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn resolve_service_probe_uses_first_existing_candidate() {
+        let tmp = std::env::temp_dir().join("rscan_probe_candidate.txt");
+        std::fs::write(&tmp, "Probe TCP NULL q||\n").unwrap();
+        let out = resolve_service_probe_file_path_with(
+            None,
+            None,
+            vec![PathBuf::from("/nonexistent/probes"), tmp.clone()],
+        )
+        .expect("candidate path should be discovered");
+        assert_eq!(out, tmp);
+        let _ = std::fs::remove_file(&tmp);
+    }
 }
 
 pub(in crate::cli::app) fn probe_engine_stats_line(
@@ -336,6 +429,40 @@ pub(in crate::cli::app) fn probe_engine_stats_line(
         "probe-engine loaded: probes={} rules={} skipped_rules={}",
         stats.probes, stats.loaded_rules, stats.skipped_rules
     )
+}
+
+fn is_queue_backpressure(err: &RustpenError) -> bool {
+    matches!(err, RustpenError::Generic(msg) if msg.contains("no available capacity"))
+}
+
+fn drain_ready_results(
+    rx: &mut tokio::sync::mpsc::Receiver<EngineScanResult>,
+    out: &mut Vec<EngineScanResult>,
+) {
+    while let Ok(item) = rx.try_recv() {
+        out.push(item);
+    }
+}
+
+async fn submit_with_backpressure(
+    engine: &impl ScanEngine,
+    rx: &mut tokio::sync::mpsc::Receiver<EngineScanResult>,
+    out: &mut Vec<EngineScanResult>,
+    job: ScanJob,
+) -> Result<(), RustpenError> {
+    loop {
+        match engine.submit(job.clone()) {
+            Ok(()) => {
+                drain_ready_results(rx, out);
+                return Ok(());
+            }
+            Err(err) if is_queue_backpressure(&err) => match rx.recv().await {
+                Some(item) => out.push(item),
+                None => return Err(err),
+            },
+            Err(err) => return Err(err),
+        }
+    }
 }
 
 pub(in crate::cli::app) async fn run_engine_host_scan(
@@ -366,7 +493,7 @@ pub(in crate::cli::app) async fn run_engine_host_scan(
                 if let Some(d) = tuning.retry_delay_ms {
                     job = job.with_retry_delay_ms(d);
                 }
-                engine.submit(job)?;
+                submit_with_backpressure(&engine, &mut rx, &mut out, job).await?;
             }
             let expected = ports.len();
             drop(engine);
@@ -405,7 +532,7 @@ pub(in crate::cli::app) async fn run_engine_host_scan(
                 if let Some(d) = tuning.retry_delay_ms {
                     job = job.with_retry_delay_ms(d);
                 }
-                engine.submit(job)?;
+                submit_with_backpressure(&engine, &mut rx, &mut out, job).await?;
             }
             let expected = ports.len();
             drop(engine);

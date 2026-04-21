@@ -1,9 +1,8 @@
-use std::io::{IsTerminal, stdin, stdout};
+use std::io::{IsTerminal, stdout};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
@@ -13,11 +12,12 @@ use crate::modules::reverse::{ReverseJobMeta, ReverseJobStatus, list_jobs};
 
 use super::project_store::ensure_project_layout;
 use super::reverse_workbench_support::{
-    ReverseBrowserEntry, canonical_or_clone, discover_binary_candidates,
-    ensure_reverse_project_for_input, load_reverse_browser_entries, preferred_picker_root,
+    ReverseBrowserEntry, ZellijFilepickerHandle, abort_zellij_filepicker, canonical_or_clone,
+    discover_binary_candidates, ensure_reverse_project_for_input, load_reverse_browser_entries,
+    poll_zellij_filepicker as poll_native_filepicker, preferred_picker_root,
     read_active_target_hint, relative_or_full, request_reverse_viewer_open, resolve_active_project,
-    run_analyze_now, run_zellij_filepicker, shorten_id, spawn_reverse_job,
-    write_active_project_hint, write_active_target_hint,
+    run_analyze_now, shorten_id, spawn_reverse_job, spawn_zellij_filepicker,
+    write_active_project_hint, write_active_target_hint, zellij_filepicker_is_visible,
 };
 
 #[path = "reverse_picker_view.rs"]
@@ -28,7 +28,9 @@ const AUTO_REFRESH_INTERVAL: Duration = Duration::from_millis(1200);
 const EVENT_POLL_INTERVAL: Duration = Duration::from_millis(120);
 const MAX_BROWSER_ENTRIES: usize = 256;
 const NATIVE_PICKER_TRIGGER_DEBOUNCE: Duration = Duration::from_millis(180);
-const NATIVE_PICKER_LAUNCH_SETTLE: Duration = Duration::from_millis(90);
+const FILEPICKER_WAIT_TIMEOUT: Duration = Duration::from_secs(90);
+const FILEPICKER_HIDDEN_ABORT_GRACE: Duration = Duration::from_millis(500);
+const AUTO_OPEN_VIEWER_ENV: &str = "RSCAN_REVERSE_AUTO_OPEN";
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum PickerLauncherMode {
@@ -68,6 +70,10 @@ struct ReversePickerState {
     input_mode: PickerInputMode,
     message: String,
     native_picker_not_before: Option<Instant>,
+    native_picker_handle: Option<ZellijFilepickerHandle>,
+    native_picker_started_at: Option<Instant>,
+    native_picker_seen_visible_once: bool,
+    native_picker_hidden_since: Option<Instant>,
     last_refresh: Instant,
 }
 
@@ -89,35 +95,31 @@ pub(crate) fn run_reverse_picker(
         .map_err(RustpenError::Io)?;
     let backend = CrosstermBackend::new(out);
     let mut terminal = Terminal::new(backend).map_err(RustpenError::Io)?;
-    if let Err(err) = auto_lock_zellij_for_picker() {
-        state.message = format!("zellij locked 自动切换失败: {err} | 可试 F4");
-    } else if std::env::var("ZELLIJ").is_ok() || std::env::var("ZELLIJ_SESSION_NAME").is_ok() {
-        state.message = "reverse picker 已自动切到 zellij Locked mode".to_string();
-    }
+    let res = (|| -> Result<(), RustpenError> {
+        loop {
+            state.refresh(false)?;
+            terminal
+                .draw(|f| draw_picker(f, &state))
+                .map_err(RustpenError::Io)?;
+            if state.consume_bootstrap_native_picker() {
+                state.start_zellij_filepicker();
+            }
+            state.poll_zellij_filepicker()?;
 
-    let res = loop {
-        state.refresh(false)?;
-        terminal
-            .draw(|f| draw_picker(f, &state))
-            .map_err(RustpenError::Io)?;
-        if state.consume_bootstrap_native_picker() {
-            state.pick_with_zellij_filepicker()?;
-            continue;
+            if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
+                continue;
+            }
+            let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
+                continue;
+            };
+            if key.kind != KeyEventKind::Press {
+                continue;
+            }
+            if state.handle_key(key)? {
+                return Ok(());
+            }
         }
-
-        if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
-            continue;
-        }
-        let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
-            continue;
-        };
-        if key.kind != KeyEventKind::Press {
-            continue;
-        }
-        if state.handle_key(key)? {
-            break Ok(());
-        }
-    };
+    })();
 
     disable_raw_mode().map_err(RustpenError::Io)?;
     crossterm::execute!(
@@ -136,14 +138,12 @@ impl ReversePickerState {
         let _ = write_active_project_hint(&root_ws, &active_project);
         let current_dir = initial_picker_dir(&root_ws, &active_project);
         let launcher_mode = default_launcher_mode();
-        let active_target = read_active_target_hint(&root_ws);
         let mut state = Self {
             root_ws,
             project_override,
             active_project,
             launcher_mode,
-            bootstrap_native_picker: matches!(launcher_mode, PickerLauncherMode::ZellijNative)
-                && active_target.is_none(),
+            bootstrap_native_picker: false,
             root_mode: PickerRootMode::Project,
             current_dir,
             entries: Vec::new(),
@@ -157,11 +157,12 @@ impl ReversePickerState {
             input_mode: PickerInputMode::Browse,
             message: initial_picker_message(launcher_mode),
             native_picker_not_before: None,
+            native_picker_handle: None,
+            native_picker_started_at: None,
+            native_picker_seen_visible_once: false,
+            native_picker_hidden_since: None,
             last_refresh: Instant::now() - AUTO_REFRESH_INTERVAL,
         };
-        if state.bootstrap_native_picker {
-            state.schedule_zellij_filepicker_open();
-        }
         state.refresh(true)?;
         Ok(state)
     }
@@ -207,6 +208,13 @@ impl ReversePickerState {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> Result<bool, RustpenError> {
+        if matches!(key.code, KeyCode::Char('p'))
+            && key.modifiers == KeyModifiers::NONE
+            && self.native_picker_handle.is_some()
+        {
+            self.cancel_zellij_filepicker()?;
+            return Ok(false);
+        }
         match self.input_mode {
             PickerInputMode::Browse => self.handle_browse_key(key),
             PickerInputMode::Filter => self.handle_filter_key(key),
@@ -215,12 +223,12 @@ impl ReversePickerState {
     }
 
     fn handle_browse_key(&mut self, key: KeyEvent) -> Result<bool, RustpenError> {
-        if matches!(key.code, KeyCode::F(4)) {
+        if is_native_picker_hotkey(key) {
             self.schedule_zellij_filepicker_open();
             return Ok(false);
         }
         match key.code {
-            KeyCode::Char('q') => return Ok(true),
+            KeyCode::Esc | KeyCode::Char('q') => return Ok(true),
             KeyCode::Up | KeyCode::Char('k') => self.move_selection(-1),
             KeyCode::Down | KeyCode::Char('j') => self.move_selection(1),
             KeyCode::PageUp => self.move_selection(-8),
@@ -234,7 +242,14 @@ impl ReversePickerState {
             }
             KeyCode::Enter => {
                 if self.launcher_mode == PickerLauncherMode::ZellijNative {
-                    self.schedule_zellij_filepicker_open();
+                    // In zellij-native mode, prioritize the currently highlighted entry.
+                    // This avoids the "can't select file" feeling when Enter always re-opens
+                    // filepicker instead of acting on the visible browser list.
+                    if self.selected_entry().is_some() {
+                        self.open_selected()?;
+                    } else {
+                        self.schedule_zellij_filepicker_open();
+                    }
                 } else {
                     self.import_selected()?;
                 }
@@ -266,7 +281,7 @@ impl ReversePickerState {
                 self.bootstrap_native_picker = false;
                 self.native_picker_not_before = None;
                 self.message =
-                    "launcher -> local browser | Enter/o 打开选中项，F4 仍可调 zellij filepicker"
+                    "launcher -> local browser | Enter/o 打开选中项，Alt+f 可调 zellij filepicker"
                         .to_string();
             }
             KeyCode::Char('Z') => {
@@ -275,7 +290,7 @@ impl ReversePickerState {
                     self.bootstrap_native_picker = false;
                     self.native_picker_not_before = None;
                     self.message =
-                        "launcher -> zellij native | Enter/F4 直接打开 zellij filepicker"
+                        "launcher -> zellij native | Enter/Alt+f 直接打开 zellij filepicker"
                             .to_string();
                 } else {
                     self.message = "当前不在 zellij session，无法切到 zellij native".to_string();
@@ -284,8 +299,11 @@ impl ReversePickerState {
             KeyCode::Char('/') => {
                 self.input_mode = PickerInputMode::Filter;
             }
-            KeyCode::F(2) | KeyCode::Char('p') | KeyCode::Char(':') => {
+            KeyCode::F(2) | KeyCode::Char(':') => {
                 self.enter_path_mode();
+            }
+            KeyCode::Char(c) if !c.is_whitespace() && !c.is_control() => {
+                self.start_inline_filter(c)?;
             }
             _ => {}
         }
@@ -294,7 +312,6 @@ impl ReversePickerState {
 
     fn consume_bootstrap_native_picker(&mut self) -> bool {
         let should_open = self.bootstrap_native_picker
-            && self.launcher_mode == PickerLauncherMode::ZellijNative
             && self
                 .native_picker_not_before
                 .map(|deadline| Instant::now() >= deadline)
@@ -307,12 +324,131 @@ impl ReversePickerState {
     }
 
     fn schedule_zellij_filepicker_open(&mut self) {
+        if self.native_picker_handle.is_some() {
+            self.message = "zellij filepicker 已在运行中".to_string();
+            return;
+        }
+        if !zellij_picker_available() {
+            self.message = "当前不在 zellij session，无法打开 zellij filepicker".to_string();
+            return;
+        }
         self.bootstrap_native_picker = true;
         self.native_picker_not_before = Some(Instant::now() + NATIVE_PICKER_TRIGGER_DEBOUNCE);
         self.message = "正在打开 zellij filepicker...".to_string();
     }
 
+    fn start_zellij_filepicker(&mut self) {
+        if self.native_picker_handle.is_some() {
+            return;
+        }
+        let start = self.browser_dir();
+        match spawn_zellij_filepicker(Some(&start), "rscan reverse picker") {
+            Ok(handle) => {
+                self.native_picker_handle = Some(handle);
+                self.native_picker_started_at = Some(Instant::now());
+                self.native_picker_seen_visible_once = false;
+                self.native_picker_hidden_since = None;
+                self.message = "zellij filepicker 已打开（Alt+f 可重开，p 关闭面板）".to_string();
+            }
+            Err(err) => {
+                if matches!(self.input_mode, PickerInputMode::Path) {
+                    self.path_status = format!("zellij filepicker: {}", err);
+                } else {
+                    self.message = format!("zellij filepicker: {}", err);
+                }
+            }
+        }
+    }
+
+    fn poll_zellij_filepicker(&mut self) -> Result<(), RustpenError> {
+        let Some(mut handle) = self.native_picker_handle.take() else {
+            return Ok(());
+        };
+
+        if let Some(result) = poll_native_filepicker(&mut handle).map_err(RustpenError::Generic)? {
+            self.native_picker_started_at = None;
+            self.native_picker_seen_visible_once = false;
+            self.native_picker_hidden_since = None;
+            match result {
+                Ok(path) => {
+                    let msg = self.import_target_with_default_index(&path)?;
+                    self.leave_path_mode(&msg);
+                    self.message = format!("zellij filepicker -> {}", msg);
+                }
+                Err(err) => {
+                    if matches!(self.input_mode, PickerInputMode::Path) {
+                        self.path_status = format!("zellij filepicker: {}", err);
+                    } else {
+                        self.message = format!("zellij filepicker: {}", err);
+                    }
+                }
+            }
+            return Ok(());
+        }
+
+        if self
+            .native_picker_started_at
+            .map(|started| started.elapsed() >= FILEPICKER_WAIT_TIMEOUT)
+            .unwrap_or(false)
+        {
+            let _ = abort_zellij_filepicker(&mut handle);
+            self.native_picker_started_at = None;
+            self.native_picker_seen_visible_once = false;
+            self.native_picker_hidden_since = None;
+            self.message = "zellij filepicker 等待超时，已自动取消".to_string();
+            return Ok(());
+        }
+
+        match zellij_filepicker_is_visible(&handle) {
+            Ok(true) => {
+                self.native_picker_seen_visible_once = true;
+                self.native_picker_hidden_since = None;
+            }
+            Ok(false) if self.native_picker_seen_visible_once => {
+                let since = self
+                    .native_picker_hidden_since
+                    .get_or_insert_with(Instant::now);
+                if since.elapsed() >= FILEPICKER_HIDDEN_ABORT_GRACE {
+                    let _ = abort_zellij_filepicker(&mut handle);
+                    self.native_picker_started_at = None;
+                    self.native_picker_seen_visible_once = false;
+                    self.native_picker_hidden_since = None;
+                    self.message = "zellij filepicker 已关闭/取消".to_string();
+                    return Ok(());
+                }
+            }
+            _ => {}
+        }
+
+        self.native_picker_handle = Some(handle);
+        Ok(())
+    }
+
+    fn cancel_zellij_filepicker(&mut self) -> Result<(), RustpenError> {
+        let Some(mut handle) = self.native_picker_handle.take() else {
+            self.message = "zellij filepicker 当前未打开".to_string();
+            return Ok(());
+        };
+        abort_zellij_filepicker(&mut handle).map_err(RustpenError::Generic)?;
+        self.native_picker_started_at = None;
+        self.native_picker_seen_visible_once = false;
+        self.native_picker_hidden_since = None;
+        self.message = "zellij filepicker 已关闭（p）".to_string();
+        Ok(())
+    }
+
+    fn start_inline_filter(&mut self, first: char) -> Result<(), RustpenError> {
+        self.input_mode = PickerInputMode::Filter;
+        self.filter.push(first);
+        self.refresh(true)?;
+        Ok(())
+    }
+
     fn handle_filter_key(&mut self, key: KeyEvent) -> Result<bool, RustpenError> {
+        if is_native_picker_hotkey(key) {
+            self.schedule_zellij_filepicker_open();
+            return Ok(false);
+        }
         match key.code {
             KeyCode::Esc => {
                 self.input_mode = PickerInputMode::Browse;
@@ -334,7 +470,7 @@ impl ReversePickerState {
     }
 
     fn handle_path_key(&mut self, key: KeyEvent) -> Result<bool, RustpenError> {
-        if matches!(key.code, KeyCode::F(4)) {
+        if is_native_picker_hotkey(key) {
             self.schedule_zellij_filepicker_open();
             return Ok(false);
         }
@@ -475,7 +611,8 @@ impl ReversePickerState {
         &mut self,
         selected: &Path,
     ) -> Result<String, RustpenError> {
-        let (project, target, bind_msg) = self.bind_selected_file(selected, true)?;
+        let (project, target, bind_msg) =
+            self.bind_selected_file(selected, auto_open_viewer_enabled())?;
         if let Some(job) = reusable_analysis_job(&project, &target) {
             return Ok(format!("{bind_msg} | {}", describe_reused_job(&job)));
         }
@@ -710,34 +847,6 @@ impl ReversePickerState {
         Ok(())
     }
 
-    fn pick_with_zellij_filepicker(&mut self) -> Result<(), RustpenError> {
-        let start = self.browser_dir();
-        self.bootstrap_native_picker = false;
-        self.native_picker_not_before = None;
-        drain_pending_terminal_events();
-        let _ = disable_raw_mode();
-        flush_tty_stdin_input();
-        std::thread::sleep(NATIVE_PICKER_LAUNCH_SETTLE);
-        flush_tty_stdin_input();
-        let picked = run_zellij_filepicker(Some(&start), "rscan reverse picker");
-        let _ = enable_raw_mode();
-        match picked {
-            Ok(path) => {
-                let msg = self.import_target_with_default_index(&path)?;
-                self.leave_path_mode(&msg);
-                self.message = format!("zellij filepicker -> {}", msg);
-            }
-            Err(err) => {
-                if matches!(self.input_mode, PickerInputMode::Path) {
-                    self.path_status = format!("zellij filepicker: {}", err);
-                } else {
-                    self.message = format!("zellij filepicker: {}", err);
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn display_dir(&self) -> &Path {
         match self.input_mode {
             PickerInputMode::Path => self
@@ -766,26 +875,19 @@ impl ReversePickerState {
     }
 }
 
-fn drain_pending_terminal_events() {
-    while event::poll(Duration::ZERO).unwrap_or(false) {
-        if event::read().is_err() {
-            break;
-        }
-    }
+fn is_native_picker_hotkey(key: KeyEvent) -> bool {
+    matches!(key.code, KeyCode::Char('f') | KeyCode::Char('F'))
+        && key.modifiers.contains(KeyModifiers::ALT)
 }
 
-#[cfg(unix)]
-fn flush_tty_stdin_input() {
-    if !stdin().is_terminal() {
-        return;
-    }
-    unsafe {
-        libc::tcflush(libc::STDIN_FILENO, libc::TCIFLUSH);
-    }
+fn auto_open_viewer_enabled() -> bool {
+    std::env::var(AUTO_OPEN_VIEWER_ENV)
+        .map(|value| {
+            let normalized = value.trim().to_ascii_lowercase();
+            normalized == "1" || normalized == "true" || normalized == "yes" || normalized == "on"
+        })
+        .unwrap_or(false)
 }
-
-#[cfg(not(unix))]
-fn flush_tty_stdin_input() {}
 
 fn build_browser_entries(
     project: &Path,
@@ -875,11 +977,11 @@ fn zellij_picker_available_for_env(zellij: Option<&str>, session: Option<&str>) 
 fn initial_picker_message(mode: PickerLauncherMode) -> String {
     match mode {
         PickerLauncherMode::ZellijNative => {
-            "Enter/F4 打开 zellij filepicker；popup 内先用 Tab/Right 选路径，再 Enter 回传并自动补 index"
+            "Enter 优先处理当前选中项；可直接键入过滤（或按 /）；Alt+f 打开 zellij filepicker，p 关闭"
                 .to_string()
         }
         PickerLauncherMode::LocalBrowser => {
-            "Enter=import+index+open viewer  o=open only  f=full  i=index  a=analyze  s=sync target"
+            "Enter=import+index+open viewer  o=open only  f=full  i=index  a=analyze  s=sync target  /或直接键入=过滤"
                 .to_string()
         }
     }
@@ -941,24 +1043,6 @@ fn describe_reused_job(job: &ReverseJobMeta) -> String {
         ReverseJobStatus::Failed => "failed",
     };
     format!("复用现有 {mode} job {} ({status})", shorten_id(&job.id, 18))
-}
-
-fn auto_lock_zellij_for_picker() -> Result<(), String> {
-    if std::env::var("ZELLIJ").is_err() && std::env::var("ZELLIJ_SESSION_NAME").is_err() {
-        return Ok(());
-    }
-    let status = Command::new("zellij")
-        .args(["action", "switch-mode", "locked"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|e| format!("zellij switch-mode locked 失败: {e}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err("zellij switch-mode locked 返回失败".to_string())
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -1071,6 +1155,7 @@ fn file_name_or_empty(path: &Path) -> String {
 mod tests {
     use super::*;
     use crate::modules::reverse::ReverseJobStatus;
+    use crate::tui::reverse_workbench_support::unix_now_secs;
 
     #[test]
     fn path_preview_selects_existing_file_parent() {
@@ -1100,11 +1185,6 @@ mod tests {
     }
 
     #[test]
-    fn auto_lock_is_noop_outside_zellij() {
-        assert!(auto_lock_zellij_for_picker().is_ok());
-    }
-
-    #[test]
     fn default_launcher_prefers_zellij_inside_session() {
         assert_eq!(
             default_launcher_mode_for_env(Some("1"), None),
@@ -1128,6 +1208,99 @@ mod tests {
         assert!(!state.consume_bootstrap_native_picker());
         std::thread::sleep(NATIVE_PICKER_TRIGGER_DEBOUNCE + Duration::from_millis(30));
         assert!(state.consume_bootstrap_native_picker());
+    }
+
+    #[test]
+    fn browse_mode_direct_char_starts_filter_input() {
+        let mut state = fake_picker_state();
+        state.input_mode = PickerInputMode::Browse;
+        state.filter.clear();
+
+        let quit = state
+            .handle_browse_key(KeyEvent::new(KeyCode::Char('x'), event::KeyModifiers::NONE))
+            .unwrap();
+
+        assert!(!quit);
+        assert_eq!(state.input_mode, PickerInputMode::Filter);
+        assert_eq!(state.filter, "x");
+    }
+
+    #[test]
+    fn alt_f_schedules_native_filepicker() {
+        let mut state = fake_picker_state();
+        state.input_mode = PickerInputMode::Browse;
+        state.bootstrap_native_picker = false;
+
+        let quit = state
+            .handle_browse_key(KeyEvent::new(KeyCode::Char('f'), event::KeyModifiers::ALT))
+            .unwrap();
+
+        assert!(!quit);
+        assert!(state.bootstrap_native_picker);
+    }
+
+    #[test]
+    fn native_picker_hotkey_detects_alt_f_only() {
+        assert!(is_native_picker_hotkey(KeyEvent::new(
+            KeyCode::Char('f'),
+            event::KeyModifiers::ALT
+        )));
+        assert!(is_native_picker_hotkey(KeyEvent::new(
+            KeyCode::Char('F'),
+            event::KeyModifiers::ALT
+        )));
+        assert!(!is_native_picker_hotkey(KeyEvent::new(
+            KeyCode::Char('f'),
+            event::KeyModifiers::NONE
+        )));
+        assert!(!is_native_picker_hotkey(KeyEvent::new(
+            KeyCode::F(4),
+            event::KeyModifiers::NONE
+        )));
+    }
+
+    #[test]
+    fn esc_quits_in_browse_mode() {
+        let mut state = fake_picker_state();
+        state.input_mode = PickerInputMode::Browse;
+        let quit = state
+            .handle_browse_key(KeyEvent::new(KeyCode::Esc, event::KeyModifiers::NONE))
+            .unwrap();
+        assert!(quit);
+    }
+
+    #[test]
+    fn enter_in_native_mode_uses_selected_file_instead_of_reopening_filepicker() {
+        let root =
+            std::env::temp_dir().join(format!("rscan_picker_enter_select_{}", unix_now_secs()));
+        let src = root.join("fixtures").join("sample.bin");
+        std::fs::create_dir_all(src.parent().unwrap()).unwrap();
+        std::fs::write(&src, b"\x7fELF").unwrap();
+
+        let mut state = fake_picker_state();
+        state.root_ws = root.clone();
+        state.active_project = root.join("projects").join("default");
+        std::fs::create_dir_all(&state.active_project).unwrap();
+        state.current_dir = src.parent().unwrap().to_path_buf();
+        state.entries = vec![ReverseBrowserEntry {
+            path: src.clone(),
+            is_dir: false,
+            label: "sample.bin".to_string(),
+            detail: "4 B | bin".to_string(),
+        }];
+        state.selected = 0;
+
+        let quit = state
+            .handle_browse_key(KeyEvent::new(KeyCode::Enter, event::KeyModifiers::NONE))
+            .unwrap();
+        assert!(!quit);
+        assert!(!state.bootstrap_native_picker);
+        assert!(state.message.contains("project="));
+        assert!(
+            state.message.contains("viewer 请求已发出") || state.message.contains("目标已同步")
+        );
+
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]
@@ -1218,6 +1391,10 @@ mod tests {
             input_mode: PickerInputMode::Browse,
             message: String::new(),
             native_picker_not_before: None,
+            native_picker_handle: None,
+            native_picker_started_at: None,
+            native_picker_seen_visible_once: false,
+            native_picker_hidden_since: None,
             last_refresh: Instant::now(),
         }
     }

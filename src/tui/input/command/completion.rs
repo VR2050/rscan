@@ -202,13 +202,19 @@ fn build_completions(
             placeholder_suggestions(head_str, sub, token_idx, prefix),
         );
     }
-    if matches!(head_str, "w.dir" | "w.fuzz" | "w.dns" | "w.crawl" | "w.live") {
+    if matches!(
+        head_str,
+        "w.dir" | "w.fuzz" | "w.dns" | "w.crawl" | "w.live"
+    ) {
         return prefer_non_empty(
             web_alias_option_suggestions(head_str, token_idx, prefix),
             placeholder_suggestions(head_str, sub, token_idx, prefix),
         );
     }
-    if matches!(head_str, "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa") {
+    if matches!(
+        head_str,
+        "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa"
+    ) {
         return prefer_non_empty(
             vuln_alias_option_suggestions(head_str, token_idx, prefix),
             placeholder_suggestions(head_str, sub, token_idx, prefix),
@@ -439,7 +445,12 @@ fn host_tcpish_options(prefix: &str) -> Vec<String> {
 
 fn host_syn_options(prefix: &str) -> Vec<String> {
     host_flag_filter(
-        ["--profile", "--service-detect", "--probes-file", "--syn-mode"],
+        [
+            "--profile",
+            "--service-detect",
+            "--probes-file",
+            "--syn-mode",
+        ],
         prefix,
     )
 }
@@ -449,7 +460,8 @@ fn host_arp_options(prefix: &str) -> Vec<String> {
 }
 
 fn host_flag_filter<const N: usize>(flags: [&str; N], prefix: &str) -> Vec<String> {
-    flags.iter()
+    flags
+        .iter()
         .filter(|flag| flag.starts_with(prefix))
         .map(|flag| (*flag).to_string())
         .collect()
@@ -531,7 +543,12 @@ fn web_dns_options(prefix: &str) -> Vec<String> {
 
 fn web_crawl_options(prefix: &str) -> Vec<String> {
     flag_filter(
-        &["--max-depth", "--concurrency", "--max-pages", "--obey-robots"],
+        &[
+            "--max-depth",
+            "--concurrency",
+            "--max-pages",
+            "--obey-robots",
+        ],
         prefix,
     )
 }
@@ -560,7 +577,14 @@ fn vuln_alias_option_suggestions(head: &str, token_idx: usize, prefix: &str) -> 
 
 fn vuln_scan_options(prefix: &str) -> Vec<String> {
     flag_filter(
-        &["--severity", "--tag", "--concurrency", "--timeout-ms"],
+        &[
+            "--severity",
+            "--tag",
+            "--concurrency",
+            "--timeout-ms",
+            "--findings-only",
+            "--success-only",
+        ],
         prefix,
     )
 }
@@ -599,9 +623,10 @@ fn reverse_option_suggestions(sub: Option<&str>, token_idx: usize, prefix: &str)
         Some("job-logs") if token_idx >= 3 => flag_filter(&["--stream"], prefix),
         Some("job-search") if token_idx >= 4 => flag_filter(&["--max"], prefix),
         Some("job-clear") if token_idx >= 2 => flag_filter(&["--all"], prefix),
-        Some("job-prune") if token_idx >= 2 => {
-            flag_filter(&["--keep", "--older-than-days", "--include-running"], prefix)
-        }
+        Some("job-prune") if token_idx >= 2 => flag_filter(
+            &["--keep", "--older-than-days", "--include-running"],
+            prefix,
+        ),
         Some("debug-script") if token_idx >= 4 => {
             flag_filter(&["--profile", "--pwndbg-init"], prefix)
         }
@@ -617,9 +642,10 @@ fn reverse_alias_option_suggestions(head: &str, token_idx: usize, prefix: &str) 
         "r.logs" if token_idx >= 2 => flag_filter(&["--stream"], prefix),
         "r.search" if token_idx >= 3 => flag_filter(&["--max"], prefix),
         "r.clear" if token_idx >= 1 => flag_filter(&["--all"], prefix),
-        "r.prune" if token_idx >= 1 => {
-            flag_filter(&["--keep", "--older-than-days", "--include-running"], prefix)
-        }
+        "r.prune" if token_idx >= 1 => flag_filter(
+            &["--keep", "--older-than-days", "--include-running"],
+            prefix,
+        ),
         "r.debug" if token_idx >= 3 => flag_filter(&["--profile", "--pwndbg-init"], prefix),
         _ => Vec::new(),
     }
@@ -653,7 +679,12 @@ fn reverse_plan_option_suggestions(token_idx: usize, prefix: &str) -> Vec<String
 fn reverse_run_option_suggestions(token_idx: usize, prefix: &str) -> Vec<String> {
     if token_idx >= 3 {
         flag_filter(
-            &["--deep", "--rust-first", "--no-rust-first", "--timeout-secs"],
+            &[
+                "--deep",
+                "--rust-first",
+                "--no-rust-first",
+                "--timeout-secs",
+            ],
             prefix,
         )
     } else {
@@ -662,7 +693,8 @@ fn reverse_run_option_suggestions(token_idx: usize, prefix: &str) -> Vec<String>
 }
 
 fn flag_filter(flags: &[&str], prefix: &str) -> Vec<String> {
-    flags.iter()
+    flags
+        .iter()
         .filter(|flag| flag.starts_with(prefix))
         .map(|flag| (*flag).to_string())
         .collect()
@@ -867,5 +899,14 @@ mod tests {
         let tokens = vec![(0, 8), (9, 14), (15, 19), (20, 22)];
         let got = build_completions(buf, &tokens, 3, "--");
         assert!(got.iter().any(|item| item == "--max"));
+    }
+
+    #[test]
+    fn vuln_scan_completion_suggests_findings_only_flags() {
+        let buf = "v.scan https://example.com --";
+        let tokens = vec![(0, 6), (7, 26), (27, 29)];
+        let got = build_completions(buf, &tokens, 2, "--");
+        assert!(got.iter().any(|item| item == "--findings-only"));
+        assert!(got.iter().any(|item| item == "--success-only"));
     }
 }

@@ -161,6 +161,45 @@ pub(super) fn format_vuln_report_pretty(r: &VulnScanReport, color: bool) -> Stri
     lines.join("\n")
 }
 
+pub(super) fn format_vuln_findings_only(r: &VulnScanReport, fmt: &str, color: bool) -> String {
+    if fmt.eq_ignore_ascii_case("json") {
+        return serde_json::to_string_pretty(&r.findings).unwrap_or_else(|_| "[]".to_string());
+    }
+    if fmt.eq_ignore_ascii_case("csv") {
+        let mut lines = vec!["severity,template_id,method,url,target,matched".to_string()];
+        for f in &r.findings {
+            let severity = f.severity.clone().unwrap_or_default().replace(',', " ");
+            let template_id = f.template_id.replace(',', " ");
+            let method = f.method.to_ascii_uppercase().replace(',', " ");
+            let url = f.url.replace(',', " ");
+            let target = f.target.replace(',', " ");
+            let matched = f.matched.join("|").replace(',', " ");
+            lines.push(format!(
+                "{severity},{template_id},{method},{url},{target},{matched}"
+            ));
+        }
+        return lines.join("\n");
+    }
+    if r.findings.is_empty() {
+        return colorize("no findings", "90", color);
+    }
+    let mut lines = vec![format!(
+        "{:>6} {:<16} {:<6} {}",
+        "SEV", "TEMPLATE", "METHOD", "URL"
+    )];
+    for f in &r.findings {
+        let (badge, code) = severity_badge(f.severity.as_deref());
+        let sev = colorize(&format!("{:>6}", badge), code, color);
+        let tpl = f.template_id.clone();
+        let method = f.method.to_ascii_uppercase();
+        lines.push(format!("{sev} {:<16} {:<6} {}", tpl, method, f.url));
+        if !f.matched.is_empty() {
+            lines.push(format!("      matched={}", f.matched.join(",")));
+        }
+    }
+    lines.join("\n")
+}
+
 pub(super) fn format_container_audit_pretty(r: &ContainerAuditReport, color: bool) -> String {
     let mut lines = Vec::new();
     lines.push(format!(
@@ -435,4 +474,42 @@ pub(super) fn engine_rows_to_host_result(
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_report() -> VulnScanReport {
+        VulnScanReport {
+            scanned_requests: 12,
+            findings: vec![crate::modules::vuln_check::VulnFinding {
+                template_id: "cvescan".to_string(),
+                template_name: Some("sample".to_string()),
+                severity: Some("high".to_string()),
+                target: "http://target".to_string(),
+                url: "http://target/login".to_string(),
+                method: "get".to_string(),
+                matched: vec!["word:body".to_string(), "status:code".to_string()],
+            }],
+            errors: vec!["network timeout".to_string()],
+        }
+    }
+
+    #[test]
+    fn format_vuln_findings_only_raw_omits_scan_summary_and_errors() {
+        let s = format_vuln_findings_only(&sample_report(), "raw", false);
+        assert!(s.contains("cvescan"));
+        assert!(s.contains("matched=word:body,status:code"));
+        assert!(!s.contains("scan=ok"));
+        assert!(!s.contains("errors:"));
+    }
+
+    #[test]
+    fn format_vuln_findings_only_json_returns_findings_array() {
+        let s = format_vuln_findings_only(&sample_report(), "json", false);
+        assert!(s.starts_with("["));
+        assert!(s.contains("\"template_id\": \"cvescan\""));
+        assert!(!s.contains("\"scanned_requests\""));
+    }
 }

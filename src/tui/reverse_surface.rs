@@ -1,9 +1,7 @@
-use std::io::{IsTerminal, stdin};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span, Text};
@@ -31,9 +29,9 @@ const AUTO_REFRESH_INTERVAL: Duration = Duration::from_millis(900);
 const EVENT_POLL_INTERVAL: Duration = Duration::from_millis(140);
 const MAX_DISCOVERED_INPUTS: usize = 8;
 const MAX_RECENT_JOBS: usize = 8;
-const NATIVE_PICKER_LAUNCH_SETTLE: Duration = Duration::from_millis(90);
 const NATIVE_PICKER_TRIGGER_DEBOUNCE: Duration = Duration::from_millis(180);
 const NATIVE_PICKER_CLOSE_GRACE: Duration = Duration::from_millis(240);
+const AUTO_OPEN_VIEWER_ENV: &str = "RSCAN_REVERSE_AUTO_OPEN";
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum SurfaceAction {
@@ -56,6 +54,7 @@ struct ReverseSurfaceState {
     last_refresh: Instant,
     native_picker_not_before: Option<Instant>,
     pending_filepicker: Option<PendingFilepicker>,
+    pending_viewer_launch: bool,
 }
 
 struct PendingFilepicker {
@@ -72,56 +71,55 @@ pub(crate) fn run_reverse_surface(
 
     let mut state = ReverseSurfaceState::new(root_ws, project)?;
     let mut terminal = enter_alt_terminal()?;
-    update_surface_lock_status(&mut state);
 
-    let res = loop {
-        state.poll_pending_filepicker()?;
-        state.refresh(false)?;
-        if state.should_auto_launch() {
-            leave_alt_terminal(&mut terminal)?;
-            let launch_result = state.launch_selected_target();
-            terminal = enter_alt_terminal()?;
-            update_surface_lock_status(&mut state);
-            if let Err(err) = launch_result {
-                state.status_line = format!("reverse viewer 启动失败: {err}");
-            }
-            continue;
-        }
-
-        terminal
-            .draw(|f| draw_surface(f, &state))
-            .map_err(RustpenError::Io)?;
-
-        if state.consume_scheduled_picker_open() {
-            drain_pending_terminal_events();
-            let pick_result = state.pick_target_with_zellij_filepicker();
-            if let Err(err) = pick_result {
-                state.status_line = format!("zellij filepicker 失败: {err}");
-            }
-            continue;
-        }
-
-        if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
-            continue;
-        }
-        let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
-            continue;
-        };
-        match state.handle_key(key)? {
-            SurfaceAction::None => {}
-            SurfaceAction::Quit => break Ok(()),
-            SurfaceAction::Launch => {
+    let res = (|| -> Result<(), RustpenError> {
+        loop {
+            state.poll_pending_filepicker()?;
+            state.refresh(false)?;
+            if state.should_auto_launch() {
                 leave_alt_terminal(&mut terminal)?;
                 let launch_result = state.launch_selected_target();
                 terminal = enter_alt_terminal()?;
-                update_surface_lock_status(&mut state);
                 if let Err(err) = launch_result {
                     state.status_line = format!("reverse viewer 启动失败: {err}");
                 }
+                continue;
             }
-            SurfaceAction::PickTarget => state.schedule_target_picker_open(),
+
+            terminal
+                .draw(|f| draw_surface(f, &state))
+                .map_err(RustpenError::Io)?;
+
+            if state.consume_scheduled_picker_open() {
+                drain_pending_terminal_events();
+                let pick_result = state.pick_target_with_zellij_filepicker();
+                if let Err(err) = pick_result {
+                    state.status_line = format!("zellij filepicker 失败: {err}");
+                }
+                continue;
+            }
+
+            if !event::poll(EVENT_POLL_INTERVAL).map_err(RustpenError::Io)? {
+                continue;
+            }
+            let Event::Key(key) = event::read().map_err(RustpenError::Io)? else {
+                continue;
+            };
+            match state.handle_key(key)? {
+                SurfaceAction::None => {}
+                SurfaceAction::Quit => return Ok(()),
+                SurfaceAction::Launch => {
+                    leave_alt_terminal(&mut terminal)?;
+                    let launch_result = state.launch_selected_target();
+                    terminal = enter_alt_terminal()?;
+                    if let Err(err) = launch_result {
+                        state.status_line = format!("reverse viewer 启动失败: {err}");
+                    }
+                }
+                SurfaceAction::PickTarget => state.schedule_target_picker_open(),
+            }
         }
-    };
+    })();
 
     leave_alt_terminal(&mut terminal).ok();
     res
@@ -141,12 +139,14 @@ impl ReverseSurfaceState {
             selected_job_id: None,
             discovered_inputs: Vec::new(),
             recent_jobs: Vec::new(),
-            status_line: "等待 Enter / p / F4 打开 zellij filepicker 选择样本；选中后会先绑定 project，分析由你手动发起。"
+            status_line:
+                "等待 Enter / Alt+f / p 打开 zellij filepicker 选择样本；选中后会先绑定 project，分析由你手动发起。"
                 .to_string(),
             last_viewer_request_ns: 0,
             last_refresh: Instant::now() - AUTO_REFRESH_INTERVAL,
             native_picker_not_before: None,
             pending_filepicker: None,
+            pending_viewer_launch: false,
         };
         state.refresh(true)?;
         Ok(state)
@@ -247,6 +247,9 @@ impl ReverseSurfaceState {
         if key.kind != KeyEventKind::Press {
             return Ok(SurfaceAction::None);
         }
+        if is_surface_picker_hotkey(key) {
+            return Ok(SurfaceAction::PickTarget);
+        }
         match key.code {
             KeyCode::Char('q') => Ok(SurfaceAction::Quit),
             KeyCode::Char('r') => {
@@ -254,7 +257,7 @@ impl ReverseSurfaceState {
                 self.status_line = "reverse surface 已刷新".to_string();
                 Ok(SurfaceAction::None)
             }
-            KeyCode::Char('p') | KeyCode::F(4) => Ok(SurfaceAction::PickTarget),
+            KeyCode::Char('p') => Ok(SurfaceAction::PickTarget),
             KeyCode::Down | KeyCode::Char('j') => {
                 self.move_job_selection(1);
                 Ok(SurfaceAction::None)
@@ -283,7 +286,7 @@ impl ReverseSurfaceState {
             KeyCode::Char('o') | KeyCode::Char('v') => {
                 if self.selected_target.is_none() {
                     self.status_line =
-                        "尚未选择目标；请按 Enter / p / F4 打开 zellij filepicker。".to_string();
+                        "尚未选择目标；请按 Enter / Alt+f / p 打开 zellij filepicker。".to_string();
                     Ok(SurfaceAction::None)
                 } else {
                     Ok(SurfaceAction::Launch)
@@ -293,7 +296,7 @@ impl ReverseSurfaceState {
                 clear_active_target_hint(&self.root_ws)?;
                 self.selected_target = None;
                 self.native_picker_not_before = None;
-                self.status_line = "已清空当前目标；可按 Enter / p / F4 重新选择。".to_string();
+                self.status_line = "已清空当前目标；可按 Enter / Alt+f / p 重新选择。".to_string();
                 Ok(SurfaceAction::None)
             }
             _ => Ok(SurfaceAction::None),
@@ -316,6 +319,19 @@ impl ReverseSurfaceState {
     }
 
     fn schedule_target_picker_open(&mut self) {
+        if self.pending_filepicker.is_some() {
+            if let Some(mut pending) = self.pending_filepicker.take() {
+                let _ = abort_zellij_filepicker(&mut pending.handle);
+            }
+            self.native_picker_not_before = None;
+            self.status_line = "zellij filepicker 已关闭（Alt+f/p）".to_string();
+            return;
+        }
+        if self.native_picker_not_before.is_some() {
+            self.native_picker_not_before = None;
+            self.status_line = "已取消 filepicker 打开请求".to_string();
+            return;
+        }
         self.native_picker_not_before = Some(Instant::now() + NATIVE_PICKER_TRIGGER_DEBOUNCE);
         self.status_line = "正在打开 zellij filepicker...".to_string();
     }
@@ -333,18 +349,15 @@ impl ReverseSurfaceState {
 
     fn pick_target_with_zellij_filepicker(&mut self) -> Result<(), RustpenError> {
         if self.pending_filepicker.is_some() {
-            self.status_line =
-                "zellij filepicker 正在运行；若要收起，直接再按一次 F4。".to_string();
+            let mut pending = self.pending_filepicker.take().expect("pending existed");
+            let _ = abort_zellij_filepicker(&mut pending.handle);
+            self.status_line = "zellij filepicker 已关闭（Alt+f/p）".to_string();
             return Ok(());
         }
         let start = self
             .selected_target
             .clone()
             .unwrap_or_else(|| preferred_picker_root(&self.active_project));
-        let _ = switch_zellij_mode_for_filepicker();
-        flush_tty_stdin_input();
-        std::thread::sleep(NATIVE_PICKER_LAUNCH_SETTLE);
-        flush_tty_stdin_input();
         let handle = spawn_zellij_filepicker(Some(&start), "rscan reverse target")
             .map_err(RustpenError::ParseError)?;
         let seen_visible = zellij_filepicker_is_visible(&handle).unwrap_or(false);
@@ -354,7 +367,7 @@ impl ReverseSurfaceState {
             seen_visible,
         });
         self.status_line = if seen_visible {
-            "zellij filepicker 已打开；选中文件后会自动绑定并补 index，F4 可关闭。".to_string()
+            "zellij filepicker 已打开；选中文件后会自动绑定并补 index，Alt+f/p 可关闭。".to_string()
         } else {
             "正在打开 zellij filepicker...".to_string()
         };
@@ -369,7 +382,6 @@ impl ReverseSurfaceState {
         if let Some(result) =
             poll_zellij_filepicker(&mut pending.handle).map_err(RustpenError::ParseError)?
         {
-            let _ = auto_lock_zellij_for_surface();
             match result {
                 Ok(path) => {
                     let msg = self.import_target_with_default_index(&path)?;
@@ -394,14 +406,14 @@ impl ReverseSurfaceState {
             && pending.opened_at.elapsed() >= NATIVE_PICKER_CLOSE_GRACE
         {
             let _ = abort_zellij_filepicker(&mut pending.handle);
-            let _ = auto_lock_zellij_for_surface();
             self.status_line = "zellij filepicker 已关闭".to_string();
             return Ok(());
         }
 
         if visible {
             self.status_line =
-                "zellij filepicker 已打开；选中文件后会自动绑定并补 index，F4 可关闭。".to_string();
+                "zellij filepicker 已打开；选中文件后会自动绑定并补 index，Alt+f/p 可关闭。"
+                    .to_string();
         }
 
         self.pending_filepicker = Some(pending);
@@ -409,13 +421,14 @@ impl ReverseSurfaceState {
     }
 
     fn should_auto_launch(&self) -> bool {
-        self.pending_viewer_request().is_some()
+        auto_open_viewer_enabled()
+            && (self.pending_viewer_launch || self.pending_viewer_request().is_some())
     }
 
     fn launch_selected_target(&mut self) -> Result<(), RustpenError> {
         let Some(target) = self.selected_target.clone() else {
             self.status_line =
-                "尚未选择目标；请按 Enter / p / F4 打开 zellij filepicker。".to_string();
+                "尚未选择目标；请按 Enter / Alt+f / p 打开 zellij filepicker。".to_string();
             return Ok(());
         };
         let display = relative_or_full(&self.active_project, &target);
@@ -425,6 +438,7 @@ impl ReverseSurfaceState {
             pwndbg_init: None,
         };
 
+        self.pending_viewer_launch = false;
         self.mark_pending_viewer_request_seen();
         let result = run_reverse_tui(cfg);
         self.refresh(true)?;
@@ -548,7 +562,8 @@ impl ReverseSurfaceState {
         &mut self,
         selected: &Path,
     ) -> Result<String, RustpenError> {
-        let (project, target, bind_msg) = self.bind_selected_file(selected, true)?;
+        let (project, target, bind_msg) =
+            self.bind_selected_file(selected, auto_open_viewer_enabled())?;
         if let Some(job) = reusable_analysis_job(&project, &target) {
             return Ok(format!("{bind_msg} | {}", describe_reused_job(&job)));
         }
@@ -569,6 +584,9 @@ impl ReverseSurfaceState {
         write_active_target_hint(&self.root_ws, &prepared.target)?;
         if open_viewer {
             request_reverse_viewer_open(&self.root_ws, &prepared.target)?;
+            // Do not rely solely on mtime-based request_ns; always force one launch
+            // to guarantee switching to the newly selected target view.
+            self.pending_viewer_launch = true;
         }
 
         let mut flags = Vec::new();
@@ -697,7 +715,7 @@ fn draw_surface(f: &mut ratatui::Frame<'_>, state: &ReverseSurfaceState) {
 
     let footer = Paragraph::new(Text::from(vec![
         Line::from(state.status_line.clone()),
-        Line::from("Enter=follow selected job / open viewer  p/F4=picker  t=follow job"),
+        Line::from("Enter=follow selected job / open viewer  Alt+f/p=picker  t=follow job"),
         Line::from("j/k=select job  i=index  f/d=full  a=analyze  c=clear  r=refresh  q=quit"),
     ]))
     .block(Block::default().title("Bridge").borders(Borders::ALL))
@@ -730,15 +748,15 @@ fn build_file_panel_text(state: &ReverseSurfaceState) -> Text<'static> {
             lines.push(Line::from("job: <none yet>"));
         }
         lines.push(Line::from(""));
-        lines.push(Line::from("p/F4 打开文件目录"));
-        lines.push(Line::from("picker 开着时再按 F4 关闭"));
+        lines.push(Line::from("Alt+f/p 打开文件目录"));
+        lines.push(Line::from("picker 开着时再按 Alt+f/p 关闭"));
         lines.push(Line::from("Enter 打开当前 viewer"));
         lines.push(Line::from("i=auto-index  f/d=ghidra-full  a=analyze"));
     } else {
         lines.push(Line::from("当前未选文件"));
         lines.push(Line::from(""));
-        lines.push(Line::from("p/F4 打开 zellij filepicker"));
-        lines.push(Line::from("picker 开着时再按 F4 关闭"));
+        lines.push(Line::from("Alt+f/p 打开 zellij filepicker"));
+        lines.push(Line::from("picker 开着时再按 Alt+f/p 关闭"));
         lines.push(Line::from("Enter 若有高亮 job 就先跟随该文件"));
         lines.push(Line::from("没有 job 时 Enter 直接选文件"));
     }
@@ -848,41 +866,9 @@ fn describe_reused_job(job: &ReverseJobMeta) -> String {
     format!("复用现有 {mode} job {} ({status})", shorten_id(&job.id, 18))
 }
 
-fn update_surface_lock_status(state: &mut ReverseSurfaceState) {
-    if let Err(err) = auto_lock_zellij_for_surface() {
-        state.status_line =
-            format!("zellij locked 自动切换失败: {err} | 如按键被吞，可手动 Ctrl-g");
-    } else if std::env::var("ZELLIJ").is_ok() || std::env::var("ZELLIJ_SESSION_NAME").is_ok() {
-        state.status_line =
-            "reverse surface 已自动切到 zellij Locked mode；Enter / p / F4 现在会直达当前 pane。"
-                .to_string();
-    }
-}
-
-fn auto_lock_zellij_for_surface() -> Result<(), String> {
-    switch_zellij_mode("locked")
-}
-
-fn switch_zellij_mode_for_filepicker() -> Result<(), String> {
-    switch_zellij_mode("pane")
-}
-
-fn switch_zellij_mode(mode: &str) -> Result<(), String> {
-    if std::env::var("ZELLIJ").is_err() && std::env::var("ZELLIJ_SESSION_NAME").is_err() {
-        return Ok(());
-    }
-    let status = Command::new("zellij")
-        .args(["action", "switch-mode", mode])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|e| format!("zellij switch-mode {mode} 失败: {e}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("zellij switch-mode {mode} 返回失败"))
-    }
+fn is_surface_picker_hotkey(key: KeyEvent) -> bool {
+    matches!(key.code, KeyCode::Char('f') | KeyCode::Char('F'))
+        && key.modifiers.contains(KeyModifiers::ALT)
 }
 
 fn is_filepicker_closed_message(err: &str) -> bool {
@@ -897,18 +883,14 @@ fn drain_pending_terminal_events() {
     }
 }
 
-#[cfg(unix)]
-fn flush_tty_stdin_input() {
-    if !stdin().is_terminal() {
-        return;
-    }
-    unsafe {
-        libc::tcflush(libc::STDIN_FILENO, libc::TCIFLUSH);
-    }
+fn auto_open_viewer_enabled() -> bool {
+    std::env::var(AUTO_OPEN_VIEWER_ENV)
+        .map(|value| {
+            let normalized = value.trim().to_ascii_lowercase();
+            normalized == "1" || normalized == "true" || normalized == "yes" || normalized == "on"
+        })
+        .unwrap_or(false)
 }
-
-#[cfg(not(unix))]
-fn flush_tty_stdin_input() {}
 
 #[cfg(test)]
 mod tests {
@@ -1024,6 +1006,7 @@ mod tests {
             last_refresh: Instant::now(),
             native_picker_not_before: None,
             pending_filepicker: None,
+            pending_viewer_launch: false,
         };
 
         let action = state.enter_key_action().unwrap();
@@ -1044,5 +1027,48 @@ mod tests {
         assert!(!is_filepicker_closed_message(
             "zellij pipe(filepicker) 调用失败"
         ));
+    }
+
+    #[test]
+    fn surface_picker_hotkey_only_matches_alt_f() {
+        assert!(is_surface_picker_hotkey(KeyEvent::new(
+            KeyCode::Char('f'),
+            KeyModifiers::ALT
+        )));
+        assert!(is_surface_picker_hotkey(KeyEvent::new(
+            KeyCode::Char('F'),
+            KeyModifiers::ALT
+        )));
+        assert!(!is_surface_picker_hotkey(KeyEvent::new(
+            KeyCode::Char('f'),
+            KeyModifiers::NONE
+        )));
+    }
+
+    #[test]
+    fn schedule_picker_open_toggles_cancel_when_already_scheduled() {
+        let root = temp_root("toggle_picker_schedule");
+        let project = root.join("projects").join("sample");
+        fs::create_dir_all(project.join("binaries")).unwrap();
+        let mut state = ReverseSurfaceState::new(root.clone(), Some(project)).unwrap();
+        state.native_picker_not_before = Some(Instant::now());
+        state.schedule_target_picker_open();
+        assert!(state.native_picker_not_before.is_none());
+        assert!(state.status_line.contains("取消"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn bind_selected_file_sets_pending_viewer_launch_for_new_target() {
+        let root = temp_root("pending_launch");
+        let outside = root.join("fixtures").join("n.bin");
+        fs::create_dir_all(outside.parent().unwrap()).unwrap();
+        fs::write(&outside, b"\x7fELF").unwrap();
+        let project = root.join("projects").join("sample");
+        fs::create_dir_all(project.join("binaries")).unwrap();
+        let mut state = ReverseSurfaceState::new(root.clone(), Some(project)).unwrap();
+        let _ = state.bind_selected_file(&outside, true).unwrap();
+        assert!(state.pending_viewer_launch);
+        let _ = fs::remove_dir_all(root);
     }
 }

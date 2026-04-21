@@ -14,10 +14,20 @@ pub(crate) fn launcher_commands() -> Vec<(&'static str, &'static str)> {
             "w.fuzz https://example.com/FUZZ admin,login",
         ),
         ("Web DNS example.com", "w.dns example.com www,api,dev"),
-        ("Web Crawl example.com", "w.crawl https://example.com --max-depth 2"),
-        ("Web Live batch", "w.live https://example.com,https://example.org"),
+        (
+            "Web Crawl example.com",
+            "w.crawl https://example.com --max-depth 2",
+        ),
+        (
+            "Web Live batch",
+            "w.live https://example.com,https://example.org",
+        ),
         ("Vuln Lint builtin templates", "v.lint ./nuclei-templates"),
         ("Vuln Scan example.com", "v.scan https://example.com"),
+        (
+            "Vuln Scan findings only",
+            "v.scan https://example.com --findings-only",
+        ),
         ("Vuln Container Audit", "v.ca ./k8s"),
         ("Vuln System Guard", "v.sg"),
         ("Vuln Stealth Check", "v.sc https://example.com"),

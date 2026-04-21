@@ -109,7 +109,6 @@ pub(crate) enum InputMode {
     NoteInput,
     CommandInput,
     TerminalInput,
-    ScriptEdit,
     ScriptNewInput,
     ProjectNewInput,
     ProjectImportInput,
