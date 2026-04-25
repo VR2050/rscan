@@ -2,8 +2,6 @@ mod input;
 mod pty;
 mod render;
 
-use std::os::unix::io::RawFd;
-
 use alacritty_terminal::event::VoidListener;
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::term::Term;
@@ -28,12 +26,18 @@ pub(crate) struct TerminalSelection {
     pub(crate) end: (u16, u16),
 }
 
+#[cfg(unix)]
+type TerminalHandle = std::os::unix::io::RawFd;
+#[cfg(not(unix))]
+type TerminalHandle = i32;
+
 pub(crate) struct TerminalSession {
-    master_fd: RawFd,
+    master_fd: TerminalHandle,
     term: Term<VoidListener>,
     parser: Processor,
 }
 
+#[cfg(unix)]
 impl Drop for TerminalSession {
     fn drop(&mut self) {
         unsafe {
