@@ -41,17 +41,20 @@ cargo build --release
 ```
 可选：将 `target/release` 加入 PATH 或执行 `cargo install --path .` 进行本地安装。
 
-### Windows 离线打包（含 zellij）
+### Linux 离线打包（Debian / Ubuntu）
 ```bash
 # 在仓库根目录执行
-chmod +x scripts/package_windows_offline.sh
-scripts/package_windows_offline.sh
+chmod +x scripts/package_linux_offline.sh
+scripts/package_linux_offline.sh
 ```
-- 默认尝试构建 `x86_64-pc-windows-gnu` 并下载 `zellij v0.44.1` Windows 预编译包。
+- 默认打包内容：`rscan` + `zellij` + 启动脚本（`run-rscan-cli.sh` / `run-rscan-tui-zellij.sh`）。
+- 包内包含运行时辅助脚本：
+  - `check-runtime.sh`：启动前检查动态库缺失
+  - `install-deps-debian-ubuntu.sh`：一键安装 Debian/Ubuntu 运行依赖
 - 可选参数：
-  - `TARGET=x86_64-pc-windows-gnu|x86_64-pc-windows-msvc`
-  - `RSCAN_EXE=/path/to/rscan.exe`（使用现成可执行文件，跳过构建）
-  - `ZELLIJ_EXE=/path/to/zellij.exe`（使用本地 zellij，跳过下载）
+  - `TARGET=x86_64-unknown-linux-gnu`
+  - `RSCAN_BIN=/path/to/rscan`（使用现成二进制，跳过构建）
+  - `ZELLIJ_BIN=/path/to/zellij`（使用本地 zellij，跳过下载）
   - `INCLUDE_GHIDRA=1`（把内置 ghidra 目录一起打包）
 
 ### 运行最小示例
