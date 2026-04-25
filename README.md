@@ -47,15 +47,14 @@ cargo build --release
 chmod +x scripts/package_linux_offline.sh
 scripts/package_linux_offline.sh
 ```
-- 默认打包内容：`rscan` + `zellij` + 启动脚本（`run-rscan-cli.sh` / `run-rscan-tui-zellij.sh`）。
-- 包内包含运行时辅助脚本：
-  - `check-runtime.sh`：启动前检查动态库缺失
-  - `install-deps-debian-ubuntu.sh`：一键安装 Debian/Ubuntu 运行依赖
+- 默认打包内容（极简发布）：
+  - `bin/rscan`（编译好的可执行文件）
+  - `install-deps-debian-ubuntu.sh`（依赖安装脚本）
+  - `third_party/ghidra_core_headless_x86_min`（ghidra 后端文件）
 - 可选参数：
   - `TARGET=x86_64-unknown-linux-gnu`
   - `RSCAN_BIN=/path/to/rscan`（使用现成二进制，跳过构建）
-  - `ZELLIJ_BIN=/path/to/zellij`（使用本地 zellij，跳过下载）
-  - `INCLUDE_GHIDRA=1`（把内置 ghidra 目录一起打包）
+  - `GHIDRA_BACKEND_DIR=/path/to/ghidra_core_headless_x86_min`（替换后端目录来源）
 
 ### 运行最小示例
 ```bash
