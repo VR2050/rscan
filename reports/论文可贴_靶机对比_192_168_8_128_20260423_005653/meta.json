@@ -1,0 +1,13 @@
+{
+  "target": "192.168.8.128",
+  "scan_range": "1-1024",
+  "rounds": 5,
+  "reference": "nmap_default union over rounds",
+  "nmap_union_open_ports": [
+    22
+  ],
+  "nmap_intersection_open_ports": [
+    22
+  ],
+  "score_formula": "0.65*Jaccard_vs_nmap + 0.35*speed_norm"
+}

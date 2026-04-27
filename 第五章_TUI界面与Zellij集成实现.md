@@ -1,168 +1,226 @@
 # 第五章 TUI界面与Zellij集成实现
 
-本章围绕 `rscan_codex` 终端交互层的工程实现展开，重点说明统一 TUI 控制面如何与 Zellij 原生运行时协同工作。系统设计遵循“CLI 负责真实执行、TUI 负责编排与可视化、Zellij 负责原生终端与工作区承载”的原则，在不破坏既有命令语义的前提下，实现多模块任务统一调度、逆向工作区专用交互和高性能终端渲染。
+本章围绕 `rscan_codex` 终端交互层展开，说明统一 TUI 如何与 Zellij 原生运行时协同。系统遵循“CLI 负责真实执行、TUI 负责编排与可视化、Zellij 负责终端工作区承载”的分工原则，在不改变既有命令语义的前提下，实现跨模块任务统一调度、逆向专用工作区交互与高性能终端渲染。
 
 ## 5.1 TUI架构设计
 
 ### 5.1.1 Ratatui框架应用
 
-系统统一 TUI 基于 `Ratatui + Crossterm` 构建。入口位于 `src/tui/app.rs`，通过 `Terminal<CrosstermBackend>` 建立终端绘制循环，并以事件轮询方式处理键盘、粘贴和鼠标输入。相比逐命令输出的传统 CLI，Ratatui 提供了声明式布局与组件化绘制能力，使系统可以在同一终端内同时呈现任务列表、详情面板、结果摘要、脚本输出与状态栏。
+统一 TUI 基于 `Ratatui + Crossterm` 实现，入口位于 `src/tui/app.rs`。系统通过 `Terminal<CrosstermBackend>` 建立渲染循环，并在同一事件通道中处理键盘、粘贴、鼠标输入。
 
-在实现上，TUI 主循环采用“状态轮询 + 条件渲染”的机制：每个 Tick 内依次执行任务刷新、脚本完成检测、性能数据采样、状态行推送与渲染缓存更新，再根据渲染签名判断是否需要绘制新帧。该机制兼顾实时性与开销控制，避免了无效重绘导致的终端闪烁和 CPU 浪费。
+与传统“命令执行后逐行打印”的 CLI 交互相比，Ratatui 的声明式布局使系统能够在单终端窗口内并行呈现任务列表、任务详情、结果摘要、脚本输出和状态栏，显著提升多任务场景下的信息密度与可操作性。
 
-此外，系统针对运行环境实现了双模式适配：
+主循环采用“状态轮询 + 条件渲染”机制。每个 Tick 内依次执行：
 
-1. 非 Zellij 管理模式下，启用内置 mini terminal 与浮动控制台。
-2. Zellij 管理模式下，TUI 退化为“控制平面”，真实命令执行与日志跟随交给原生 pane。
+1. 终端输出轮询与性能采样（`poll_terminal_output`、`poll_perf_refresh`）。
+2. 脚本完成检测与任务刷新（`poll_script_completion`、`poll_task_refresh`）。
+3. 状态行推送与渲染缓存更新（`push_status_line`、`refresh_render_caches`）。
+4. 通过 `should_draw_frame()` 判定是否重绘。
 
-该设计保证了 TUI 在普通终端与 Zellij 工作流中均可稳定运行。
+轮询周期根据活跃度动态切换：终端高活跃约 `16ms`、任务活跃约 `120ms`、空闲使用基础刷新间隔。该机制在保证实时性的同时，避免无效重绘造成闪烁和 CPU 浪费。
+
+系统提供双模式适配：
+
+1. 非 Zellij 管理模式：启用内置 mini terminal 与浮动控制台。
+2. Zellij 管理模式：TUI 退化为控制平面，真实执行与日志跟随交由原生 pane。
+
+![图5-1 统一TUI控制面主界面](./images/ch5/fig5-1-control-main.png)
+
+图5-1 截图位置：`Control` tab 中的主界面全屏，需包含顶部 Header、中部主 pane、底部状态栏。
 
 ### 5.1.2 状态管理与渲染分离
 
-系统在 `src/tui/app_state/` 与 `src/tui/render/` 间实现了明确分层：
+系统在 `src/tui/app_state/` 与 `src/tui/render/` 之间建立了明确分层：
 
-1. `AppState` 仅负责业务状态、输入状态、任务索引、缓存键与轮询节奏控制。
-2. `RenderCtx` 作为只读快照，将状态层数据映射为渲染层输入。
-3. `draw_frame` 与各 pane 子模块仅负责 UI 组合与绘制，不直接修改业务状态。
+1. `AppState` 负责业务状态、输入状态、任务索引、缓存键和轮询节奏控制。
+2. `RenderCtx` 作为只读快照，将状态层映射为渲染输入。
+3. `draw_frame` 与 `render/panes/*` 仅负责 UI 组合与绘制，不直接改写业务状态。
 
-该分离带来三方面收益：
+该分层带来三方面收益：
 
-1. 可维护性提升：状态更新与视觉渲染职责单一，便于持续重构。
-2. 可测试性提升：缓存键、签名计算、列表构建等逻辑可在无终端环境下验证。
-3. 性能可控：状态层通过 `task_signature`、`live_serial`、`render_serial` 等机制精确判定“何时重算、何时重绘”。
+1. 可维护性：状态更新与视觉渲染职责解耦，便于持续迭代。
+2. 可测试性：签名计算、缓存键、列表构建等逻辑可在无终端环境单测。
+3. 性能可控：通过 `task_signature`、`live_serial`、`render_serial` 精确判定“重算/重绘时机”。
 
-例如，`should_draw_frame()` 基于“当前 UI 状态哈希”做帧级去抖；若签名未变化，则跳过整帧绘制。与此同时，各 pane 还有独立缓存键，避免“一个局部状态变化导致全局文本重建”。
+具体实现上，`should_draw_frame()` 使用 `frame_render_signature` 对关键 UI 状态哈希；签名未变化即跳过整帧绘制。同时各 pane 拥有独立缓存序列，避免局部变化触发全局文本重建。
 
 ### 5.1.3 多面板布局设计
 
-统一 TUI 支持三种主布局：`Single`、`SplitLeftTasks`、`TriPanel`，对应单面板、双栏和三栏场景。布局调度在 `src/tui/render.rs` 中实现，具体 pane 内容由 `render/panes/*` 子模块负责。
+统一 TUI 支持三种主布局：`Single`、`SplitLeftTasks`、`TriPanel`。布局调度位于 `src/tui/render.rs`，具体内容由 `src/tui/render/panes/*` 子模块渲染。
 
-核心面板包括：
+核心 pane 包括：
 
 1. `Dashboard`：全局任务统计、模块分布、运行时与 pane registry 概览。
 2. `Tasks`：任务状态表格与生命周期视图。
-3. `Results`：终态任务结果聚合与诊断视图。
-4. `Projects`：项目切换、模板选择与项目管理。
+3. `Results`：终态任务聚合、结果状态与诊断摘要。
+4. `Projects`：项目切换、模板选择与管理。
 5. `Scripts`：脚本文件管理、输出回显与运行状态。
-6. `Launcher`：内置命令模板与快捷启动入口。
+6. `Launcher`：命令模板与快捷启动入口。
 
-在 Zellij 管理模式下，TUI 与 `Control/Work/Inspect/Reverse` 四个 tab 协同：Control 保持统一调度视图，Work/Inspect/Reverse 承载原生任务操作，从而形成“结构化控制 + 原生终端执行”的多面板工作流。
+在 Zellij 管理模式下，TUI 与 `Control / Work / Inspect / Reverse` 四 tab 协同：`Control` 维持统一调度视图，`Work/Inspect/Reverse` 承载原生任务操作，形成“结构化控制 + 原生终端执行”的混合工作流。
+
+![图5-2 多面板布局与功能区域](./images/ch5/fig5-2-tripanel-layout.png)
+
+图5-2 截图位置：`Control` tab 切到 `TriPanel` 布局，确保左中右三栏（Tasks/Center/Results）同时可见。
 
 ## 5.2 Zellij深度集成实现
 
 ### 5.2.1 原生Pane管理机制
 
-系统将 Zellij 集成封装在 `src/tui/zellij.rs`、`zellij_layout.rs`、`zellij_query.rs` 中，实现了会话探测、布局引导、tab 补齐与 pane 打开能力。
+Zellij 集成主要封装在 `src/tui/zellij.rs`、`src/tui/zellij_layout.rs`、`src/tui/zellij_query.rs`。系统完成了会话探测、布局引导、tab 补齐与 pane 打开能力。
 
-启动时，系统会自动生成 `.rscan/zellij/*.kdl` 布局文件，并构建四个托管 tab：
+启动时自动生成 `.rscan/zellij/*.kdl` 布局资产，并维护四个托管 tab：
 
 1. `Control`：运行 `rscan tui`。
-2. `Work`：运行 work hub，并保留原生 shell。
-3. `Inspect`：运行 inspect hub，并保留原生 shell。
+2. `Work`：运行 work hub，并保留原生 shell 工作入口。
+3. `Inspect`：运行 inspect hub，并保留原生 shell 入口。
 4. `Reverse`：运行 reverse surface。
 
-Pane 打开统一使用 `zellij action new-pane --cwd ... [--name ...]`，并支持命名 pane。命名策略（如 `logs-xxxx`、`task-xxxx`、`art-xxxx`）使后续复用与聚焦成为可能。
+pane 打开统一走 `zellij action new-pane --cwd ... [--name ...]`。命名策略（如 `logs-xxxx`、`task-xxxx`、`art-xxxx`）为后续复用、聚焦与追踪提供了稳定锚点。
+
+![图5-3 Zellij托管布局（四Tab）](./images/ch5/fig5-3-zellij-tabs.png)
+
+图5-3 截图位置：Zellij 顶部 tab-bar 需完整展示 `Control/Work/Inspect/Reverse` 四个 tab 名称。
 
 ### 5.2.2 任务运行时绑定设计
 
-为把“任务元数据”与“原生 pane 上下文”关联，系统引入 `TaskRuntimeBinding`，并写入 `TaskMeta.extra.runtime`（普通任务）或 `jobs/<id>/task-runtime.json`（reverse job）。绑定字段包括：
+为将任务元数据与原生 pane 上下文关联，系统引入 `TaskRuntimeBinding`，并写入：
 
-1. backend/session/tab/pane_name
-2. role（如 `inspect-logs`、`task-shell`）
-3. cwd 与 command
+1. 普通任务：`TaskMeta.extra.runtime`。
+2. reverse 主作业：`jobs/<id>/task-runtime.json`。
 
-该设计使 TUI 不再是“只发命令不感知运行态”的壳层，而是可在详情面板展示任务当前绑定的原生运行时信息，并为 `zlogs/zshell/zart/zfocus` 等动作提供可追踪上下文。
+绑定字段包括：
+
+1. `backend / session / tab / pane_name`
+2. `role`（如 `inspect-logs`、`task-shell`）
+3. `cwd / command`
+
+该机制使 TUI 从“只下发命令”的壳层，升级为“可感知运行态”的控制面：详情面板可展示任务当前绑定的原生 runtime，`zlogs/zshell/zart/zfocus` 也可基于该上下文执行可追踪跳转。
+
+![图5-4 任务运行时绑定详情](./images/ch5/fig5-4-runtime-binding.png)
+
+图5-4 截图位置：`Tasks` 或 `Results` 右侧详情区，需清晰看到 `runtime.backend/session/tab/pane/role/cwd/command` 字段。
 
 ### 5.2.3 Pane复用与生命周期管理
 
 系统采用“实时布局探测 + 本地注册表回退”的复用链路：
 
-1. 优先通过 `zellij dump-layout` 解析命名 pane 是否已存在。
-2. 若实时布局暂不可得，则读取 `.rscan/zellij/panes.json` 作为 soft hint。
-3. 命中后直接聚焦目标 tab，避免重复开 pane。
+1. 优先通过 `zellij action dump-layout` 判断命名 pane 是否已存在。
+2. 若实时布局不可得，则读取 `.rscan/zellij/panes.json` 作为 soft hint。
+3. 命中后优先聚焦目标 tab，避免重复创建 pane。
 
-其中，`zellij_registry::record_pane()` 在每次打开日志/产物/shell pane 后记录最近信息（tab、cwd、role、command、更新时间），并在 Dashboard 展示统计摘要。此机制降低了 pane 泄漏与重复创建问题，提高了工作区连续性。
+`zellij_registry::record_pane()` 在日志/产物/shell pane 打开后记录最近信息（tab、cwd、role、command、更新时间），并在 `Dashboard` 提供摘要展示。该机制可减少 pane 泄漏与重复开窗，提升工作区连续性。
 
-生命周期方面，系统不把 pane 作为任务真相源，真实状态仍以磁盘任务目录与 job 元数据为准。pane 仅承担“观察与操作界面”角色，从架构层面避免了 UI 状态漂移。
+生命周期策略上，pane 不是任务真相源；系统真相仍由任务目录与 job 元数据定义。pane 仅承担“观察/操作界面”角色，从架构层面规避 UI 状态漂移。
 
 ## 5.3 交互体验优化
 
 ### 5.3.1 智能命令补全系统
 
-命令输入在 `src/tui/input/command/` 中实现，具备历史导航、撤销重做、剪贴板粘贴和多级补全能力。补全策略采用分层语义：
+命令输入位于 `src/tui/input/command/`，支持历史导航、撤销重做、粘贴与多级补全。补全策略采用分层语义：
 
 1. 一级补全：`host/web/vuln/reverse` 与 `zrun/zlogs/zshell/zart/zrev/zfocus`。
 2. 二级补全：父命令下子命令（如 `web crawl`、`reverse run`）。
-3. 三级补全：场景相关 flags（如 `--severity`、`--stream`、`--timeout-ms`）。
+3. 三级补全：场景 flags（如 `--severity`、`--stream`、`--timeout-ms`）。
 
-系统同时兼容短别名（`h.quick`、`w.dir`、`r.run`），并通过 completion seed 管理候选轮换，避免上下文变化导致的补全错位。
+系统兼容短别名（如 `h.quick`、`w.dir`、`r.run`），并通过 completion seed 管理候选轮换，降低上下文变化时的补全错位。
 
 ### 5.3.2 实时结果展示链
 
-结果展示链从任务落盘开始：
+结果链路从任务落盘开始：
 
-1. 命令触发后立即写入占位 `meta.json` 与日志文件，避免“任务突变式出现”。
-2. `poll_task_refresh()` 周期刷新 `tasks/` 与 `jobs/`，并将 reverse primary jobs 映射为统一 `TaskView`。
-3. `Results` 面板基于结果状态机输出 `artifact-ready/logs-only/non-previewable-artifact/empty/launching`。
-4. 详情区结合事件尾部、stdout/stderr tail 与 artifact 片段做诊断展示。
+1. 命令触发后即写占位 `meta.json` 与日志文件，避免“任务突变式出现”。
+2. `poll_task_refresh()` 周期刷新 `tasks/` 与 `jobs/`。
+3. reverse 主作业通过 `load_reverse_jobs_as_tasks()` 映射为统一 `TaskView`。
+4. `Results` 基于状态机输出 `artifact-ready/logs-only/non-previewable-artifact/empty/launching`。
+5. 详情区融合事件尾部、stdout/stderr tail 与 artifact 片段完成诊断展示。
 
-该链路实现了“任务启动-执行-产出-诊断”的闭环可视化。特别是 reverse 任务被桥接为统一任务视图后，用户可在同一 `Tasks/Results` 入口观察主机扫描、Web 扫描、漏洞检测与逆向分析结果，降低跨模块切换成本。
+该链路实现“任务启动-执行-产出-诊断”的闭环可视化。reverse 作业接入统一任务视图后，用户可在同一入口观察主机扫描、Web 扫描、漏洞检测与逆向分析结果。
 
 ### 5.3.3 缓存机制与性能优化
 
-系统性能优化分为四层：
+系统性能优化主要体现在四层：
 
-1. 轮询节流：根据活动强度动态切换 tick（终端活跃 16ms，任务活跃 120ms，空闲按基准刷新）。
-2. 数据缓存：任务表、结果列表、脚本面板、项目面板、mini console 均使用独立 cache key 与 render serial。
-3. 帧级去重：通过 `frame_render_signature` 对终端尺寸、输入模式、序列号与核心状态做哈希，签名不变则不重绘。
-4. I/O 优化：日志预览使用尾部读取策略（如 reverse deck 的 `read_last_lines_fast`），避免大文件全量加载。
+1. 轮询节流：按活跃度动态切换 tick（16ms/120ms/基础刷新）。
+2. 数据缓存：任务表、结果列表、脚本面板、项目面板、mini console 使用独立 cache key 与 render serial。
+3. 帧级去重：`frame_render_signature` 对尺寸、输入模式、序列号和核心状态哈希，签名不变则不重绘。
+4. I/O 优化：日志预览采用尾部读取策略（如 `read_last_lines_fast`），避免大文件全量加载。
 
-上述机制使系统在任务高频变更时保持响应性，在空闲状态下降低资源占用，满足终端工具长期驻留的性能需求。
+上述策略使系统在高频任务变更时保持响应，在空闲状态下降低资源占用，满足终端工具长期驻留要求。
 
 ## 5.4 逆向工作区专用视图
 
 ### 5.4.1 文件浏览器实现
 
-逆向文件浏览能力由 `reverse_surface` 与 `reverse_picker` 协同提供：
+逆向文件浏览由 `reverse_surface` 与 `reverse_picker` 协同提供：
 
-1. 本地浏览模式：在 Ratatui 列表中浏览目录、过滤样本、路径输入跳转。
-2. Zellij 原生模式：通过 `strider` filepicker 选择样本，适配真实终端交互。
+1. 本地浏览模式：Ratatui 列表浏览目录、过滤样本、路径跳转。
+2. Zellij 原生模式：通过 `zellij pipe -p filepicker` 拉起 `strider` filepicker。
 
-样本发现策略基于 `reverse_workbench_fs.rs`：
+样本发现策略基于 `src/tui/reverse_workbench_fs.rs`：
 
-1. 递归扫描 `binaries/samples/inputs` 及项目浅层目录。
-2. 过滤 `.git/.rscan/tasks/reverse_out` 等非目标目录。
-3. 依据扩展名、可执行位与目录语义判定“可能逆向输入”。
+1. 递归扫描 `binaries/samples/inputs` 与项目浅层目录。
+2. 过滤 `.git/.rscan/tasks/reverse_out/node_modules/target` 等非目标目录。
+3. 基于扩展名、可执行位与目录语义识别“可能逆向输入”。
 4. 按修改时间排序并限制候选数量。
 
-该机制降低了样本定位成本，并支持“路径直输 + 列表浏览 + 原生 filepicker”三种互补入口。
+该机制支持“路径直输 + 列表浏览 + 原生 filepicker”三种入口互补，降低样本定位成本。
+
+![图5-5 Reverse Surface与文件选择](./images/ch5/fig5-5-reverse-surface-filepicker.png)
+
+图5-5 截图位置：`Reverse` tab 中 `reverse surface` 主界面；若可行，截图时同时展示 filepicker 浮窗或其选择结果提示行。
 
 ### 5.4.2 代码查看器设计
 
-代码查看器复用成熟的 reverse TUI（`src/modules/reverse/console.rs`），采用“函数列表 + 多 Tab 详情 + 字符串侧栏”的设计：
+代码查看器复用 `src/modules/reverse/console.rs`，采用“函数列表 + 多 Tab 详情 + 字符串侧栏”结构：
 
-1. 左侧 Functions 列表用于定位函数。
-2. 右侧 Tab 支持 `Pseudocode/Calls/Xrefs/Externals/Strings/Asm` 六类视图。
-3. 支持过滤、全文搜索、跳转、行注释、命令模式与作业切换。
+1. 左侧 `Functions` 列表用于函数定位。
+2. 右侧支持 `Pseudocode/Calls/Xrefs/Externals/Strings/Asm` 多视图切换。
+3. 支持过滤、搜索、跳转、注释、命令模式与作业切换。
 
-为避免重型自动流程干扰，当前架构将“样本选择”和“查看器打开”解耦：`reverse surface` 仅在收到显式 viewer 请求时拉起完整查看器，不再因目标变化自动触发分析。这一策略显著提升了可控性和交互确定性。
+为避免重型自动流程干扰，系统将“样本选择”与“查看器打开”解耦：`reverse surface` 仅在收到显式 viewer 请求时拉起查看器，不再因目标变化自动触发分析。
+
+![图5-6 Reverse Viewer多Tab详情](./images/ch5/fig5-6-reverse-viewer-tabs.png)
+
+图5-6 截图位置：完整 reverse viewer 界面，需包含左侧函数列表与右侧任一详情 Tab（推荐 `Pseudocode`）。
 
 ### 5.4.3 任务与结果关联展示
 
-逆向工作区通过提示文件与统一任务映射实现跨视图一致性：
+逆向工作区通过提示文件维持跨视图一致性：
 
-1. `.rscan/reverse/active_project.txt` 维护当前项目语义。
-2. `.rscan/reverse/selected_target.txt` 维护当前样本语义。
-3. `.rscan/reverse/open_viewer.txt` 维护查看器打开请求。
+1. `.rscan/reverse/active_project.txt`：当前项目语义。
+2. `.rscan/reverse/selected_target.txt`：当前样本语义。
+3. `.rscan/reverse/open_viewer.txt`：查看器打开请求。
 
-在此基础上，`load_reverse_jobs_as_tasks()` 将 reverse 主作业投影为 `TaskView`，并附带运行时绑定、产物目录与日志路径。最终效果是：
+在此基础上，`load_reverse_jobs_as_tasks()` 将 reverse 主作业投影为 `TaskView`，并附带运行时绑定、产物目录与日志路径。最终实现：
 
-1. Reverse tab 中的 full/index 作业可在 Control 的 `Tasks/Results` 中统一查看。
-2. `L/W/A` 与 `zlogs/zshell/zart` 可直接把 reverse job 送入对应原生 pane。
-3. Work/Inspect/Reverse 三个工作面共享同一 project/target 上下文。
+1. `Reverse` tab 中的 full/index 作业可在 `Control` 的 `Tasks/Results` 统一查看。
+2. `L/W/A` 与 `zlogs/zshell/zart` 可直接将 reverse job 派送至原生 pane。
+3. `Work/Inspect/Reverse` 共用 project/target 上下文。
 
-因此，系统实现了“逆向专用视图负责深度分析，统一控制视图负责跨模块编排”的协同模式，兼顾专业性与整体可用性。
+## 5.5 截图清单与采集说明
+
+建议统一放在：`images/ch5/`（或论文资产目录 `reports/thesis_fig_assets/ch5/`），然后按下表命名。
+
+| 图号 | 建议文件名 | 在文中插入位置 | 具体截哪里 |
+|---|---|---|---|
+| 图5-1 | `fig5-1-control-main.png` | 5.1.1 后 | `Control` tab 全屏主界面（Header + 主pane + Footer） |
+| 图5-2 | `fig5-2-tripanel-layout.png` | 5.1.3 后 | `Control` tab 切到 `TriPanel`，确保三栏同时可见 |
+| 图5-3 | `fig5-3-zellij-tabs.png` | 5.2.1 后 | Zellij 顶部 tab-bar，清晰显示四 tab：Control/Work/Inspect/Reverse |
+| 图5-4 | `fig5-4-runtime-binding.png` | 5.2.2 后 | `Tasks/Results` 详情区 runtime 字段（backend/session/tab/pane/cwd/command） |
+| 图5-5 | `fig5-5-reverse-surface-filepicker.png` | 5.4.1 后 | `Reverse` tab 的 reverse surface（含 filepicker 提示或浮窗） |
+| 图5-6 | `fig5-6-reverse-viewer-tabs.png` | 5.4.2 后 | reverse viewer（左 Functions + 右侧 Pseudocode/Asm 等 Tab） |
+
+推荐截图流程：
+
+```bash
+# 1) 启动统一 TUI（普通模式）
+cargo run -- tui
+
+# 2) 启动 Zellij 托管模式（用于图5-3/5-5/5-6）
+RSCAN_ZELLIJ=1 cargo run -- tui
+```
 
 ## 本章小结
 
-本章完成了统一 TUI 与 Zellij 深度集成方案的实现分析。实践表明，通过状态与渲染解耦、原生 pane 编排、运行时绑定、结果链路可视化和逆向专用工作区设计，系统在终端环境下实现了接近 IDE 的多任务协作体验，并保持了 CLI 语义稳定与工程可维护性，为后续性能评估与应用验证奠定了基础。
+本章给出了统一 TUI 与 Zellij 深度集成的实现路径。通过状态-渲染解耦、原生 pane 编排、运行时绑定、结果链路可视化与逆向专用工作区设计，系统在终端环境下实现了接近 IDE 的多任务协作体验，并保持 CLI 语义稳定与工程可维护性，为后续测试评估与应用验证奠定了基础。

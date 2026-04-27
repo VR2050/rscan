@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640">
+<rect width="100%" height="100%" fill="white"/>
+<text x="550.0" y="40" text-anchor="middle" font-size="28" font-family="Arial">图A 全量端口扫描耗时对比（中位数）</text>
+<text x="550.0" y="66" text-anchor="middle" font-size="15" font-family="Arial" fill="#555">目标 127.0.0.1，端口 1-65535，5轮统计</text>
+<line x1="100" y1="80" x2="100" y2="490" stroke="black"/>
+<line x1="100" y1="490" x2="1060" y2="490" stroke="black"/>
+<line x1="94" y1="490.0" x2="100" y2="490.0" stroke="black"/>
+<text x="88" y="495.0" text-anchor="end" font-size="13" font-family="Arial">0</text>
+<line x1="94" y1="408.0" x2="100" y2="408.0" stroke="black"/>
+<text x="88" y="413.0" text-anchor="end" font-size="13" font-family="Arial">359</text>
+<line x1="100" y1="408.0" x2="1060" y2="408.0" stroke="#ececec"/>
+<line x1="94" y1="326.0" x2="100" y2="326.0" stroke="black"/>
+<text x="88" y="331.0" text-anchor="end" font-size="13" font-family="Arial">718</text>
+<line x1="100" y1="326.0" x2="1060" y2="326.0" stroke="#ececec"/>
+<line x1="94" y1="244.0" x2="100" y2="244.0" stroke="black"/>
+<text x="88" y="249.0" text-anchor="end" font-size="13" font-family="Arial">1077</text>
+<line x1="100" y1="244.0" x2="1060" y2="244.0" stroke="#ececec"/>
+<line x1="94" y1="162.0" x2="100" y2="162.0" stroke="black"/>
+<text x="88" y="167.0" text-anchor="end" font-size="13" font-family="Arial">1436</text>
+<line x1="100" y1="162.0" x2="1060" y2="162.0" stroke="#ececec"/>
+<line x1="94" y1="80.0" x2="100" y2="80.0" stroke="black"/>
+<text x="88" y="85.0" text-anchor="end" font-size="13" font-family="Arial">1795</text>
+<line x1="100" y1="80.0" x2="1060" y2="80.0" stroke="#ececec"/>
+<rect x="100.0" y="389.0" width="290.0" height="101.0" fill="#4E9F3D"/>
+<text x="245.0" y="379.0" text-anchor="middle" font-size="14" font-family="Arial">442 ms</text>
+<text x="245.0" y="522" text-anchor="middle" font-size="15" font-family="Arial">nmap(默认)</text>
+<rect x="435.0" y="389.0" width="290.0" height="101.0" fill="#2E86AB"/>
+<text x="580.0" y="379.0" text-anchor="middle" font-size="14" font-family="Arial">442 ms</text>
+<text x="580.0" y="522" text-anchor="middle" font-size="15" font-family="Arial">rscan(aggressive)</text>
+<rect x="770.0" y="80.0" width="290.0" height="410.0" fill="#F39C12"/>
+<text x="915.0" y="70.0" text-anchor="middle" font-size="14" font-family="Arial">1795 ms</text>
+<text x="915.0" y="522" text-anchor="middle" font-size="15" font-family="Arial">rustscan(默认)</text>
+</svg>

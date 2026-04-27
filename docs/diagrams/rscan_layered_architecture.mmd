@@ -1,0 +1,16 @@
+flowchart TB
+    U[Users / Terminal Input<br/>keyboard, command mode, shortcuts]
+    TUI[TUI Layer (src/tui)<br/>13. Dashboard / Task Mgmt / Results<br/>14. Native Zellij pane orchestration<br/>15. Event handling + state management]
+    OA[Orchestration & Adapters<br/>command_build / command_exec / task_actions<br/>translate UI intent to CLI/task actions]
+    M[Module Layer (src/modules)<br/>port_scan | web_scan | vuln_check | reverse]
+    C[Core Capabilities (src/cores + src/services)<br/>host/web/engine + service_probe]
+    D[Data & Runtime Truth Source<br/>tasks meta/events/logs + jobs/reverse_out + zellij registry]
+    A[Layering Advantages<br/>clear responsibilities | low coupling | testability | extensibility]
+
+    U --> TUI
+    TUI --> OA
+    OA --> M
+    M --> C
+    C --> D
+    D -. state refresh .-> TUI
+    TUI -.-> A

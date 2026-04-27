@@ -1,0 +1,15 @@
+{
+  "target": "127.0.0.1",
+  "scan_range": "1-65535",
+  "open_ports_truth": [
+    42001,
+    42003,
+    42007,
+    42011,
+    42019,
+    43123,
+    44444
+  ],
+  "closed_ports_count": 65528,
+  "score_formula": "score = 0.7*F1 + 0.3*(min_time_ms/time_ms)"
+}

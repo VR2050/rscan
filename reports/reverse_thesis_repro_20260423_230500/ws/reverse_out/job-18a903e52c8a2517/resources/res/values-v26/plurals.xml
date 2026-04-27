@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Base.Theme.AppCompat" parent="@plurals/Base.V26.Theme.AppCompat">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light" parent="@plurals/Base.V26.Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Base.V26.Theme.AppCompat" parent="@plurals/Base.V23.Theme.AppCompat">
+        <item>?android:attr/colorError</item>
+    </plurals>
+    <plurals name="Base.V26.Theme.AppCompat.Light" parent="@plurals/Base.V23.Theme.AppCompat.Light">
+        <item>?android:attr/colorError</item>
+    </plurals>
+    <plurals name="Base.V26.Widget.AppCompat.Toolbar" parent="@plurals/Base.V7.Widget.AppCompat.Toolbar">
+        <item>true</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Toolbar" parent="@plurals/Base.V26.Widget.AppCompat.Toolbar">
+    </plurals>
+    <plurals name="Widget.Design.AppBarLayout" parent="@android:style/Widget">
+        <item>?style/colorPrimary</item>
+        <item>@animator/design_appbar_state_list_animator</item>
+        <item>true</item>
+        <item>true</item>
+    </plurals>
+</resources>

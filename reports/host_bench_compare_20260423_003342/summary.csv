@@ -1,0 +1,7 @@
+scene,tool,case,rc,ms,open_ports_count,open_ports
+common,rscan,rscan_common,0,1329,0,
+common,rustscan,rustscan_common,0,1514,0,
+common,nmap,nmap_common,0,1592,0,
+1-1024,rscan,rscan_1_1024,0,3062,0,
+1-1024,rustscan,rustscan_1_1024,0,1798,0,
+1-1024,nmap,nmap_1_1024,0,5876,0,

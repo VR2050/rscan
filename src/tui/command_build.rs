@@ -168,7 +168,7 @@ pub(crate) fn build_task_spawn_args(
         "vuln" => {
             if parts.len() < 2 {
                 return Err(
-                    "用法: vuln <lint|scan|container-audit|system-guard|stealth-check|fragment-audit> ..."
+                    "用法: vuln <lint|scan|container-audit|system-guard|stealth-check|fragment-audit|fuzz|poc> ..."
                         .to_string(),
                 );
             }
@@ -184,6 +184,7 @@ pub(crate) fn build_task_spawn_args(
                         "--templates".to_string(),
                         parts[2].to_string(),
                     ]);
+                    append_vuln_common_output_args(&mut args, &parts[3..])?;
                 }
                 "scan" => {
                     if parts.len() < 3 {
@@ -223,9 +224,11 @@ pub(crate) fn build_task_spawn_args(
                         "--manifests".to_string(),
                         parts[2].to_string(),
                     ]);
+                    append_vuln_common_output_args(&mut args, &parts[3..])?;
                 }
                 "system-guard" => {
                     args.extend(["vuln".to_string(), "system-guard".to_string()]);
+                    append_vuln_common_output_args(&mut args, &parts[2..])?;
                 }
                 "stealth-check" => {
                     if parts.len() < 3 {
@@ -259,13 +262,55 @@ pub(crate) fn build_task_spawn_args(
                         VulnTargetedKind::Fragment,
                     )?;
                 }
+                "fuzz" => {
+                    if parts.len() < 3 {
+                        return Err(
+                            "用法: vuln fuzz <url_with_FUZZ> [keywords_csv] [--keyword ...]"
+                                .to_string(),
+                        );
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "fuzz".to_string(),
+                        "--url".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    let extra_start = if parts.len() >= 4 && !parts[3].starts_with("--") {
+                        for kw in parts[3].split(',').filter(|kw| !kw.is_empty()) {
+                            args.push("--keyword".into());
+                            args.push(kw.to_string());
+                        }
+                        4
+                    } else {
+                        3
+                    };
+                    append_vuln_fuzz_extra_args(&mut args, &parts[extra_start..])?;
+                }
+                "poc" => {
+                    if parts.len() < 3 {
+                        return Err("用法: vuln poc <target_url> [path]".to_string());
+                    }
+                    args.extend([
+                        "vuln".to_string(),
+                        "poc".to_string(),
+                        "--target".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    let extra_start = if parts.len() >= 4 && !parts[3].starts_with("--") {
+                        args.extend(["--path".to_string(), parts[3].to_string()]);
+                        4
+                    } else {
+                        3
+                    };
+                    append_vuln_poc_extra_args(&mut args, &parts[extra_start..])?;
+                }
                 _ => return Err(format!("未知 vuln 子命令: {sub}")),
             }
         }
         "reverse" => {
             if parts.len() < 2 {
                 return Err(
-                    "用法: reverse <analyze|plan|run|jobs|job-status|job-logs|job-artifacts|job-functions|job-show|job-search|job-clear|job-prune|job-doctor|debug-script> ..."
+                    "用法: reverse <analyze|plan|run|jobs|job-status|job-logs|job-artifacts|job-functions|job-show|job-search|job-clear|job-prune|job-doctor|debug-script|backend-status|android-analyze|malware-triage|shell-audit|console> ..."
                         .to_string(),
                 );
             }
@@ -450,6 +495,63 @@ pub(crate) fn build_task_spawn_args(
                     };
                     append_reverse_debug_script_extra_args(&mut args, &parts[extra_start..])?;
                 }
+                "backend-status" => {
+                    args.extend(["reverse".to_string(), "backend-status".to_string()]);
+                    append_reverse_output_extra_args(&mut args, &parts[2..])?;
+                }
+                "android-analyze" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse android-analyze <input_file>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "android-analyze".to_string(),
+                        "--input".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_reverse_output_extra_args(&mut args, &parts[3..])?;
+                }
+                "malware-triage" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse malware-triage <input_file>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "malware-triage".to_string(),
+                        "--input".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_reverse_output_extra_args(&mut args, &parts[3..])?;
+                }
+                "shell-audit" => {
+                    if parts.len() < 3 {
+                        return Err(
+                            "用法: reverse shell-audit <input_file> [--text <script_text>]"
+                                .to_string(),
+                        );
+                    }
+                    args.extend(["reverse".to_string(), "shell-audit".to_string()]);
+                    if parts[2] == "--text" {
+                        let text = parts.get(3).ok_or_else(|| "--text 需要取值".to_string())?;
+                        args.extend(["--text".to_string(), (*text).to_string()]);
+                        append_reverse_output_extra_args(&mut args, &parts[4..])?;
+                    } else {
+                        args.extend(["--input".to_string(), parts[2].to_string()]);
+                        append_reverse_output_extra_args(&mut args, &parts[3..])?;
+                    }
+                }
+                "console" => {
+                    if parts.len() < 3 {
+                        return Err("用法: reverse console <input_file>".to_string());
+                    }
+                    args.extend([
+                        "reverse".to_string(),
+                        "console".to_string(),
+                        "--input".to_string(),
+                        parts[2].to_string(),
+                    ]);
+                    append_reverse_console_extra_args(&mut args, &parts[3..])?;
+                }
                 _ => return Err(format!("未知 reverse 子命令: {sub}")),
             }
         }
@@ -600,6 +702,7 @@ pub(crate) fn build_task_spawn_args(
                 "--templates".to_string(),
                 parts[1].to_string(),
             ]);
+            append_vuln_common_output_args(&mut args, &parts[2..])?;
         }
         "v.scan" => {
             if parts.len() < 2 {
@@ -639,9 +742,11 @@ pub(crate) fn build_task_spawn_args(
                 "--manifests".to_string(),
                 parts[1].to_string(),
             ]);
+            append_vuln_common_output_args(&mut args, &parts[2..])?;
         }
         "v.sg" => {
             args.extend(["vuln".to_string(), "system-guard".to_string()]);
+            append_vuln_common_output_args(&mut args, &parts[1..])?;
         }
         "v.sc" => {
             if parts.len() < 2 {
@@ -666,6 +771,47 @@ pub(crate) fn build_task_spawn_args(
                 parts[1].to_string(),
             ]);
             append_vuln_targeted_extra_args(&mut args, &parts[2..], VulnTargetedKind::Fragment)?;
+        }
+        "v.fuzz" => {
+            if parts.len() < 2 {
+                return Err(
+                    "用法: v.fuzz <url_with_FUZZ> [keywords_csv] [--keyword ...]".to_string(),
+                );
+            }
+            args.extend([
+                "vuln".to_string(),
+                "fuzz".to_string(),
+                "--url".to_string(),
+                parts[1].to_string(),
+            ]);
+            let extra_start = if parts.len() >= 3 && !parts[2].starts_with("--") {
+                for kw in parts[2].split(',').filter(|kw| !kw.is_empty()) {
+                    args.push("--keyword".into());
+                    args.push(kw.to_string());
+                }
+                3
+            } else {
+                2
+            };
+            append_vuln_fuzz_extra_args(&mut args, &parts[extra_start..])?;
+        }
+        "v.poc" => {
+            if parts.len() < 2 {
+                return Err("用法: v.poc <target_url> [path]".to_string());
+            }
+            args.extend([
+                "vuln".to_string(),
+                "poc".to_string(),
+                "--target".to_string(),
+                parts[1].to_string(),
+            ]);
+            let extra_start = if parts.len() >= 3 && !parts[2].starts_with("--") {
+                args.extend(["--path".to_string(), parts[2].to_string()]);
+                3
+            } else {
+                2
+            };
+            append_vuln_poc_extra_args(&mut args, &parts[extra_start..])?;
         }
         "r.analyze" => {
             if parts.len() < 2 {
@@ -842,6 +988,60 @@ pub(crate) fn build_task_spawn_args(
                 3
             };
             append_reverse_debug_script_extra_args(&mut args, &parts[extra_start..])?;
+        }
+        "r.backend" => {
+            args.extend(["reverse".to_string(), "backend-status".to_string()]);
+            append_reverse_output_extra_args(&mut args, &parts[1..])?;
+        }
+        "r.android" => {
+            if parts.len() < 2 {
+                return Err("用法: r.android <input_file>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "android-analyze".to_string(),
+                "--input".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_reverse_output_extra_args(&mut args, &parts[2..])?;
+        }
+        "r.mal" => {
+            if parts.len() < 2 {
+                return Err("用法: r.mal <input_file>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "malware-triage".to_string(),
+                "--input".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_reverse_output_extra_args(&mut args, &parts[2..])?;
+        }
+        "r.shell" => {
+            if parts.len() < 2 {
+                return Err("用法: r.shell <input_file> [--text <script_text>]".to_string());
+            }
+            args.extend(["reverse".to_string(), "shell-audit".to_string()]);
+            if parts[1] == "--text" {
+                let text = parts.get(2).ok_or_else(|| "--text 需要取值".to_string())?;
+                args.extend(["--text".to_string(), (*text).to_string()]);
+                append_reverse_output_extra_args(&mut args, &parts[3..])?;
+            } else {
+                args.extend(["--input".to_string(), parts[1].to_string()]);
+                append_reverse_output_extra_args(&mut args, &parts[2..])?;
+            }
+        }
+        "r.console" => {
+            if parts.len() < 2 {
+                return Err("用法: r.console <input_file>".to_string());
+            }
+            args.extend([
+                "reverse".to_string(),
+                "console".to_string(),
+                "--input".to_string(),
+                parts[1].to_string(),
+            ]);
+            append_reverse_console_extra_args(&mut args, &parts[2..])?;
         }
         _ => return Err(format!("未知命令: {head}")),
     }
@@ -1089,7 +1289,139 @@ fn append_vuln_scan_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Resul
                 args.push(extras[idx].to_string());
                 idx += 1;
             }
+            "--output" | "-o" => {
+                let value = expect_value(extras, idx, "--output 需要取值")?;
+                args.extend(["--output".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--out" | "-f" => {
+                let value = expect_value(extras, idx, "--out 需要取值")?;
+                args.extend(["--out".to_string(), value.to_string()]);
+                idx += 2;
+            }
             unknown => return Err(format!("未知 vuln scan 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_vuln_fuzz_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--keyword" | "-k" => {
+                let value = expect_value(extras, idx, "--keyword 需要取值")?;
+                for item in value.split(',').filter(|item| !item.is_empty()) {
+                    args.extend(["--keyword".to_string(), item.to_string()]);
+                }
+                idx += 2;
+            }
+            "--keywords-file" => {
+                let value = expect_value(extras, idx, "--keywords-file 需要取值")?;
+                args.extend(["--keywords-file".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--concurrency" | "-c" => {
+                let value = expect_value(extras, idx, "--concurrency 需要取值")?;
+                args.extend(["--concurrency".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--timeout-ms" | "-T" => {
+                let value = expect_value(extras, idx, "--timeout-ms 需要取值")?;
+                args.extend(["--timeout-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--status-min" => {
+                let value = expect_value(extras, idx, "--status-min 需要取值")?;
+                args.extend(["--status-min".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--status-max" => {
+                let value = expect_value(extras, idx, "--status-max 需要取值")?;
+                args.extend(["--status-max".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--output" | "-o" => {
+                let value = expect_value(extras, idx, "--output 需要取值")?;
+                args.extend(["--output".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--out" | "-f" => {
+                let value = expect_value(extras, idx, "--out 需要取值")?;
+                args.extend(["--out".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 vuln fuzz 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_vuln_poc_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--path" => {
+                let value = expect_value(extras, idx, "--path 需要取值")?;
+                args.extend(["--path".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--method" => {
+                let value = expect_value(extras, idx, "--method 需要取值")?;
+                args.extend(["--method".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--header" => {
+                let value = expect_value(extras, idx, "--header 需要取值")?;
+                args.extend(["--header".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--body" => {
+                let value = expect_value(extras, idx, "--body 需要取值")?;
+                args.extend(["--body".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--timeout-ms" | "-T" => {
+                let value = expect_value(extras, idx, "--timeout-ms 需要取值")?;
+                args.extend(["--timeout-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--status" => {
+                let value = expect_value(extras, idx, "--status 需要取值")?;
+                for item in value.split(',').filter(|item| !item.is_empty()) {
+                    args.extend(["--status".to_string(), item.to_string()]);
+                }
+                idx += 2;
+            }
+            "--word" => {
+                let value = expect_value(extras, idx, "--word 需要取值")?;
+                for item in value.split(',').filter(|item| !item.is_empty()) {
+                    args.extend(["--word".to_string(), item.to_string()]);
+                }
+                idx += 2;
+            }
+            "--header-word" => {
+                let value = expect_value(extras, idx, "--header-word 需要取值")?;
+                for item in value.split(',').filter(|item| !item.is_empty()) {
+                    args.extend(["--header-word".to_string(), item.to_string()]);
+                }
+                idx += 2;
+            }
+            "--match-all" | "--case-insensitive" => {
+                args.push(extras[idx].to_string());
+                idx += 1;
+            }
+            "--output" | "-o" => {
+                let value = expect_value(extras, idx, "--output 需要取值")?;
+                args.extend(["--output".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--out" | "-f" => {
+                let value = expect_value(extras, idx, "--out 需要取值")?;
+                args.extend(["--out".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 vuln poc 扩展参数: {unknown}")),
         }
     }
     Ok(())
@@ -1140,6 +1472,39 @@ fn append_vuln_targeted_extra_args(
                 args.extend(["--burst-requests".to_string(), value.to_string()]);
                 idx += 2;
             }
+            "--low-noise-interval-ms" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err("--low-noise-interval-ms 仅支持 stealth-check".to_string());
+                }
+                let value = expect_value(extras, idx, "--low-noise-interval-ms 需要取值")?;
+                args.extend(["--low-noise-interval-ms".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--advanced-checks" | "--no-advanced-checks" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err(
+                        "--advanced-checks/--no-advanced-checks 仅支持 stealth-check".to_string(),
+                    );
+                }
+                args.push(extras[idx].to_string());
+                idx += 1;
+            }
+            "--variant-requests" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err("--variant-requests 仅支持 stealth-check".to_string());
+                }
+                let value = expect_value(extras, idx, "--variant-requests 需要取值")?;
+                args.extend(["--variant-requests".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--variant-concurrency" => {
+                if kind != VulnTargetedKind::Stealth {
+                    return Err("--variant-concurrency 仅支持 stealth-check".to_string());
+                }
+                let value = expect_value(extras, idx, "--variant-concurrency 需要取值")?;
+                args.extend(["--variant-concurrency".to_string(), value.to_string()]);
+                idx += 2;
+            }
             "--requests-per-tier" => {
                 if kind != VulnTargetedKind::Fragment {
                     return Err("--requests-per-tier 仅支持 fragment-audit".to_string());
@@ -1170,6 +1535,36 @@ fn append_vuln_targeted_extra_args(
                 }
                 let value = expect_value(extras, idx, "--payload-step-bytes 需要取值")?;
                 args.extend(["--payload-step-bytes".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--output" | "-o" => {
+                let value = expect_value(extras, idx, "--output 需要取值")?;
+                args.extend(["--output".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--out" | "-f" => {
+                let value = expect_value(extras, idx, "--out 需要取值")?;
+                args.extend(["--out".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 vuln 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_vuln_common_output_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--output" | "-o" => {
+                let value = expect_value(extras, idx, "--output 需要取值")?;
+                args.extend(["--output".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--out" | "-f" => {
+                let value = expect_value(extras, idx, "--out 需要取值")?;
+                args.extend(["--out".to_string(), value.to_string()]);
                 idx += 2;
             }
             unknown => return Err(format!("未知 vuln 扩展参数: {unknown}")),
@@ -1472,6 +1867,58 @@ fn append_reverse_debug_script_extra_args(
     Ok(())
 }
 
+fn append_reverse_output_extra_args(args: &mut Vec<String>, extras: &[&str]) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--output" | "-o" => {
+                let value = expect_value(extras, idx, "--output 需要取值")?;
+                args.extend(["--output".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--out" | "-f" => {
+                let value = expect_value(extras, idx, "--out 需要取值")?;
+                args.extend(["--out".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            unknown => return Err(format!("未知 reverse 输出参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
+fn append_reverse_console_extra_args(
+    args: &mut Vec<String>,
+    extras: &[&str],
+) -> Result<(), String> {
+    let mut idx = 0usize;
+    while idx < extras.len() {
+        match extras[idx] {
+            "--workspace" | "-w" => {
+                let value = expect_value(extras, idx, "--workspace 需要目录路径")?;
+                args.extend(["--workspace".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--pwndbg-init" | "-P" => {
+                let value = expect_value(extras, idx, "--pwndbg-init 需要文件路径")?;
+                args.extend(["--pwndbg-init".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--ghidra-home" => {
+                let value = expect_value(extras, idx, "--ghidra-home 需要目录路径")?;
+                args.extend(["--ghidra-home".to_string(), value.to_string()]);
+                idx += 2;
+            }
+            "--tui" => {
+                args.push("--tui".to_string());
+                idx += 1;
+            }
+            unknown => return Err(format!("未知 reverse console 扩展参数: {unknown}")),
+        }
+    }
+    Ok(())
+}
+
 fn expect_value<'a>(extras: &'a [&str], idx: usize, err: &str) -> Result<&'a str, String> {
     extras.get(idx + 1).copied().ok_or_else(|| err.to_string())
 }
@@ -1626,6 +2073,107 @@ mod tests {
     }
 
     #[test]
+    fn build_vuln_fuzz_and_poc_accept_extra_flags() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let fuzz_parts = [
+            "v.fuzz",
+            "https://example.com/FUZZ",
+            "admin,debug",
+            "--status-min",
+            "200",
+            "--status-max",
+            "403",
+            "--keywords-file",
+            "/tmp/words.txt",
+        ];
+        let fuzz_args = build_task_spawn_args(&ws, "v.fuzz", &fuzz_parts).unwrap();
+        assert!(fuzz_args.windows(2).any(|w| w == ["--status-min", "200"]));
+        assert!(fuzz_args.windows(2).any(|w| w == ["--status-max", "403"]));
+        assert!(
+            fuzz_args
+                .windows(2)
+                .any(|w| w == ["--keywords-file", "/tmp/words.txt"])
+        );
+
+        let poc_parts = [
+            "v.poc",
+            "https://example.com",
+            "/login",
+            "--method",
+            "POST",
+            "--status",
+            "200,302",
+            "--word",
+            "token,error",
+            "--match-all",
+        ];
+        let poc_args = build_task_spawn_args(&ws, "v.poc", &poc_parts).unwrap();
+        assert!(poc_args.windows(2).any(|w| w == ["--method", "POST"]));
+        assert!(poc_args.windows(2).any(|w| w == ["--status", "200"]));
+        assert!(poc_args.windows(2).any(|w| w == ["--status", "302"]));
+        assert!(poc_args.windows(2).any(|w| w == ["--word", "token"]));
+        assert!(poc_args.windows(2).any(|w| w == ["--word", "error"]));
+        assert!(poc_args.iter().any(|arg| arg == "--match-all"));
+
+        let fuzz_kw_parts = [
+            "v.fuzz",
+            "https://example.com/FUZZ",
+            "--keyword",
+            "cfg,backup",
+            "--output",
+            "csv",
+            "--out",
+            "/tmp/vuln-fuzz.csv",
+        ];
+        let fuzz_kw_args = build_task_spawn_args(&ws, "v.fuzz", &fuzz_kw_parts).unwrap();
+        assert!(fuzz_kw_args.windows(2).any(|w| w == ["--keyword", "cfg"]));
+        assert!(
+            fuzz_kw_args
+                .windows(2)
+                .any(|w| w == ["--keyword", "backup"])
+        );
+        assert!(fuzz_kw_args.windows(2).any(|w| w == ["--output", "csv"]));
+        assert!(
+            fuzz_kw_args
+                .windows(2)
+                .any(|w| w == ["--out", "/tmp/vuln-fuzz.csv"])
+        );
+    }
+
+    #[test]
+    fn build_vuln_stealth_accepts_advanced_and_output_flags() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+        let parts = [
+            "v.sc",
+            "https://example.com",
+            "--low-noise-interval-ms",
+            "400",
+            "--advanced-checks",
+            "--variant-requests",
+            "16",
+            "--variant-concurrency",
+            "8",
+            "--output",
+            "raw",
+            "--out",
+            "/tmp/vuln-stealth.txt",
+        ];
+        let args = build_task_spawn_args(&ws, "v.sc", &parts).unwrap();
+        assert!(
+            args.windows(2)
+                .any(|w| w == ["--low-noise-interval-ms", "400"])
+        );
+        assert!(args.iter().any(|arg| arg == "--advanced-checks"));
+        assert!(args.windows(2).any(|w| w == ["--variant-requests", "16"]));
+        assert!(args.windows(2).any(|w| w == ["--variant-concurrency", "8"]));
+        assert!(args.windows(2).any(|w| w == ["--output", "raw"]));
+        assert!(
+            args.windows(2)
+                .any(|w| w == ["--out", "/tmp/vuln-stealth.txt"])
+        );
+    }
+
+    #[test]
     fn build_reverse_job_commands_and_run_flags() {
         let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
         let run_parts = [
@@ -1648,5 +2196,49 @@ mod tests {
         assert!(job_args.windows(2).any(|w| w == ["--job", "job-123"]));
         assert!(job_args.windows(2).any(|w| w == ["--keyword", "main"]));
         assert!(job_args.windows(2).any(|w| w == ["--max", "10"]));
+    }
+
+    #[test]
+    fn build_reverse_phase1_new_commands() {
+        let ws = std::env::temp_dir().join("rscan_cmd_build_ws");
+
+        let backend_parts = ["reverse", "backend-status", "--output", "raw"];
+        let backend_args = build_task_spawn_args(&ws, "reverse", &backend_parts).unwrap();
+        assert!(backend_args.windows(2).any(|w| w == ["--output", "raw"]));
+
+        let android_parts = ["r.android", "sample.apk", "--output", "json"];
+        let android_args = build_task_spawn_args(&ws, "r.android", &android_parts).unwrap();
+        assert!(
+            android_args
+                .windows(2)
+                .any(|w| w == ["--input", "sample.apk"])
+        );
+        assert!(android_args.windows(2).any(|w| w == ["--output", "json"]));
+
+        let mal_parts = ["r.mal", "sample.bin", "--out", "/tmp/mal.json"];
+        let mal_args = build_task_spawn_args(&ws, "r.mal", &mal_parts).unwrap();
+        assert!(mal_args.windows(2).any(|w| w == ["--input", "sample.bin"]));
+        assert!(mal_args.windows(2).any(|w| w == ["--out", "/tmp/mal.json"]));
+
+        let shell_parts = ["r.shell", "--text", "echo hi", "--output", "raw"];
+        let shell_args = build_task_spawn_args(&ws, "r.shell", &shell_parts).unwrap();
+        assert!(shell_args.windows(2).any(|w| w == ["--text", "echo hi"]));
+        assert!(shell_args.windows(2).any(|w| w == ["--output", "raw"]));
+
+        let console_parts = [
+            "r.console",
+            "/bin/ls",
+            "--tui",
+            "--ghidra-home",
+            "/opt/ghidra",
+        ];
+        let console_args = build_task_spawn_args(&ws, "r.console", &console_parts).unwrap();
+        assert!(console_args.windows(2).any(|w| w == ["--input", "/bin/ls"]));
+        assert!(console_args.iter().any(|arg| arg == "--tui"));
+        assert!(
+            console_args
+                .windows(2)
+                .any(|w| w == ["--ghidra-home", "/opt/ghidra"])
+        );
     }
 }

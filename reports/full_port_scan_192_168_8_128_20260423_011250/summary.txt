@@ -1,0 +1,5 @@
+target=192.168.8.128
+elapsed_ms=2354
+open_ports_count=7
+open_ports=22,1716,2234,6174,7897,8082,18789
+filtered_ports_count=11

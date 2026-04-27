@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tl="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <RelativeLayout
+        android:id="@attr/rl_tab_container"
+        android:background="@drawable/shape_bg_fc_tab"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.tablayout.SlidingTabLayout
+            android:id="@attr/tabLayout"
+            android:background="#fffdfdfd"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/dp_45"
+            android:layout_centerHorizontal="true"
+            tl:tl_divider_color="@android:color/transparent"
+            tl:tl_indicator_color="#fff5dab9"
+            tl:tl_indicator_corner_radius="12dp"
+            tl:tl_indicator_end_color="#fffabb6f"
+            tl:tl_indicator_height="23dp"
+            tl:tl_indicator_margin_bottom="11dp"
+            tl:tl_indicator_margin_top="11dp"
+            tl:tl_indicator_style="2"
+            tl:tl_indicator_width="50dp"
+            tl:tl_tab_padding="16dp"
+            tl:tl_textBold="0"
+            tl:tl_textNormalSize="16sp"
+            tl:tl_textSelectColor="@color/white"
+            tl:tl_textUnSelectColor="#ff666666"/>
+        <View
+            android:background="#ffe4e4e4"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_below="@attr/tabLayout"/>
+    </RelativeLayout>
+    <im.uwrkaxlmjj.ui.hviews.NoScrollViewPager
+        android:id="@attr/viewpager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@attr/rl_tab_container"/>
+    <View
+        android:background="#ffe4e4e4"
+        android:layout_width="match_parent"
+        android:layout_height="1px"/>
+</RelativeLayout>

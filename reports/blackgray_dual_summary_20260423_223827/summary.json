@@ -1,0 +1,96 @@
+[
+  {
+    "name": "3pPro",
+    "path": "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk",
+    "sha256": "9cfa82df322ceb66fb531ec7256beec63eb57afa2c8d8dd697274ed927ac1692",
+    "entropy": 6.844594375647301,
+    "malware_confidence": 40,
+    "package": "com.xhs.p3",
+    "cleartext": false,
+    "dangerous_permissions": [
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.CAMERA",
+      "android.permission.READ_CALL_LOG",
+      "android.permission.READ_CONTACTS",
+      "android.permission.READ_SMS",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SEND_SMS"
+    ],
+    "exported_components": 2,
+    "score_total": 100,
+    "top_hits": [
+      {
+        "api": "WebView",
+        "count": 43
+      },
+      {
+        "api": "AccessibilityService",
+        "count": 3
+      },
+      {
+        "api": "DexClassLoader",
+        "count": 2
+      },
+      {
+        "api": "addJavascriptInterface",
+        "count": 1
+      },
+      {
+        "api": "getDeviceId",
+        "count": 1
+      }
+    ],
+    "packer_confidence": 0,
+    "obfuscation_indicators": [
+      "no imports in large binary"
+    ]
+  },
+  {
+    "name": "6c685e54ee9446889353feda8dc510d8",
+    "path": "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk",
+    "sha256": "b71d3008141b7244effea5552344fb2bf76b793431bd7323f5630fcc33a24ec2",
+    "entropy": 7.865574446912844,
+    "malware_confidence": 44,
+    "package": "mpEIGo.juqQQs.esbSDO",
+    "cleartext": true,
+    "dangerous_permissions": [
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.CAMERA",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.REQUEST_INSTALL_PACKAGES",
+      "android.permission.SYSTEM_ALERT_WINDOW"
+    ],
+    "exported_components": 20,
+    "score_total": 100,
+    "top_hits": [
+      {
+        "api": "WebView",
+        "count": 80
+      },
+      {
+        "api": "TelephonyManager",
+        "count": 19
+      },
+      {
+        "api": "loadUrl",
+        "count": 13
+      },
+      {
+        "api": "addJavascriptInterface",
+        "count": 8
+      },
+      {
+        "api": "getDeviceId",
+        "count": 8
+      }
+    ],
+    "packer_confidence": 33,
+    "obfuscation_indicators": [
+      "high entropy 7.866",
+      "no imports in large binary"
+    ]
+  }
+]

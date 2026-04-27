@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <View
+        android:id="@attr/llBottomParent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <ImageView
+        android:id="@attr/ivBottmTrash"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@attr/tvBottomTrash"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <im.uwrkaxlmjj.ui.hui.friendscircle_v1.ui.publishhubRecycleView.AddPictureRecyclerView
+        android:id="@attr/rv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</RelativeLayout>

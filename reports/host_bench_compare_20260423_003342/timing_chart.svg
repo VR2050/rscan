@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520">
+<rect x="0" y="0" width="980" height="520" fill="white"/>
+<text x="490.0" y="32" text-anchor="middle" font-size="20" font-family="Arial">rscan vs rustscan vs nmap (time ms)</text>
+<line x1="80" y1="60" x2="80" y2="400" stroke="black"/>
+<line x1="80" y1="400" x2="950" y2="400" stroke="black"/>
+<line x1="75" y1="400.0" x2="80" y2="400.0" stroke="black"/>
+<text x="70" y="404.0" text-anchor="end" font-size="11" font-family="Arial">0</text>
+<line x1="75" y1="332.0" x2="80" y2="332.0" stroke="black"/>
+<text x="70" y="336.0" text-anchor="end" font-size="11" font-family="Arial">1175</text>
+<line x1="80" y1="332.0" x2="950" y2="332.0" stroke="#eee"/>
+<line x1="75" y1="264.0" x2="80" y2="264.0" stroke="black"/>
+<text x="70" y="268.0" text-anchor="end" font-size="11" font-family="Arial">2350</text>
+<line x1="80" y1="264.0" x2="950" y2="264.0" stroke="#eee"/>
+<line x1="75" y1="196.0" x2="80" y2="196.0" stroke="black"/>
+<text x="70" y="200.0" text-anchor="end" font-size="11" font-family="Arial">3525</text>
+<line x1="80" y1="196.0" x2="950" y2="196.0" stroke="#eee"/>
+<line x1="75" y1="128.0" x2="80" y2="128.0" stroke="black"/>
+<text x="70" y="132.0" text-anchor="end" font-size="11" font-family="Arial">4700</text>
+<line x1="80" y1="128.0" x2="950" y2="128.0" stroke="#eee"/>
+<line x1="75" y1="60.0" x2="80" y2="60.0" stroke="black"/>
+<text x="70" y="64.0" text-anchor="end" font-size="11" font-family="Arial">5876</text>
+<line x1="80" y1="60.0" x2="950" y2="60.0" stroke="#eee"/>
+<text x="277.5" y="454" text-anchor="middle" font-size="13" font-family="Arial">common</text>
+<rect x="80.0" y="323.1" width="122.3" height="76.9" fill="#2E86AB"/>
+<text x="141.2" y="317.1" text-anchor="middle" font-size="11" font-family="Arial">1329</text>
+<rect x="216.3" y="312.4" width="122.3" height="87.6" fill="#F39C12"/>
+<text x="277.5" y="306.4" text-anchor="middle" font-size="11" font-family="Arial">1514</text>
+<rect x="352.7" y="307.9" width="122.3" height="92.1" fill="#4E9F3D"/>
+<text x="413.8" y="301.9" text-anchor="middle" font-size="11" font-family="Arial">1592</text>
+<text x="752.5" y="454" text-anchor="middle" font-size="13" font-family="Arial">1-1024</text>
+<rect x="555.0" y="222.8" width="122.3" height="177.2" fill="#2E86AB"/>
+<text x="616.2" y="216.8" text-anchor="middle" font-size="11" font-family="Arial">3062</text>
+<rect x="691.3" y="296.0" width="122.3" height="104.0" fill="#F39C12"/>
+<text x="752.5" y="290.0" text-anchor="middle" font-size="11" font-family="Arial">1798</text>
+<rect x="827.7" y="60.0" width="122.3" height="340.0" fill="#4E9F3D"/>
+<text x="888.8" y="54.0" text-anchor="middle" font-size="11" font-family="Arial">5876</text>
+<rect x="720" y="36" width="12" height="12" fill="#2E86AB"/>
+<text x="740" y="46" font-size="12" font-family="Arial">rscan</text>
+<rect x="720" y="56" width="12" height="12" fill="#F39C12"/>
+<text x="740" y="66" font-size="12" font-family="Arial">rustscan</text>
+<rect x="720" y="76" width="12" height="12" fill="#4E9F3D"/>
+<text x="740" y="86" font-size="12" font-family="Arial">nmap</text>
+</svg>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/cell_all_bg"
+    android:padding="@dimen/dp_16"
+    android:paddingBottom="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="@dimen/dp_16"
+    android:layout_marginEnd="@dimen/dp_16">
+    <im.uwrkaxlmjj.ui.hviews.MryTextView
+        android:textSize="@dimen/sp_12"
+        android:textColor="@color/text_descriptive_color"
+        android:id="@attr/tvTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintLeft_toLeftOf="0"
+        app:layout_constraintTop_toTopOf="0"/>
+    <im.uwrkaxlmjj.ui.components.RecyclerListView
+        android:id="@attr/rv"
+        android:scrollbars="none"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:minHeight="112dp"
+        android:overScrollMode="never"
+        app:layout_constraintLeft_toLeftOf="0"
+        app:layout_constraintRight_toRightOf="0"
+        app:layout_constraintTop_toBottomOf="@attr/tvTitle"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

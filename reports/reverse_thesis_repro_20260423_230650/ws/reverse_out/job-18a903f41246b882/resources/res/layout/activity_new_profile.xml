@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="false"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <im.uwrkaxlmjj.ui.components.RecyclerListView
+        android:id="@attr/listview"
+        android:scrollbars="none"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="never"/>
+    <include layout="@layout/item_profile_bottom_btn"/>
+</RelativeLayout>

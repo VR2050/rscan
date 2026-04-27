@@ -1,0 +1,2541 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="ActionBar.Transparent.TMessages.Item" parent="@android:style/TextAppearance.Widget.IconMenu.Item">
+        <item>18sp</item>
+        <item>#000000</item>
+    </plurals>
+    <plurals name="ActionBar.Transparent.TMessages.Start" parent="@plurals/Widget.AppCompat.Light.ActionBar">
+        <item>#ff527da3</item>
+        <item />
+        <item>@drawable/transparent</item>
+    </plurals>
+    <plurals name="ActivityTranslucent">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@android:color/transparent</item>
+        <item>false</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>@android:color/transparent</item>
+    </plurals>
+    <plurals name="AlertDialog.AppCompat" parent="@plurals/Base.AlertDialog.AppCompat">
+    </plurals>
+    <plurals name="AlertDialog.AppCompat.Light" parent="@plurals/Base.AlertDialog.AppCompat.Light">
+    </plurals>
+    <plurals name="AnimRight" parent="@android:style/Animation">
+        <item>@anim/dialog_right_in</item>
+        <item>@anim/dialog_right_out</item>
+    </plurals>
+    <plurals name="Animation.AppCompat.Dialog" parent="@plurals/Base.Animation.AppCompat.Dialog">
+    </plurals>
+    <plurals name="Animation.AppCompat.DropDownUp" parent="@plurals/Base.Animation.AppCompat.DropDownUp">
+    </plurals>
+    <plurals name="Animation.AppCompat.Tooltip" parent="@plurals/Base.Animation.AppCompat.Tooltip">
+    </plurals>
+    <plurals name="Animation.Design.BottomSheetDialog" parent="@plurals/Animation.AppCompat.Dialog">
+        <item>@anim/design_bottom_sheet_slide_in</item>
+        <item>@anim/design_bottom_sheet_slide_out</item>
+    </plurals>
+    <plurals name="AnimationBottomInAndOut">
+        <item>@anim/bottom_in</item>
+        <item>@anim/bottom_out</item>
+    </plurals>
+    <plurals name="AppTheme.Toolbar" parent="@plurals/Widget.AppCompat.ActionBar">
+        <item>@plurals/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+        <item>?style/colorPrimary</item>
+        <item>-1</item>
+        <item>40dp</item>
+    </plurals>
+    <plurals name="Base.AlertDialog.AppCompat" parent="@android:style/Widget">
+        <item>@layout/abc_alert_dialog_material</item>
+        <item>@dimen/abc_alert_dialog_button_dimen</item>
+        <item>@layout/select_dialog_item_material</item>
+        <item>@layout/abc_select_dialog_material</item>
+        <item>@layout/select_dialog_multichoice_material</item>
+        <item>@layout/select_dialog_singlechoice_material</item>
+    </plurals>
+    <plurals name="Base.AlertDialog.AppCompat.Light" parent="@plurals/Base.AlertDialog.AppCompat">
+    </plurals>
+    <plurals name="Base.Animation.AppCompat.Dialog" parent="@android:style/Animation">
+        <item>@anim/abc_popup_enter</item>
+        <item>@anim/abc_popup_exit</item>
+    </plurals>
+    <plurals name="Base.Animation.AppCompat.DropDownUp" parent="@android:style/Animation">
+        <item>@anim/abc_grow_fade_in_from_bottom</item>
+        <item>@anim/abc_shrink_fade_out_from_bottom</item>
+    </plurals>
+    <plurals name="Base.Animation.AppCompat.Tooltip" parent="@android:style/Animation">
+        <item>@anim/abc_tooltip_enter</item>
+        <item>@anim/abc_tooltip_exit</item>
+    </plurals>
+    <plurals name="Base.CardView" parent="@android:style/Widget">
+        <item>@dimen/cardview_default_radius</item>
+        <item>@dimen/cardview_default_elevation</item>
+        <item>@dimen/cardview_default_elevation</item>
+        <item>true</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Base.DialogWindowTitle.AppCompat" parent="@android:style/Widget">
+        <item>@plurals/TextAppearance.AppCompat.Title</item>
+        <item>1</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.DialogWindowTitleBackground.AppCompat" parent="@android:style/Widget">
+        <item>@null</item>
+        <item>?style/dialogPreferredPadding</item>
+        <item>@dimen/abc_dialog_padding_top_material</item>
+        <item>?style/dialogPreferredPadding</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat" parent="@android:style/TextAppearance.Material">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Body1" parent="@android:style/TextAppearance.Material.Body1">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Body2" parent="@android:style/TextAppearance.Material.Body2">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Button" parent="@android:style/TextAppearance.Material.Button">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Caption" parent="@android:style/TextAppearance.Material.Caption">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Display1" parent="@android:style/TextAppearance.Material.Display1">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Display2" parent="@android:style/TextAppearance.Material.Display2">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Display3" parent="@android:style/TextAppearance.Material.Display3">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Display4" parent="@android:style/TextAppearance.Material.Display4">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Headline" parent="@android:style/TextAppearance.Material.Headline">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Inverse" parent="@android:style/TextAppearance.Material.Inverse">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Large" parent="@android:style/TextAppearance.Material.Large">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Large.Inverse" parent="@android:style/TextAppearance.Material.Large.Inverse">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Light.Widget.PopupMenu.Large" parent="@android:style/TextAppearance.Material.Widget.PopupMenu.Large">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Light.Widget.PopupMenu.Small" parent="@android:style/TextAppearance.Material.Widget.PopupMenu.Small">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Medium" parent="@android:style/TextAppearance.Material.Medium">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Medium.Inverse" parent="@android:style/TextAppearance.Material.Medium.Inverse">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Menu" parent="@android:style/TextAppearance.Material.Menu">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.SearchResult">
+        <item>0x0</item>
+        <item>?android:attr/textColorPrimary</item>
+        <item>?android:attr/textColorHint</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.SearchResult.Subtitle" parent="@android:style/TextAppearance.Material.SearchResult.Subtitle">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.SearchResult.Title" parent="@android:style/TextAppearance.Material.SearchResult.Title">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Small" parent="@android:style/TextAppearance.Material.Small">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Small.Inverse" parent="@android:style/TextAppearance.Material.Small.Inverse">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Subhead" parent="@android:style/TextAppearance.Material.Subhead">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Subhead.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Subhead">
+        <item>?android:attr/textColorPrimaryInverse</item>
+        <item>?android:attr/textColorHighlightInverse</item>
+        <item>?android:attr/textColorHintInverse</item>
+        <item>?android:attr/textColorLinkInverse</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Title" parent="@android:style/TextAppearance.Material.Title">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Title.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Title">
+        <item>?android:attr/textColorPrimaryInverse</item>
+        <item>?android:attr/textColorHighlightInverse</item>
+        <item>?android:attr/textColorHintInverse</item>
+        <item>?android:attr/textColorLinkInverse</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Tooltip" parent="@plurals/Base.TextAppearance.AppCompat">
+        <item>14sp</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionBar.Menu" parent="@plurals/TextAppearance.AppCompat.Button">
+        <item>?style/actionMenuTextColor</item>
+        <item>@bool/abc_config_actionMenuItemAllCaps</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionBar.Subtitle" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Subtitle">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionBar.Subtitle.Inverse" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Subtitle.Inverse">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionBar.Title" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionBar.Title.Inverse" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title.Inverse">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionMode.Subtitle" parent="@android:style/TextAppearance.Material.Widget.ActionMode.Subtitle">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.ActionMode.Title" parent="@android:style/TextAppearance.Material.Widget.ActionMode.Title">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.Button" parent="@android:style/TextAppearance.Material.Widget.Button">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Button">
+        <item>@color/abc_btn_colored_borderless_text_material</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.Button.Colored" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Button">
+        <item>@color/abc_btn_colored_text_material</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.Button.Inverse" parent="@plurals/TextAppearance.AppCompat.Button">
+        <item>?android:attr/textColorPrimaryInverse</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.DropDownItem" parent="@android:style/TextAppearance.Small">
+        <item>?android:attr/textColorPrimaryDisableOnly</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.PopupMenu.Header" parent="@plurals/TextAppearance.AppCompat">
+        <item>@dimen/abc_text_size_menu_header_material</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>sans-serif-medium</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.PopupMenu.Large" parent="@android:style/TextAppearance.Material.Widget.PopupMenu.Large">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.PopupMenu.Small" parent="@android:style/TextAppearance.Material.Widget.PopupMenu.Small">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.Switch" parent="@android:style/TextAppearance.Material.Button">
+    </plurals>
+    <plurals name="Base.TextAppearance.AppCompat.Widget.TextView.SpinnerItem" parent="@android:style/TextAppearance.Material.Widget.TextView.SpinnerItem">
+    </plurals>
+    <plurals name="Base.TextAppearance.Widget.AppCompat.ExpandedMenu.Item" parent="@android:style/TextAppearance.Medium">
+        <item>?android:attr/textColorPrimaryDisableOnly</item>
+    </plurals>
+    <plurals name="Base.TextAppearance.Widget.AppCompat.Toolbar.Subtitle" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Subtitle">
+    </plurals>
+    <plurals name="Base.TextAppearance.Widget.AppCompat.Toolbar.Title" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat" parent="@plurals/Base.V21.Theme.AppCompat">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.CompactMenu">
+        <item>@plurals/Widget.AppCompat.ListView.Menu</item>
+        <item>@plurals/Animation.AppCompat.DropDownUp</item>
+        <item>?android:attr/textAppearanceMedium</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Dialog" parent="@plurals/Base.V21.Theme.AppCompat.Dialog">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Dialog.Alert" parent="@plurals/Base.Theme.AppCompat.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Dialog.FixedSize" parent="@plurals/Base.Theme.AppCompat.Dialog">
+        <item>@dimen/abc_dialog_fixed_height_major</item>
+        <item>@dimen/abc_dialog_fixed_height_minor</item>
+        <item>@dimen/abc_dialog_fixed_width_major</item>
+        <item>@dimen/abc_dialog_fixed_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Dialog.MinWidth" parent="@plurals/Base.Theme.AppCompat.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.DialogWhenLarge" parent="@plurals/Theme.AppCompat">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light" parent="@plurals/Base.V21.Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.DarkActionBar" parent="@plurals/Base.Theme.AppCompat.Light">
+        <item>@plurals/ThemeOverlay.AppCompat.Light</item>
+        <item>@plurals/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+        <item>@null</item>
+        <item>?style/actionBarTheme</item>
+        <item>@color/primary_material_dark</item>
+        <item>@color/primary_dark_material_dark</item>
+        <item>@drawable/abc_list_selector_holo_dark</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.Dialog" parent="@plurals/Base.V21.Theme.AppCompat.Light.Dialog">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.Dialog.Alert" parent="@plurals/Base.Theme.AppCompat.Light.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.Dialog.FixedSize" parent="@plurals/Base.Theme.AppCompat.Light.Dialog">
+        <item>@dimen/abc_dialog_fixed_height_major</item>
+        <item>@dimen/abc_dialog_fixed_height_minor</item>
+        <item>@dimen/abc_dialog_fixed_width_major</item>
+        <item>@dimen/abc_dialog_fixed_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.Dialog.MinWidth" parent="@plurals/Base.Theme.AppCompat.Light.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.DialogWhenLarge" parent="@plurals/Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents" parent="@plurals/Base.V14.Theme.MaterialComponents">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Bridge" parent="@plurals/Base.V14.Theme.MaterialComponents.Bridge">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.CompactMenu">
+        <item>@plurals/Widget.AppCompat.ListView.Menu</item>
+        <item>@plurals/Animation.AppCompat.DropDownUp</item>
+        <item>?android:attr/textAppearanceMedium</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Dialog" parent="@plurals/Base.V14.Theme.MaterialComponents.Dialog">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Dialog.Alert" parent="@plurals/Base.Theme.MaterialComponents.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Dialog.FixedSize" parent="@plurals/Base.Theme.MaterialComponents.Dialog">
+        <item>@dimen/abc_dialog_fixed_height_major</item>
+        <item>@dimen/abc_dialog_fixed_height_minor</item>
+        <item>@dimen/abc_dialog_fixed_width_major</item>
+        <item>@dimen/abc_dialog_fixed_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Dialog.MinWidth" parent="@plurals/Base.Theme.MaterialComponents.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.DialogWhenLarge" parent="@plurals/Theme.MaterialComponents">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light" parent="@plurals/Base.V14.Theme.MaterialComponents.Light">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.Bridge" parent="@plurals/Base.V14.Theme.MaterialComponents.Light.Bridge">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.DarkActionBar" parent="@plurals/Base.Theme.MaterialComponents.Light">
+        <item>@plurals/ThemeOverlay.MaterialComponents.Light</item>
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dark.ActionBar</item>
+        <item>@null</item>
+        <item>@color/primary_material_dark</item>
+        <item>@color/primary_dark_material_dark</item>
+        <item>@drawable/abc_list_selector_holo_dark</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.DarkActionBar.Bridge" parent="@plurals/Base.V14.Theme.MaterialComponents.Light.DarkActionBar.Bridge">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.Dialog" parent="@plurals/Base.V14.Theme.MaterialComponents.Light.Dialog">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.Dialog.Alert" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.Dialog.FixedSize" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog">
+        <item>@dimen/abc_dialog_fixed_height_major</item>
+        <item>@dimen/abc_dialog_fixed_height_minor</item>
+        <item>@dimen/abc_dialog_fixed_width_major</item>
+        <item>@dimen/abc_dialog_fixed_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.Dialog.MinWidth" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.DialogWhenLarge" parent="@plurals/Theme.MaterialComponents.Light">
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat" parent="@plurals/Platform.ThemeOverlay.AppCompat">
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.ActionBar" parent="@plurals/Base.ThemeOverlay.AppCompat">
+        <item>?android:attr/textColorPrimary</item>
+        <item>@plurals/Widget.AppCompat.SearchView.ActionBar</item>
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.Dark" parent="@plurals/Platform.ThemeOverlay.AppCompat.Dark">
+        <item>@color/foreground_material_dark</item>
+        <item>@color/background_material_dark</item>
+        <item>@color/abc_primary_text_material_dark</item>
+        <item>@color/abc_primary_text_disable_only_material_dark</item>
+        <item>@color/abc_secondary_text_material_dark</item>
+        <item>@color/abc_primary_text_material_light</item>
+        <item>@color/abc_secondary_text_material_light</item>
+        <item>@color/abc_hint_foreground_material_light</item>
+        <item>@color/background_material_dark</item>
+        <item>@color/highlighted_text_material_dark</item>
+        <item>@color/abc_hint_foreground_material_dark</item>
+        <item>@color/foreground_material_light</item>
+        <item>@color/abc_secondary_text_material_dark</item>
+        <item>@color/abc_secondary_text_material_light</item>
+        <item>@color/abc_background_cache_hint_selector_material_dark</item>
+        <item>@color/background_floating_material_dark</item>
+        <item>@color/button_material_dark</item>
+        <item>@color/ripple_material_dark</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>@color/switch_thumb_material_dark</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.Dark.ActionBar" parent="@plurals/Base.ThemeOverlay.AppCompat.Dark">
+        <item>?android:attr/textColorPrimary</item>
+        <item>@plurals/Widget.AppCompat.SearchView.ActionBar</item>
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.Dialog" parent="@plurals/Base.V21.ThemeOverlay.AppCompat.Dialog">
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.Dialog.Alert" parent="@plurals/Base.ThemeOverlay.AppCompat.Dialog">
+        <item>@dimen/abc_dialog_min_width_major</item>
+        <item>@dimen/abc_dialog_min_width_minor</item>
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.Light" parent="@plurals/Platform.ThemeOverlay.AppCompat.Light">
+        <item>@color/foreground_material_light</item>
+        <item>@color/background_material_light</item>
+        <item>@color/abc_primary_text_material_light</item>
+        <item>@color/abc_primary_text_disable_only_material_light</item>
+        <item>@color/abc_secondary_text_material_light</item>
+        <item>@color/abc_primary_text_material_dark</item>
+        <item>@color/abc_secondary_text_material_dark</item>
+        <item>@color/abc_hint_foreground_material_dark</item>
+        <item>@color/background_material_light</item>
+        <item>@color/highlighted_text_material_light</item>
+        <item>@color/abc_hint_foreground_material_light</item>
+        <item>@color/foreground_material_dark</item>
+        <item>@color/abc_secondary_text_material_light</item>
+        <item>@color/abc_secondary_text_material_dark</item>
+        <item>@color/abc_primary_text_disable_only_material_dark</item>
+        <item>@color/abc_background_cache_hint_selector_material_light</item>
+        <item>@color/background_floating_material_light</item>
+        <item>@color/button_material_light</item>
+        <item>@color/ripple_material_light</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>@color/switch_thumb_material_light</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.ThemeOverlay.MaterialComponents.Dialog" parent="@plurals/Base.V14.ThemeOverlay.MaterialComponents.Dialog">
+    </plurals>
+    <plurals name="Base.ThemeOverlay.MaterialComponents.Dialog.Alert" parent="@plurals/Base.V14.ThemeOverlay.MaterialComponents.Dialog.Alert">
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents" parent="@plurals/Base.V14.Theme.MaterialComponents.Bridge">
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dialog</item>
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dialog</item>
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dialog.Alert</item>
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton</item>
+        <item>@plurals/Widget.MaterialComponents.BottomAppBar</item>
+        <item>@plurals/Widget.MaterialComponents.BottomNavigationView.Colored</item>
+        <item>@plurals/Widget.MaterialComponents.ChipGroup</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Entry</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Action</item>
+        <item>?style/colorSecondary</item>
+        <item>@color/design_default_color_primary</item>
+        <item>@color/design_default_color_primary_dark</item>
+        <item>@plurals/Widget.MaterialComponents.FloatingActionButton</item>
+        <item>@plurals/Widget.MaterialComponents.Button</item>
+        <item>@plurals/Widget.MaterialComponents.CardView</item>
+        <item>@plurals/Widget.MaterialComponents.NavigationView</item>
+        <item>?style/borderlessButtonStyle</item>
+        <item>@plurals/Widget.MaterialComponents.Snackbar</item>
+        <item>@plurals/Widget.MaterialComponents.TabLayout.Colored</item>
+        <item>@plurals/Widget.Design.TextInputLayout</item>
+        <item>@plurals/Widget.MaterialComponents.Toolbar</item>
+        <item>com.google.android.material.theme.MaterialComponentsViewInflater</item>
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents.Bridge" parent="@plurals/Platform.MaterialComponents">
+        <item>?style/colorPrimary</item>
+        <item>@color/mtrl_scrim_color</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Button</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Caption</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline3</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline4</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline5</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline6</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Overline</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle2</item>
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents.Dialog" parent="@plurals/Platform.MaterialComponents.Dialog">
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton</item>
+        <item>@plurals/Widget.MaterialComponents.BottomAppBar</item>
+        <item>@plurals/Widget.MaterialComponents.BottomNavigationView.Colored</item>
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton.Dialog</item>
+        <item>@plurals/Widget.MaterialComponents.ChipGroup</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Entry</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Action</item>
+        <item>?style/colorSecondary</item>
+        <item>@color/design_default_color_primary</item>
+        <item>@color/design_default_color_primary_dark</item>
+        <item>?style/colorPrimary</item>
+        <item>@plurals/Widget.MaterialComponents.FloatingActionButton</item>
+        <item>@plurals/Widget.MaterialComponents.Button</item>
+        <item>@plurals/Widget.MaterialComponents.CardView</item>
+        <item>@plurals/Widget.MaterialComponents.NavigationView</item>
+        <item>@color/mtrl_scrim_color</item>
+        <item>?style/borderlessButtonStyle</item>
+        <item>@plurals/Widget.MaterialComponents.Snackbar</item>
+        <item>@plurals/Widget.MaterialComponents.TabLayout.Colored</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Button</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Caption</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline3</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline4</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline5</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline6</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Overline</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle2</item>
+        <item>@plurals/Widget.Design.TextInputLayout</item>
+        <item>@plurals/Widget.MaterialComponents.Toolbar</item>
+        <item>com.google.android.material.theme.MaterialComponentsViewInflater</item>
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents.Light" parent="@plurals/Base.V14.Theme.MaterialComponents.Light.Bridge">
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dialog</item>
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dialog</item>
+        <item>@plurals/ThemeOverlay.MaterialComponents.Dialog.Alert</item>
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton</item>
+        <item>@plurals/Widget.MaterialComponents.BottomAppBar</item>
+        <item>@plurals/Widget.MaterialComponents.BottomNavigationView</item>
+        <item>@plurals/Widget.MaterialComponents.ChipGroup</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Entry</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Action</item>
+        <item>?style/colorSecondary</item>
+        <item>@color/design_default_color_primary</item>
+        <item>@color/design_default_color_primary_dark</item>
+        <item>@plurals/Widget.MaterialComponents.FloatingActionButton</item>
+        <item>@plurals/Widget.MaterialComponents.Button</item>
+        <item>@plurals/Widget.MaterialComponents.CardView</item>
+        <item>@plurals/Widget.MaterialComponents.NavigationView</item>
+        <item>?style/borderlessButtonStyle</item>
+        <item>@plurals/Widget.MaterialComponents.Snackbar</item>
+        <item>@plurals/Widget.MaterialComponents.TabLayout</item>
+        <item>@plurals/Widget.Design.TextInputLayout</item>
+        <item>@plurals/Widget.MaterialComponents.Toolbar</item>
+        <item>com.google.android.material.theme.MaterialComponentsViewInflater</item>
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents.Light.Bridge" parent="@plurals/Platform.MaterialComponents.Light">
+        <item>?style/colorPrimary</item>
+        <item>@color/mtrl_scrim_color</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Button</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Caption</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline3</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline4</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline5</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline6</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Overline</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle2</item>
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents.Light.DarkActionBar.Bridge" parent="@plurals/Theme.AppCompat.Light.DarkActionBar">
+        <item>?style/colorPrimary</item>
+        <item>@color/mtrl_scrim_color</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Button</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Caption</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline3</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline4</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline5</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline6</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Overline</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle2</item>
+    </plurals>
+    <plurals name="Base.V14.Theme.MaterialComponents.Light.Dialog" parent="@plurals/Platform.MaterialComponents.Light.Dialog">
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton</item>
+        <item>@plurals/Widget.MaterialComponents.BottomAppBar</item>
+        <item>@plurals/Widget.MaterialComponents.BottomNavigationView</item>
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton.Dialog</item>
+        <item>@plurals/Widget.MaterialComponents.ChipGroup</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Entry</item>
+        <item>@plurals/Widget.MaterialComponents.Chip.Action</item>
+        <item>?style/colorSecondary</item>
+        <item>@color/design_default_color_primary</item>
+        <item>@color/design_default_color_primary_dark</item>
+        <item>?style/colorPrimary</item>
+        <item>@plurals/Widget.MaterialComponents.FloatingActionButton</item>
+        <item>@plurals/Widget.MaterialComponents.Button</item>
+        <item>@plurals/Widget.MaterialComponents.CardView</item>
+        <item>@plurals/Widget.MaterialComponents.NavigationView</item>
+        <item>@color/mtrl_scrim_color</item>
+        <item>?style/borderlessButtonStyle</item>
+        <item>@plurals/Widget.MaterialComponents.Snackbar</item>
+        <item>@plurals/Widget.MaterialComponents.TabLayout</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Body2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Button</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Caption</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline2</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline3</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline4</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline5</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Headline6</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Overline</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle1</item>
+        <item>@plurals/TextAppearance.MaterialComponents.Subtitle2</item>
+        <item>@plurals/Widget.Design.TextInputLayout</item>
+        <item>@plurals/Widget.MaterialComponents.Toolbar</item>
+        <item>com.google.android.material.theme.MaterialComponentsViewInflater</item>
+    </plurals>
+    <plurals name="Base.V14.ThemeOverlay.MaterialComponents.Dialog" parent="@plurals/ThemeOverlay.AppCompat.Dialog">
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton.Dialog</item>
+    </plurals>
+    <plurals name="Base.V14.ThemeOverlay.MaterialComponents.Dialog.Alert" parent="@plurals/ThemeOverlay.AppCompat.Dialog.Alert">
+        <item>@plurals/Widget.MaterialComponents.Button.TextButton.Dialog</item>
+    </plurals>
+    <plurals name="Base.V21.Theme.AppCompat" parent="@plurals/Base.V7.Theme.AppCompat">
+        <item>?style/colorControlNormal</item>
+        <item>?style/colorControlActivated</item>
+        <item>?style/colorButtonNormal</item>
+        <item>?style/colorControlHighlight</item>
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimaryDark</item>
+        <item>?style/colorAccent</item>
+        <item>?android:attr/actionBarDivider</item>
+        <item>@drawable/abc_action_bar_item_background_material</item>
+        <item>?android:attr/actionBarSize</item>
+        <item>?android:attr/actionButtonStyle</item>
+        <item>?android:attr/actionModeBackground</item>
+        <item>?android:attr/actionModeCloseDrawable</item>
+        <item>?android:attr/borderlessButtonStyle</item>
+        <item>?android:attr/buttonStyle</item>
+        <item>?android:attr/buttonStyleSmall</item>
+        <item>?android:attr/checkboxStyle</item>
+        <item>?android:attr/checkedTextViewStyle</item>
+        <item>?android:attr/dividerHorizontal</item>
+        <item>?android:attr/dividerVertical</item>
+        <item>@drawable/abc_edit_text_material</item>
+        <item>?android:attr/editTextColor</item>
+        <item>?android:attr/homeAsUpIndicator</item>
+        <item>?android:attr/listChoiceBackgroundIndicator</item>
+        <item>?android:attr/listPreferredItemHeightSmall</item>
+        <item>?android:attr/radioButtonStyle</item>
+        <item>?android:attr/ratingBarStyle</item>
+        <item>?android:attr/selectableItemBackground</item>
+        <item>?android:attr/selectableItemBackgroundBorderless</item>
+        <item>?android:attr/spinnerStyle</item>
+        <item>?android:attr/textAppearanceLargePopupMenu</item>
+        <item>?android:attr/textAppearanceSmallPopupMenu</item>
+    </plurals>
+    <plurals name="Base.V21.Theme.AppCompat.Dialog" parent="@plurals/Base.V7.Theme.AppCompat.Dialog">
+        <item>@dimen/abc_floating_window_z</item>
+    </plurals>
+    <plurals name="Base.V21.Theme.AppCompat.Light" parent="@plurals/Base.V7.Theme.AppCompat.Light">
+        <item>?style/colorControlNormal</item>
+        <item>?style/colorControlActivated</item>
+        <item>?style/colorButtonNormal</item>
+        <item>?style/colorControlHighlight</item>
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimaryDark</item>
+        <item>?style/colorAccent</item>
+        <item>?android:attr/actionBarDivider</item>
+        <item>@drawable/abc_action_bar_item_background_material</item>
+        <item>?android:attr/actionBarSize</item>
+        <item>?android:attr/actionButtonStyle</item>
+        <item>?android:attr/actionModeBackground</item>
+        <item>?android:attr/actionModeCloseDrawable</item>
+        <item>?android:attr/borderlessButtonStyle</item>
+        <item>?android:attr/buttonStyle</item>
+        <item>?android:attr/buttonStyleSmall</item>
+        <item>?android:attr/checkboxStyle</item>
+        <item>?android:attr/checkedTextViewStyle</item>
+        <item>?android:attr/dividerHorizontal</item>
+        <item>?android:attr/dividerVertical</item>
+        <item>@drawable/abc_edit_text_material</item>
+        <item>?android:attr/editTextColor</item>
+        <item>?android:attr/homeAsUpIndicator</item>
+        <item>?android:attr/listChoiceBackgroundIndicator</item>
+        <item>?android:attr/listPreferredItemHeightSmall</item>
+        <item>?android:attr/radioButtonStyle</item>
+        <item>?android:attr/ratingBarStyle</item>
+        <item>?android:attr/selectableItemBackground</item>
+        <item>?android:attr/selectableItemBackgroundBorderless</item>
+        <item>?android:attr/spinnerStyle</item>
+        <item>?android:attr/textAppearanceLargePopupMenu</item>
+        <item>?android:attr/textAppearanceSmallPopupMenu</item>
+    </plurals>
+    <plurals name="Base.V21.Theme.AppCompat.Light.Dialog" parent="@plurals/Base.V7.Theme.AppCompat.Light.Dialog">
+        <item>@dimen/abc_floating_window_z</item>
+    </plurals>
+    <plurals name="Base.V21.ThemeOverlay.AppCompat.Dialog" parent="@plurals/Base.V7.ThemeOverlay.AppCompat.Dialog">
+        <item>@dimen/abc_floating_window_z</item>
+    </plurals>
+    <plurals name="Base.V7.Theme.AppCompat" parent="@plurals/Platform.AppCompat">
+        <item>@android:color/transparent</item>
+        <item>@plurals/Widget.AppCompat.ListView.DropDown</item>
+        <item>@plurals/Widget.AppCompat.TextView</item>
+        <item>@plurals/Widget.AppCompat.DropDownItem.Spinner</item>
+        <item>@plurals/Widget.AppCompat.TextView.SpinnerItem</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.Button</item>
+        <item>?style/dividerVertical</item>
+        <item>?style/selectableItemBackgroundBorderless</item>
+        <item>@null</item>
+        <item>@dimen/abc_action_bar_default_height_material</item>
+        <item>?style/actionBarStyle</item>
+        <item>@plurals/Widget.AppCompat.ActionBar.Solid</item>
+        <item>@plurals/Widget.AppCompat.ActionBar.TabBar</item>
+        <item>@plurals/Widget.AppCompat.ActionBar.TabView</item>
+        <item>@plurals/Widget.AppCompat.ActionBar.TabText</item>
+        <item>@plurals/ThemeOverlay.AppCompat.ActionBar</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.ActionButton</item>
+        <item>@plurals/Widget.AppCompat.Spinner.DropDown.ActionBar</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.ActionBar.Menu</item>
+        <item>?android:attr/textColorPrimaryDisableOnly</item>
+        <item>@drawable/abc_cab_background_top_material</item>
+        <item>@plurals/Widget.AppCompat.ActionButton.CloseMode</item>
+        <item>@string/abc_action_mode_done</item>
+        <item>@drawable/abc_ic_ab_back_material</item>
+        <item>@drawable/abc_ic_menu_copy_mtrl_am_alpha</item>
+        <item>@drawable/abc_ic_menu_cut_mtrl_alpha</item>
+        <item>@drawable/abc_ic_menu_paste_mtrl_am_alpha</item>
+        <item>@drawable/abc_ic_menu_selectall_mtrl_alpha</item>
+        <item>@drawable/abc_ic_menu_share_mtrl_alpha</item>
+        <item>?style/colorPrimaryDark</item>
+        <item>@plurals/Widget.AppCompat.ActionMode</item>
+        <item>?style/actionBarTheme</item>
+        <item>@plurals/Widget.AppCompat.ActionButton.Overflow</item>
+        <item>@plurals/Widget.AppCompat.PopupMenu.Overflow</item>
+        <item>@plurals/Widget.AppCompat.ActivityChooserView</item>
+        <item>false</item>
+        <item>@plurals/AlertDialog.AppCompat</item>
+        <item>@plurals/ThemeOverlay.AppCompat.Dialog.Alert</item>
+        <item>@plurals/Widget.AppCompat.AutoCompleteTextView</item>
+        <item>@plurals/Widget.AppCompat.Button.Borderless</item>
+        <item>@plurals/Widget.AppCompat.Button.ButtonBar.AlertDialog</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>@plurals/Widget.AppCompat.ButtonBar</item>
+        <item>@plurals/Widget.AppCompat.Button</item>
+        <item>@plurals/Widget.AppCompat.Button.Small</item>
+        <item>@plurals/Widget.AppCompat.CompoundButton.CheckBox</item>
+        <item>@color/accent_material_dark</item>
+        <item>@color/background_floating_material_dark</item>
+        <item>@color/button_material_dark</item>
+        <item>?style/colorAccent</item>
+        <item>@color/ripple_material_dark</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>@color/error_color_material_dark</item>
+        <item>@color/primary_material_dark</item>
+        <item>@color/primary_dark_material_dark</item>
+        <item>@color/switch_thumb_material_dark</item>
+        <item>?style/selectableItemBackgroundBorderless</item>
+        <item>@dimen/abc_dialog_corner_radius_material</item>
+        <item>@dimen/abc_dialog_padding_material</item>
+        <item>@plurals/ThemeOverlay.AppCompat.Dialog</item>
+        <item>@drawable/abc_list_divider_mtrl_alpha</item>
+        <item>@drawable/abc_list_divider_mtrl_alpha</item>
+        <item>@plurals/Widget.AppCompat.DrawerArrowToggle</item>
+        <item>?android:attr/dropDownListViewStyle</item>
+        <item>?style/listPreferredItemHeightSmall</item>
+        <item>@drawable/abc_edit_text_material</item>
+        <item>?android:attr/textColorPrimary</item>
+        <item>@plurals/Widget.AppCompat.EditText</item>
+        <item>@drawable/abc_ic_ab_back_material</item>
+        <item>@plurals/Widget.AppCompat.ImageButton</item>
+        <item>false</item>
+        <item>@drawable/abc_list_selector_holo_dark</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.ListMenuView</item>
+        <item>@plurals/Widget.AppCompat.ListPopupWindow</item>
+        <item>@dimen/abc_list_item_height_material</item>
+        <item>@dimen/abc_list_item_height_large_material</item>
+        <item>@dimen/abc_list_item_height_small_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@drawable/abc_menu_hardkey_panel_mtrl_mult</item>
+        <item>@plurals/Theme.AppCompat.CompactMenu</item>
+        <item>@dimen/abc_panel_menu_list_width</item>
+        <item>@plurals/Widget.AppCompat.PopupMenu</item>
+        <item>@plurals/Widget.AppCompat.CompoundButton.RadioButton</item>
+        <item>@plurals/Widget.AppCompat.RatingBar</item>
+        <item>@plurals/Widget.AppCompat.RatingBar.Indicator</item>
+        <item>@plurals/Widget.AppCompat.RatingBar.Small</item>
+        <item>@plurals/Widget.AppCompat.SearchView</item>
+        <item>@plurals/Widget.AppCompat.SeekBar</item>
+        <item>@drawable/abc_item_background_holo_dark</item>
+        <item>?style/selectableItemBackground</item>
+        <item>@plurals/Widget.AppCompat.DropDownItem.Spinner</item>
+        <item>@plurals/Widget.AppCompat.Spinner</item>
+        <item>@plurals/Widget.AppCompat.CompoundButton.Switch</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.PopupMenu.Large</item>
+        <item>@plurals/TextAppearance.AppCompat.Subhead</item>
+        <item>@plurals/TextAppearance.AppCompat.Body1</item>
+        <item>@plurals/TextAppearance.AppCompat.Subhead</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.PopupMenu.Header</item>
+        <item>@plurals/TextAppearance.AppCompat.SearchResult.Subtitle</item>
+        <item>@plurals/TextAppearance.AppCompat.SearchResult.Title</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.PopupMenu.Small</item>
+        <item>@color/abc_primary_text_material_dark</item>
+        <item>@color/abc_search_url_text</item>
+        <item>@plurals/Widget.AppCompat.Toolbar.Button.Navigation</item>
+        <item>@plurals/Widget.AppCompat.Toolbar</item>
+        <item>@color/foreground_material_light</item>
+        <item>@drawable/tooltip_frame_light</item>
+        <item>true</item>
+        <item>false</item>
+        <item>false</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Base.V7.Theme.AppCompat.Dialog" parent="@plurals/Base.Theme.AppCompat">
+        <item>?style/colorBackgroundFloating</item>
+        <item>@drawable/abc_dialog_material_background</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/RtlOverlay.DialogWindowTitle.AppCompat</item>
+        <item>@plurals/Base.DialogWindowTitleBackground.AppCompat</item>
+        <item>@plurals/Animation.AppCompat.Dialog</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>0x20</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.Button.Borderless</item>
+        <item>@plurals/Widget.AppCompat.ButtonBar.AlertDialog</item>
+        <item>true</item>
+        <item>24dp</item>
+        <item>24dp</item>
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.V7.Theme.AppCompat.Light" parent="@plurals/Platform.AppCompat.Light">
+        <item>@android:color/transparent</item>
+        <item>@plurals/Widget.AppCompat.ListView.DropDown</item>
+        <item>@plurals/Widget.AppCompat.TextView</item>
+        <item>@plurals/Widget.AppCompat.DropDownItem.Spinner</item>
+        <item>@plurals/Widget.AppCompat.TextView.SpinnerItem</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.Button</item>
+        <item>?style/dividerVertical</item>
+        <item>?style/selectableItemBackgroundBorderless</item>
+        <item>@null</item>
+        <item>@dimen/abc_action_bar_default_height_material</item>
+        <item>?style/actionBarStyle</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionBar.Solid</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionBar.TabBar</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionBar.TabView</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionBar.TabText</item>
+        <item>@plurals/ThemeOverlay.AppCompat.ActionBar</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionButton</item>
+        <item>@plurals/Widget.AppCompat.Light.Spinner.DropDown.ActionBar</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.ActionBar.Menu</item>
+        <item>?android:attr/textColorPrimaryDisableOnly</item>
+        <item>@drawable/abc_cab_background_top_material</item>
+        <item>@plurals/Widget.AppCompat.ActionButton.CloseMode</item>
+        <item>@string/abc_action_mode_done</item>
+        <item>@drawable/abc_ic_ab_back_material</item>
+        <item>@drawable/abc_ic_menu_copy_mtrl_am_alpha</item>
+        <item>@drawable/abc_ic_menu_cut_mtrl_alpha</item>
+        <item>@drawable/abc_ic_menu_paste_mtrl_am_alpha</item>
+        <item>@drawable/abc_ic_menu_selectall_mtrl_alpha</item>
+        <item>@drawable/abc_ic_menu_share_mtrl_alpha</item>
+        <item>?style/colorPrimaryDark</item>
+        <item>@plurals/Widget.AppCompat.ActionMode</item>
+        <item>?style/actionBarTheme</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionButton.Overflow</item>
+        <item>@plurals/Widget.AppCompat.Light.PopupMenu.Overflow</item>
+        <item>@plurals/Widget.AppCompat.ActivityChooserView</item>
+        <item>false</item>
+        <item>@plurals/AlertDialog.AppCompat.Light</item>
+        <item>@plurals/ThemeOverlay.AppCompat.Dialog.Alert</item>
+        <item>@plurals/Widget.AppCompat.AutoCompleteTextView</item>
+        <item>@plurals/Widget.AppCompat.Button.Borderless</item>
+        <item>@plurals/Widget.AppCompat.Button.ButtonBar.AlertDialog</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>@plurals/Widget.AppCompat.ButtonBar</item>
+        <item>@plurals/Widget.AppCompat.Button</item>
+        <item>@plurals/Widget.AppCompat.Button.Small</item>
+        <item>@plurals/Widget.AppCompat.CompoundButton.CheckBox</item>
+        <item>@color/accent_material_light</item>
+        <item>@color/background_floating_material_light</item>
+        <item>@color/button_material_light</item>
+        <item>?style/colorAccent</item>
+        <item>@color/ripple_material_light</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>@color/error_color_material_light</item>
+        <item>@color/primary_material_light</item>
+        <item>@color/primary_dark_material_light</item>
+        <item>@color/switch_thumb_material_light</item>
+        <item>?style/selectableItemBackgroundBorderless</item>
+        <item>@dimen/abc_dialog_corner_radius_material</item>
+        <item>@dimen/abc_dialog_padding_material</item>
+        <item>@plurals/ThemeOverlay.AppCompat.Dialog</item>
+        <item>@drawable/abc_list_divider_mtrl_alpha</item>
+        <item>@drawable/abc_list_divider_mtrl_alpha</item>
+        <item>@plurals/Widget.AppCompat.DrawerArrowToggle</item>
+        <item>?android:attr/dropDownListViewStyle</item>
+        <item>?style/listPreferredItemHeightSmall</item>
+        <item>@drawable/abc_edit_text_material</item>
+        <item>?android:attr/textColorPrimary</item>
+        <item>@plurals/Widget.AppCompat.EditText</item>
+        <item>@drawable/abc_ic_ab_back_material</item>
+        <item>@plurals/Widget.AppCompat.ImageButton</item>
+        <item>true</item>
+        <item>@drawable/abc_list_selector_holo_light</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.ListMenuView</item>
+        <item>@plurals/Widget.AppCompat.ListPopupWindow</item>
+        <item>@dimen/abc_list_item_height_material</item>
+        <item>@dimen/abc_list_item_height_large_material</item>
+        <item>@dimen/abc_list_item_height_small_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@dimen/abc_list_item_padding_horizontal_material</item>
+        <item>@drawable/abc_menu_hardkey_panel_mtrl_mult</item>
+        <item>@plurals/Theme.AppCompat.CompactMenu</item>
+        <item>@dimen/abc_panel_menu_list_width</item>
+        <item>@plurals/Widget.AppCompat.Light.PopupMenu</item>
+        <item>@plurals/Widget.AppCompat.CompoundButton.RadioButton</item>
+        <item>@plurals/Widget.AppCompat.RatingBar</item>
+        <item>@plurals/Widget.AppCompat.RatingBar.Indicator</item>
+        <item>@plurals/Widget.AppCompat.RatingBar.Small</item>
+        <item>@plurals/Widget.AppCompat.Light.SearchView</item>
+        <item>@plurals/Widget.AppCompat.SeekBar</item>
+        <item>@drawable/abc_item_background_holo_light</item>
+        <item>?style/selectableItemBackground</item>
+        <item>@plurals/Widget.AppCompat.DropDownItem.Spinner</item>
+        <item>@plurals/Widget.AppCompat.Spinner</item>
+        <item>@plurals/Widget.AppCompat.CompoundButton.Switch</item>
+        <item>@plurals/TextAppearance.AppCompat.Light.Widget.PopupMenu.Large</item>
+        <item>@plurals/TextAppearance.AppCompat.Subhead</item>
+        <item>@plurals/TextAppearance.AppCompat.Body1</item>
+        <item>@plurals/TextAppearance.AppCompat.Subhead</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.PopupMenu.Header</item>
+        <item>@plurals/TextAppearance.AppCompat.SearchResult.Subtitle</item>
+        <item>@plurals/TextAppearance.AppCompat.SearchResult.Title</item>
+        <item>@plurals/TextAppearance.AppCompat.Light.Widget.PopupMenu.Small</item>
+        <item>@color/abc_primary_text_material_light</item>
+        <item>@color/abc_search_url_text</item>
+        <item>@plurals/Widget.AppCompat.Toolbar.Button.Navigation</item>
+        <item>@plurals/Widget.AppCompat.Toolbar</item>
+        <item>@color/foreground_material_dark</item>
+        <item>@drawable/tooltip_frame_dark</item>
+        <item>true</item>
+        <item>false</item>
+        <item>false</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Base.V7.Theme.AppCompat.Light.Dialog" parent="@plurals/Base.Theme.AppCompat.Light">
+        <item>?style/colorBackgroundFloating</item>
+        <item>@drawable/abc_dialog_material_background</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/RtlOverlay.DialogWindowTitle.AppCompat</item>
+        <item>@plurals/Base.DialogWindowTitleBackground.AppCompat</item>
+        <item>@plurals/Animation.AppCompat.Dialog</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>0x20</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.Button.Borderless</item>
+        <item>@plurals/Widget.AppCompat.ButtonBar.AlertDialog</item>
+        <item>true</item>
+        <item>24dp</item>
+        <item>24dp</item>
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.V7.ThemeOverlay.AppCompat.Dialog" parent="@plurals/Base.ThemeOverlay.AppCompat">
+        <item>?style/colorBackgroundFloating</item>
+        <item>@drawable/abc_dialog_material_background</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/RtlOverlay.DialogWindowTitle.AppCompat</item>
+        <item>@plurals/Base.DialogWindowTitleBackground.AppCompat</item>
+        <item>@plurals/Animation.AppCompat.Dialog</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>0x20</item>
+        <item>@null</item>
+        <item>@plurals/Widget.AppCompat.Button.Borderless</item>
+        <item>@plurals/Widget.AppCompat.ButtonBar.AlertDialog</item>
+        <item>true</item>
+        <item>24dp</item>
+        <item>24dp</item>
+        <item>false</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+    </plurals>
+    <plurals name="Base.V7.Widget.AppCompat.AutoCompleteTextView" parent="@android:style/Widget.AutoCompleteTextView">
+        <item>?android:attr/textAppearanceMediumInverse</item>
+        <item>?style/editTextColor</item>
+        <item>?style/editTextBackground</item>
+        <item>?style/listChoiceBackgroundIndicator</item>
+        <item>@drawable/abc_popup_background_mtrl_mult</item>
+        <item>@drawable/abc_text_cursor_material</item>
+    </plurals>
+    <plurals name="Base.V7.Widget.AppCompat.EditText" parent="@android:style/Widget.EditText">
+        <item>?android:attr/textAppearanceMediumInverse</item>
+        <item>?style/editTextColor</item>
+        <item>?style/editTextBackground</item>
+        <item>@drawable/abc_text_cursor_material</item>
+    </plurals>
+    <plurals name="Base.V7.Widget.AppCompat.Toolbar" parent="@android:style/Widget">
+        <item>@dimen/abc_action_bar_default_padding_start_material</item>
+        <item>@dimen/abc_action_bar_default_padding_end_material</item>
+        <item>?style/actionBarSize</item>
+        <item>@dimen/abc_action_bar_default_padding_start_material</item>
+        <item>@dimen/abc_action_bar_default_padding_end_material</item>
+        <item>0x30</item>
+        <item>@string/abc_toolbar_collapse_description</item>
+        <item>?style/homeAsUpIndicator</item>
+        <item>16dp</item>
+        <item>@dimen/abc_action_bar_content_inset_with_nav</item>
+        <item>@dimen/abc_action_bar_default_height_material</item>
+        <item>@plurals/TextAppearance.Widget.AppCompat.Toolbar.Subtitle</item>
+        <item>4dp</item>
+        <item>@plurals/TextAppearance.Widget.AppCompat.Toolbar.Title</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionBar">
+        <item>0x10</item>
+        <item>@plurals/Widget.AppCompat.ActionButton</item>
+        <item>@plurals/Widget.AppCompat.ActionButton.Overflow</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@dimen/abc_action_bar_content_inset_material</item>
+        <item>@dimen/abc_action_bar_content_inset_material</item>
+        <item>@dimen/abc_action_bar_content_inset_with_nav</item>
+        <item>0x8</item>
+        <item>?style/dividerVertical</item>
+        <item>@dimen/abc_action_bar_elevation_material</item>
+        <item>?style/actionBarSize</item>
+        <item>?style/actionBarPopupTheme</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.ActionBar.Subtitle</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.ActionBar.Title</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionBar.Solid" parent="@plurals/Base.Widget.AppCompat.ActionBar">
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimary</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionBar.TabBar">
+        <item>?style/actionBarDivider</item>
+        <item>8dp</item>
+        <item>0x2</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionBar.TabText" parent="@android:style/Widget.Material.ActionBar.TabText">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionBar.TabView" parent="@android:style/Widget.Material.ActionBar.TabView">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionButton" parent="@android:style/Widget.Material.ActionButton">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionButton.CloseMode" parent="@android:style/Widget.Material.ActionButton.CloseMode">
+        <item>56dp</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionButton.Overflow" parent="@android:style/Widget.Material.ActionButton.Overflow">
+        <item>@null</item>
+        <item>@drawable/abc_ic_menu_overflow_material</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActionMode">
+        <item>@dimen/abc_action_bar_default_padding_start_material</item>
+        <item>@dimen/abc_action_bar_default_padding_end_material</item>
+        <item>?style/actionBarSize</item>
+        <item>@dimen/abc_action_bar_default_padding_start_material</item>
+        <item>@dimen/abc_action_bar_default_padding_end_material</item>
+        <item>?style/actionModeBackground</item>
+        <item>?style/actionModeSplitBackground</item>
+        <item>0x30</item>
+        <item>@layout/abc_action_mode_close_item_material</item>
+        <item>16dp</item>
+        <item>@dimen/abc_action_bar_content_inset_with_nav</item>
+        <item>?style/actionBarSize</item>
+        <item>@dimen/abc_action_bar_default_height_material</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.ActionMode.Subtitle</item>
+        <item>4dp</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.ActionMode.Title</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ActivityChooserView">
+        <item>0x11</item>
+        <item>@drawable/abc_ab_share_pack_mtrl_alpha</item>
+        <item>?style/dividerVertical</item>
+        <item>6dp</item>
+        <item>0x2</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.AutoCompleteTextView" parent="@android:style/Widget.Material.AutoCompleteTextView">
+        <item>?style/editTextBackground</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Button" parent="@android:style/Widget.Material.Button">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Button.Borderless" parent="@android:style/Widget.Material.Button.Borderless">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Button.Borderless.Colored" parent="@android:style/Widget.Material.Button.Borderless.Colored">
+        <item>@color/abc_btn_colored_borderless_text_material</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Button.ButtonBar.AlertDialog" parent="@plurals/Widget.AppCompat.Button.Borderless.Colored">
+        <item>64dp</item>
+        <item>@dimen/abc_alert_dialog_button_bar_height</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Button.Colored" parent="@plurals/Base.Widget.AppCompat.Button">
+        <item>@plurals/TextAppearance.AppCompat.Widget.Button.Colored</item>
+        <item>@drawable/abc_btn_colored_material</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Button.Small" parent="@android:style/Widget.Material.Button.Small">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ButtonBar" parent="@android:style/Widget.Material.ButtonBar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ButtonBar.AlertDialog" parent="@plurals/Base.Widget.AppCompat.ButtonBar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.CompoundButton.CheckBox" parent="@android:style/Widget.Material.CompoundButton.CheckBox">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.CompoundButton.RadioButton" parent="@android:style/Widget.Material.CompoundButton.RadioButton">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.CompoundButton.Switch" parent="@android:style/Widget.CompoundButton">
+        <item>?style/controlBackground</item>
+        <item>@string/abc_capital_on</item>
+        <item>@string/abc_capital_off</item>
+        <item>@drawable/abc_switch_thumb_material</item>
+        <item>false</item>
+        <item>@dimen/abc_switch_padding</item>
+        <item>@plurals/TextAppearance.AppCompat.Widget.Switch</item>
+        <item>@drawable/abc_switch_track_mtrl_alpha</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.DrawerArrowToggle" parent="@plurals/Base.Widget.AppCompat.DrawerArrowToggle.Common">
+        <item>18dp</item>
+        <item>24dp</item>
+        <item>3dp</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.DrawerArrowToggle.Common">
+        <item>8dp</item>
+        <item>16dp</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>true</item>
+        <item>2dp</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.DropDownItem.Spinner" parent="@android:style/Widget.Material.DropDownItem.Spinner">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.EditText" parent="@android:style/Widget.Material.EditText">
+        <item>?style/editTextBackground</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ImageButton" parent="@android:style/Widget.Material.ImageButton">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.ActionBar" parent="@plurals/Base.Widget.AppCompat.ActionBar">
+        <item>@plurals/Widget.AppCompat.Light.ActionButton</item>
+        <item>@plurals/Widget.AppCompat.Light.ActionButton.Overflow</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.ActionBar.Solid" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar">
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimary</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.ActionBar.TabBar" parent="@plurals/Base.Widget.AppCompat.ActionBar.TabBar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.ActionBar.TabText" parent="@android:style/Widget.Material.Light.ActionBar.TabText">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.ActionBar.TabText.Inverse" parent="@android:style/Widget.Material.Light.ActionBar.TabText">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.ActionBar.TabView" parent="@android:style/Widget.Material.Light.ActionBar.TabView">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.PopupMenu" parent="@android:style/Widget.Material.Light.PopupMenu">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Light.PopupMenu.Overflow" parent="@plurals/Base.Widget.AppCompat.Light.PopupMenu">
+        <item>-4dp</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ListMenuView" parent="@android:style/Widget">
+        <item>@drawable/abc_ic_arrow_drop_right_black_24dp</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ListPopupWindow" parent="@android:style/Widget.Material.ListPopupWindow">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ListView" parent="@android:style/Widget.Material.ListView">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ListView.DropDown" parent="@android:style/Widget.Material.ListView.DropDown">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ListView.Menu" parent="@plurals/Base.Widget.AppCompat.ListView">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.PopupMenu" parent="@android:style/Widget.Material.PopupMenu">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.PopupMenu.Overflow" parent="@plurals/Base.Widget.AppCompat.PopupMenu">
+        <item>-4dp</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.PopupWindow" parent="@android:style/Widget.PopupWindow">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ProgressBar" parent="@android:style/Widget.Material.ProgressBar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.ProgressBar.Horizontal" parent="@android:style/Widget.Material.ProgressBar.Horizontal">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.RatingBar" parent="@android:style/Widget.Material.RatingBar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.RatingBar.Indicator" parent="@android:style/Widget.RatingBar">
+        <item>36dp</item>
+        <item>@drawable/abc_ratingbar_indicator_material</item>
+        <item>@drawable/abc_ratingbar_indicator_material</item>
+        <item>36dp</item>
+        <item>@null</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.RatingBar.Small" parent="@android:style/Widget.RatingBar">
+        <item>16dp</item>
+        <item>@drawable/abc_ratingbar_small_material</item>
+        <item>@drawable/abc_ratingbar_small_material</item>
+        <item>16dp</item>
+        <item>@null</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.SearchView" parent="@android:style/Widget">
+        <item>@drawable/abc_ic_clear_material</item>
+        <item>@drawable/abc_ic_commit_search_api_mtrl_alpha</item>
+        <item>@drawable/abc_ic_go_search_api_material</item>
+        <item>@layout/abc_search_view</item>
+        <item>@drawable/abc_textfield_search_material</item>
+        <item>@drawable/abc_ic_search_api_material</item>
+        <item>@drawable/abc_ic_search_api_material</item>
+        <item>@drawable/abc_textfield_search_material</item>
+        <item>@layout/abc_search_dropdown_item_icons_2line</item>
+        <item>@drawable/abc_ic_voice_search_api_material</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.SearchView.ActionBar" parent="@plurals/Base.Widget.AppCompat.SearchView">
+        <item>@string/abc_search_hint</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>@null</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.SeekBar" parent="@android:style/Widget.Material.SeekBar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.SeekBar.Discrete" parent="@plurals/Base.Widget.AppCompat.SeekBar">
+        <item>@drawable/abc_seekbar_tick_mark_material</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Spinner" parent="@android:style/Widget.Material.Spinner">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Spinner.Underlined" parent="@plurals/Base.Widget.AppCompat.Spinner">
+        <item>@drawable/abc_spinner_textfield_background_material</item>
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.TextView" parent="@android:style/Widget.Material.TextView">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.TextView.SpinnerItem" parent="@android:style/Widget.Material.TextView.SpinnerItem">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Toolbar" parent="@plurals/Base.V7.Widget.AppCompat.Toolbar">
+    </plurals>
+    <plurals name="Base.Widget.AppCompat.Toolbar.Button.Navigation" parent="@android:style/Widget.Material.Toolbar.Button.Navigation">
+    </plurals>
+    <plurals name="Base.Widget.Design.TabLayout" parent="@android:style/Widget">
+        <item>@null</item>
+        <item>@null</item>
+        <item>@drawable/mtrl_tabs_default_indicator</item>
+        <item>@integer/design_tab_indicator_anim_duration_ms</item>
+        <item>?style/colorAccent</item>
+        <item>0</item>
+        <item>@dimen/design_tab_max_width</item>
+        <item>12dp</item>
+        <item>12dp</item>
+        <item>?style/colorControlHighlight</item>
+        <item>@plurals/TextAppearance.Design.Tab</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Base.Widget.MaterialComponents.Chip" parent="@android:style/Widget">
+        <item>?style/textAppearanceBody2</item>
+        <item>@color/mtrl_chip_text_color</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>@animator/mtrl_chip_state_list_anim</item>
+        <item>@drawable/ic_mtrl_chip_checked_circle</item>
+        <item>true</item>
+        <item>@color/mtrl_chip_background_color</item>
+        <item>16dp</item>
+        <item>6dp</item>
+        <item>@null</item>
+        <item>24dp</item>
+        <item>true</item>
+        <item>32dp</item>
+        <item>4dp</item>
+        <item>#00000000</item>
+        <item>0dp</item>
+        <item>@drawable/ic_mtrl_chip_close_circle</item>
+        <item>2dp</item>
+        <item>18dp</item>
+        <item>2dp</item>
+        <item>@color/mtrl_chip_close_icon_tint</item>
+        <item>true</item>
+        <item>true</item>
+        <item>0dp</item>
+        <item>0dp</item>
+        <item>@color/mtrl_chip_ripple_color</item>
+        <item>6dp</item>
+        <item>8dp</item>
+    </plurals>
+    <plurals name="Base.Widget.MaterialComponents.TextInputEditText" parent="@plurals/Widget.AppCompat.EditText">
+        <item>12dp</item>
+        <item>16dp</item>
+        <item>12dp</item>
+        <item>16dp</item>
+        <item>12dp</item>
+        <item>12dp</item>
+    </plurals>
+    <plurals name="Base.Widget.MaterialComponents.TextInputLayout" parent="@plurals/Widget.Design.TextInputLayout">
+        <item>@null</item>
+        <item>2</item>
+        <item>0dp</item>
+        <item>@dimen/mtrl_textinput_box_corner_radius_medium</item>
+        <item>@dimen/mtrl_textinput_box_corner_radius_medium</item>
+        <item>@dimen/mtrl_textinput_box_corner_radius_medium</item>
+        <item>@dimen/mtrl_textinput_box_corner_radius_medium</item>
+        <item>?style/colorControlActivated</item>
+    </plurals>
+    <plurals name="CaptureTheme" parent="@plurals/Theme.AppCompat.Light.DarkActionBar">
+        <item>true</item>
+        <item>true</item>
+        <item>@color/capture_status_bar_color</item>
+        <item>@color/capture_navigation_bar_color</item>
+        <item>@android:color/black</item>
+        <item>@android:color/black</item>
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="CardView" parent="@plurals/Base.CardView">
+    </plurals>
+    <plurals name="CardView.Dark" parent="@plurals/CardView">
+        <item>@color/cardview_dark_background</item>
+    </plurals>
+    <plurals name="CardView.Light" parent="@plurals/CardView">
+        <item>@color/cardview_light_background</item>
+    </plurals>
+    <plurals name="CommentTextSize" parent="@android:style/TextAppearance">
+        <item>14dp</item>
+    </plurals>
+    <plurals name="DialogNoAnimation">
+        <item>@null</item>
+        <item>@null</item>
+    </plurals>
+    <plurals name="DialogStyleBottomInAndOut" parent="@plurals/Theme.AppCompat.Dialog">
+        <item>0.5</item>
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/AnimationBottomInAndOut</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="DialogTheme" parent="@android:style/Theme.Dialog">
+        <item>1</item>
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@android:color/transparent</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="EasyPermissions" parent="@plurals/Theme.AppCompat.DayNight.DarkActionBar">
+        <item>@color/colorAccent</item>
+        <item>@color/colorPrimary</item>
+        <item>@color/colorPrimaryDark</item>
+    </plurals>
+    <plurals name="EasyPermissions.Transparent" parent="@plurals/EasyPermissions">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="FcDoReplyDialogStyle" parent="@plurals/Theme.Design.Light.BottomSheetDialog">
+        <item>false</item>
+        <item>0x14</item>
+    </plurals>
+    <plurals name="GiftDialogBottom" parent="@android:style/Theme.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/GiftDialogBottomAnimation</item>
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="GiftDialogBottomAnimation" parent="@android:style/Animation.Dialog">
+        <item>@anim/gift_dialog_bottom_in</item>
+        <item>@anim/gift_dialog_bottom_out</item>
+    </plurals>
+    <plurals name="GiftDialogRight" parent="@android:style/Theme.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/GiftDialogRightAnimation</item>
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="GiftDialogRightAnimation" parent="@android:style/Animation.Dialog">
+        <item>@anim/gift_dialog_right_in</item>
+        <item>@anim/gift_dialog_right_out</item>
+    </plurals>
+    <plurals name="My.TextAppearance" parent="@android:style/TextAppearance">
+        <item>20dp</item>
+        <item>#000</item>
+    </plurals>
+    <plurals name="MyTextViewStyle" parent="@android:style/Widget.Material.Light.TextView">
+    </plurals>
+    <plurals name="Platform.AppCompat" parent="@plurals/Platform.V21.AppCompat">
+    </plurals>
+    <plurals name="Platform.AppCompat.Light" parent="@plurals/Platform.V21.AppCompat.Light">
+    </plurals>
+    <plurals name="Platform.MaterialComponents" parent="@plurals/Theme.AppCompat">
+    </plurals>
+    <plurals name="Platform.MaterialComponents.Dialog" parent="@plurals/Theme.AppCompat.Dialog">
+    </plurals>
+    <plurals name="Platform.MaterialComponents.Light" parent="@plurals/Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Platform.MaterialComponents.Light.Dialog" parent="@plurals/Theme.AppCompat.Light.Dialog">
+    </plurals>
+    <plurals name="Platform.ThemeOverlay.AppCompat">
+        <item>?style/colorControlNormal</item>
+        <item>?style/colorControlActivated</item>
+        <item>?style/colorButtonNormal</item>
+        <item>?style/colorControlHighlight</item>
+        <item>?style/colorPrimary</item>
+        <item>?style/colorPrimaryDark</item>
+        <item>?style/colorAccent</item>
+    </plurals>
+    <plurals name="Platform.ThemeOverlay.AppCompat.Dark" parent="@plurals/Platform.ThemeOverlay.AppCompat">
+    </plurals>
+    <plurals name="Platform.ThemeOverlay.AppCompat.Light" parent="@plurals/Platform.ThemeOverlay.AppCompat">
+    </plurals>
+    <plurals name="Platform.V21.AppCompat" parent="@android:style/Theme.Material.NoActionBar">
+        <item>@color/abc_hint_foreground_material_light</item>
+        <item>@color/abc_hint_foreground_material_dark</item>
+        <item>?android:attr/colorAccent</item>
+        <item>?style/buttonBarStyle</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>?android:attr/colorAccent</item>
+    </plurals>
+    <plurals name="Platform.V21.AppCompat.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item>@color/abc_hint_foreground_material_dark</item>
+        <item>@color/abc_hint_foreground_material_light</item>
+        <item>?android:attr/colorAccent</item>
+        <item>?style/buttonBarStyle</item>
+        <item>?style/buttonBarButtonStyle</item>
+        <item>?android:attr/colorAccent</item>
+    </plurals>
+    <plurals name="Platform.Widget.AppCompat.Spinner" parent="@android:style/Widget.Holo.Spinner">
+    </plurals>
+    <plurals name="PopupAnimation" parent="@android:style/Animation">
+        <item>@anim/popup_in</item>
+        <item>@anim/popup_out</item>
+    </plurals>
+    <plurals name="PopupContextAnimation" parent="@android:style/Animation">
+        <item>@anim/popup_context_in</item>
+    </plurals>
+    <plurals name="PopupContextAnimation2" parent="@android:style/Animation">
+        <item>@anim/popup_context_in</item>
+        <item>@anim/popup_out</item>
+    </plurals>
+    <plurals name="PremissionTranslucentTheme" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="RtlOverlay.DialogWindowTitle.AppCompat" parent="@plurals/Base.DialogWindowTitle.AppCompat">
+        <item>5</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.ActionBar.TitleItem" parent="@android:style/Widget">
+        <item>0x800013</item>
+        <item>8dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.DialogTitle.Icon" parent="@android:style/Widget">
+        <item>8dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.PopupMenuItem" parent="@android:style/Widget">
+        <item>16dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.PopupMenuItem.InternalGroup" parent="@android:style/Widget">
+        <item>16dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.PopupMenuItem.Shortcut" parent="@android:style/Widget">
+        <item>6</item>
+        <item>16dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.PopupMenuItem.SubmenuArrow" parent="@android:style/Widget">
+        <item>8dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.PopupMenuItem.Text" parent="@android:style/Widget">
+        <item>5</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.PopupMenuItem.Title" parent="@android:style/Widget">
+        <item>5</item>
+        <item>16dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.Search.DropDown" parent="@android:style/Widget">
+        <item>@dimen/abc_dropdownitem_text_padding_left</item>
+        <item>4dp</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.Search.DropDown.Icon1" parent="@android:style/Widget">
+        <item>true</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.Search.DropDown.Icon2" parent="@android:style/Widget">
+        <item>@attr/edit_query</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.Search.DropDown.Query" parent="@android:style/Widget">
+        <item>true</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.Search.DropDown.Text" parent="@plurals/Base.Widget.AppCompat.DropDownItem.Spinner">
+        <item>@android:id/icon2</item>
+        <item>@android:id/icon1</item>
+    </plurals>
+    <plurals name="RtlOverlay.Widget.AppCompat.SearchView.MagIcon" parent="@android:style/Widget">
+        <item>@dimen/abc_dropdownitem_text_padding_left</item>
+    </plurals>
+    <plurals name="RtlUnderlay.Widget.AppCompat.ActionButton" parent="@android:style/Widget">
+        <item>12dp</item>
+        <item>12dp</item>
+    </plurals>
+    <plurals name="RtlUnderlay.Widget.AppCompat.ActionButton.Overflow" parent="@plurals/Base.Widget.AppCompat.ActionButton">
+        <item>@dimen/abc_action_bar_overflow_padding_start_material</item>
+        <item>@dimen/abc_action_bar_overflow_padding_end_material</item>
+    </plurals>
+    <plurals name="SpinKitView">
+        <item>48dp</item>
+        <item>48dp</item>
+        <item>true</item>
+        <item>48dp</item>
+        <item>48dp</item>
+    </plurals>
+    <plurals name="TextAppearance.AppCompat" parent="@plurals/Base.TextAppearance.AppCompat">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Body1" parent="@plurals/Base.TextAppearance.AppCompat.Body1">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Body2" parent="@plurals/Base.TextAppearance.AppCompat.Body2">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Button" parent="@plurals/Base.TextAppearance.AppCompat.Button">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Caption" parent="@plurals/Base.TextAppearance.AppCompat.Caption">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Display1" parent="@plurals/Base.TextAppearance.AppCompat.Display1">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Display2" parent="@plurals/Base.TextAppearance.AppCompat.Display2">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Display3" parent="@plurals/Base.TextAppearance.AppCompat.Display3">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Display4" parent="@plurals/Base.TextAppearance.AppCompat.Display4">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Headline" parent="@plurals/Base.TextAppearance.AppCompat.Headline">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Large" parent="@plurals/Base.TextAppearance.AppCompat.Large">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Large.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Large.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Light.SearchResult.Subtitle" parent="@plurals/TextAppearance.AppCompat.SearchResult.Subtitle">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Light.SearchResult.Title" parent="@plurals/TextAppearance.AppCompat.SearchResult.Title">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Light.Widget.PopupMenu.Large" parent="@plurals/TextAppearance.AppCompat.Widget.PopupMenu.Large">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Light.Widget.PopupMenu.Small" parent="@plurals/TextAppearance.AppCompat.Widget.PopupMenu.Small">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Medium" parent="@plurals/Base.TextAppearance.AppCompat.Medium">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Medium.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Medium.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Menu" parent="@plurals/Base.TextAppearance.AppCompat.Menu">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.SearchResult.Subtitle" parent="@plurals/Base.TextAppearance.AppCompat.SearchResult.Subtitle">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.SearchResult.Title" parent="@plurals/Base.TextAppearance.AppCompat.SearchResult.Title">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Small" parent="@plurals/Base.TextAppearance.AppCompat.Small">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Small.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Small.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Subhead" parent="@plurals/Base.TextAppearance.AppCompat.Subhead">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Subhead.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Subhead.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Title" parent="@plurals/Base.TextAppearance.AppCompat.Title">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Title.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Title.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Tooltip" parent="@plurals/TextAppearance.AppCompat">
+        <item>14sp</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionBar.Menu" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionBar.Menu">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionBar.Subtitle" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionBar.Subtitle">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionBar.Subtitle.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionBar.Subtitle.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionBar.Title" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionBar.Title">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionBar.Title.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionBar.Title.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionMode.Subtitle" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionMode.Subtitle.Inverse" parent="@plurals/TextAppearance.AppCompat.Widget.ActionMode.Subtitle">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionMode.Title" parent="@plurals/Base.TextAppearance.AppCompat.Widget.ActionMode.Title">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.ActionMode.Title.Inverse" parent="@plurals/TextAppearance.AppCompat.Widget.ActionMode.Title">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.Button" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Button">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.Button.Borderless.Colored" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.Button.Colored" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Button.Colored">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.Button.Inverse" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Button.Inverse">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.DropDownItem" parent="@plurals/Base.TextAppearance.AppCompat.Widget.DropDownItem">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.PopupMenu.Header" parent="@plurals/Base.TextAppearance.AppCompat.Widget.PopupMenu.Header">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.PopupMenu.Large" parent="@plurals/Base.TextAppearance.AppCompat.Widget.PopupMenu.Large">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.PopupMenu.Small" parent="@plurals/Base.TextAppearance.AppCompat.Widget.PopupMenu.Small">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.Switch" parent="@plurals/Base.TextAppearance.AppCompat.Widget.Switch">
+    </plurals>
+    <plurals name="TextAppearance.AppCompat.Widget.TextView.SpinnerItem" parent="@plurals/Base.TextAppearance.AppCompat.Widget.TextView.SpinnerItem">
+    </plurals>
+    <plurals name="TextAppearance.Compat.Notification" parent="@android:style/TextAppearance.Material.Notification">
+    </plurals>
+    <plurals name="TextAppearance.Compat.Notification.Info" parent="@android:style/TextAppearance.Material.Notification.Info">
+    </plurals>
+    <plurals name="TextAppearance.Compat.Notification.Line2" parent="@plurals/TextAppearance.Compat.Notification.Info">
+    </plurals>
+    <plurals name="TextAppearance.Compat.Notification.Time" parent="@android:style/TextAppearance.Material.Notification.Time">
+    </plurals>
+    <plurals name="TextAppearance.Compat.Notification.Title" parent="@android:style/TextAppearance.Material.Notification.Title">
+    </plurals>
+    <plurals name="TextAppearance.Design.CollapsingToolbar.Expanded" parent="@plurals/TextAppearance.AppCompat.Display1">
+        <item>?android:attr/textColorPrimary</item>
+    </plurals>
+    <plurals name="TextAppearance.Design.Counter" parent="@plurals/TextAppearance.AppCompat.Caption">
+    </plurals>
+    <plurals name="TextAppearance.Design.Counter.Overflow" parent="@plurals/TextAppearance.AppCompat.Caption">
+        <item>@color/design_error</item>
+    </plurals>
+    <plurals name="TextAppearance.Design.Error" parent="@plurals/TextAppearance.AppCompat.Caption">
+        <item>@color/design_error</item>
+    </plurals>
+    <plurals name="TextAppearance.Design.HelperText" parent="@plurals/TextAppearance.AppCompat.Caption">
+    </plurals>
+    <plurals name="TextAppearance.Design.Hint" parent="@plurals/TextAppearance.AppCompat.Caption">
+        <item>?style/colorControlActivated</item>
+    </plurals>
+    <plurals name="TextAppearance.Design.Snackbar.Message" parent="@android:style/TextAppearance">
+        <item>@dimen/design_snackbar_text_size</item>
+        <item>?android:attr/textColorPrimary</item>
+    </plurals>
+    <plurals name="TextAppearance.Design.Tab" parent="@plurals/TextAppearance.AppCompat.Button">
+        <item>@dimen/design_tab_text_size</item>
+        <item>@color/mtrl_tabs_legacy_text_color_selector</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Body1" parent="@plurals/TextAppearance.AppCompat.Body2">
+        <item>16sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0.0312</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Body2" parent="@plurals/TextAppearance.AppCompat.Body1">
+        <item>14sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0.0179</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Button" parent="@plurals/TextAppearance.AppCompat.Button">
+        <item>14sp</item>
+        <item>0x0</item>
+        <item>true</item>
+        <item>sans-serif-medium</item>
+        <item>0.0893</item>
+        <item>sans-serif-medium</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Caption" parent="@plurals/TextAppearance.AppCompat.Caption">
+        <item>12sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0.0333</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Chip" parent="@plurals/TextAppearance.AppCompat">
+        <item>@dimen/mtrl_chip_text_size</item>
+        <item>@color/mtrl_chip_text_color</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Headline1" parent="@plurals/TextAppearance.AppCompat.Display4">
+        <item>96sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif-light</item>
+        <item>-0.0156</item>
+        <item>sans-serif-light</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Headline2" parent="@plurals/TextAppearance.AppCompat.Display3">
+        <item>60sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif-light</item>
+        <item>-0.0083</item>
+        <item>sans-serif-light</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Headline3" parent="@plurals/TextAppearance.AppCompat.Display2">
+        <item>48sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Headline4" parent="@plurals/TextAppearance.AppCompat.Display1">
+        <item>34sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0.0074</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Headline5" parent="@plurals/TextAppearance.AppCompat.Headline">
+        <item>24sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Headline6" parent="@plurals/TextAppearance.AppCompat.Title">
+        <item>20sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif-medium</item>
+        <item>0.0125</item>
+        <item>sans-serif-medium</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Overline" parent="@plurals/TextAppearance.AppCompat">
+        <item>12sp</item>
+        <item>0x0</item>
+        <item>true</item>
+        <item>sans-serif-medium</item>
+        <item>0.1667</item>
+        <item>sans-serif-medium</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Subtitle1" parent="@plurals/TextAppearance.AppCompat.Subhead">
+        <item>16sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif</item>
+        <item>0.0094</item>
+        <item>sans-serif</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Subtitle2" parent="@plurals/TextAppearance.AppCompat.Subhead">
+        <item>14sp</item>
+        <item>0x0</item>
+        <item>false</item>
+        <item>sans-serif-medium</item>
+        <item>0.0071</item>
+        <item>sans-serif-medium</item>
+    </plurals>
+    <plurals name="TextAppearance.MaterialComponents.Tab" parent="@plurals/TextAppearance.Design.Tab">
+        <item>@color/mtrl_tabs_icon_color_selector</item>
+    </plurals>
+    <plurals name="TextAppearance.Widget.AppCompat.ExpandedMenu.Item" parent="@plurals/Base.TextAppearance.Widget.AppCompat.ExpandedMenu.Item">
+    </plurals>
+    <plurals name="TextAppearance.Widget.AppCompat.Toolbar.Subtitle" parent="@plurals/Base.TextAppearance.Widget.AppCompat.Toolbar.Subtitle">
+    </plurals>
+    <plurals name="TextAppearance.Widget.AppCompat.Toolbar.Title" parent="@plurals/Base.TextAppearance.Widget.AppCompat.Toolbar.Title">
+    </plurals>
+    <plurals name="Theme.AppCompat" parent="@plurals/Base.Theme.AppCompat">
+    </plurals>
+    <plurals name="Theme.AppCompat.CompactMenu" parent="@plurals/Base.Theme.AppCompat.CompactMenu">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight" parent="@plurals/Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.DarkActionBar" parent="@plurals/Theme.AppCompat.Light.DarkActionBar">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.Dialog" parent="@plurals/Theme.AppCompat.Light.Dialog">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.Dialog.Alert" parent="@plurals/Theme.AppCompat.Light.Dialog.Alert">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.Dialog.MinWidth" parent="@plurals/Theme.AppCompat.Light.Dialog.MinWidth">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.DialogWhenLarge" parent="@plurals/Theme.AppCompat.Light.DialogWhenLarge">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.NoActionBar" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+    </plurals>
+    <plurals name="Theme.AppCompat.Dialog" parent="@plurals/Base.Theme.AppCompat.Dialog">
+    </plurals>
+    <plurals name="Theme.AppCompat.Dialog.Alert" parent="@plurals/Base.Theme.AppCompat.Dialog.Alert">
+    </plurals>
+    <plurals name="Theme.AppCompat.Dialog.MinWidth" parent="@plurals/Base.Theme.AppCompat.Dialog.MinWidth">
+    </plurals>
+    <plurals name="Theme.AppCompat.DialogWhenLarge" parent="@plurals/Base.Theme.AppCompat.DialogWhenLarge">
+    </plurals>
+    <plurals name="Theme.AppCompat.Empty">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light" parent="@plurals/Base.Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light.DarkActionBar" parent="@plurals/Base.Theme.AppCompat.Light.DarkActionBar">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light.Dialog" parent="@plurals/Base.Theme.AppCompat.Light.Dialog">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light.Dialog.Alert" parent="@plurals/Base.Theme.AppCompat.Light.Dialog.Alert">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light.Dialog.MinWidth" parent="@plurals/Base.Theme.AppCompat.Light.Dialog.MinWidth">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light.DialogWhenLarge" parent="@plurals/Base.Theme.AppCompat.Light.DialogWhenLarge">
+    </plurals>
+    <plurals name="Theme.AppCompat.Light.NoActionBar" parent="@plurals/Theme.AppCompat.Light">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.AppCompat.NoActionBar" parent="@plurals/Theme.AppCompat">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.Design" parent="@plurals/Theme.AppCompat">
+    </plurals>
+    <plurals name="Theme.Design.BottomSheetDialog" parent="@plurals/Theme.AppCompat.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@plurals/Animation.Design.BottomSheetDialog</item>
+        <item>@plurals/Widget.Design.BottomSheet.Modal</item>
+    </plurals>
+    <plurals name="Theme.Design.Light" parent="@plurals/Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Theme.Design.Light.BottomSheetDialog" parent="@plurals/Theme.AppCompat.Light.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@plurals/Animation.Design.BottomSheetDialog</item>
+        <item>@plurals/Widget.Design.BottomSheet.Modal</item>
+    </plurals>
+    <plurals name="Theme.Design.Light.NoActionBar" parent="@plurals/Theme.Design.Light">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.Design.NoActionBar" parent="@plurals/Theme.Design">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.MaterialComponents" parent="@plurals/Base.Theme.MaterialComponents">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.BottomSheetDialog" parent="@plurals/Theme.MaterialComponents.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@plurals/Animation.Design.BottomSheetDialog</item>
+        <item>@plurals/Widget.Design.BottomSheet.Modal</item>
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Bridge" parent="@plurals/Base.Theme.MaterialComponents.Bridge">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.CompactMenu" parent="@plurals/Base.Theme.MaterialComponents.CompactMenu">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Dialog" parent="@plurals/Base.Theme.MaterialComponents.Dialog">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Dialog.Alert" parent="@plurals/Base.Theme.MaterialComponents.Dialog.Alert">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Dialog.MinWidth" parent="@plurals/Base.Theme.MaterialComponents.Dialog.MinWidth">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.DialogWhenLarge" parent="@plurals/Base.Theme.MaterialComponents.DialogWhenLarge">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light" parent="@plurals/Base.Theme.MaterialComponents.Light">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.BottomSheetDialog" parent="@plurals/Theme.MaterialComponents.Light.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@plurals/Animation.Design.BottomSheetDialog</item>
+        <item>@plurals/Widget.Design.BottomSheet.Modal</item>
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.Bridge" parent="@plurals/Base.Theme.MaterialComponents.Light.Bridge">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.DarkActionBar" parent="@plurals/Base.Theme.MaterialComponents.Light.DarkActionBar">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.DarkActionBar.Bridge" parent="@plurals/Base.Theme.MaterialComponents.Light.DarkActionBar.Bridge">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.Dialog" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.Dialog.Alert" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog.Alert">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.Dialog.MinWidth" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog.MinWidth">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.DialogWhenLarge" parent="@plurals/Base.Theme.MaterialComponents.Light.DialogWhenLarge">
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.NoActionBar" parent="@plurals/Theme.MaterialComponents.Light">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.MaterialComponents.Light.NoActionBar.Bridge" parent="@plurals/Theme.MaterialComponents.Light.Bridge">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.MaterialComponents.NoActionBar" parent="@plurals/Theme.MaterialComponents">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.MaterialComponents.NoActionBar.Bridge" parent="@plurals/Theme.MaterialComponents.Bridge">
+        <item>false</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Theme.TMessages" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+        <item>@android:color/white</item>
+        <item>@android:color/white</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/Theme.TMessages.ListView</item>
+        <item>@plurals/MyTextViewStyle</item>
+        <item>#60808080</item>
+        <item>@plurals/ActionBar.Transparent.TMessages.Item</item>
+        <item>false</item>
+        <item>false</item>
+        <item>@drawable/list_selector_ex</item>
+        <item>@plurals/Theme.TMessages.Dialog.Alert</item>
+        <item>@plurals/Theme.TMessages.DatePicker</item>
+        <item>@plurals/Theme.TMessages.CalendarView</item>
+        <item>@drawable/bar_selector_style</item>
+        <item>#808080</item>
+        <item>#527da3</item>
+        <item>#33000000</item>
+        <item>#000000</item>
+        <item>@plurals/Theme.TMessages.TimePicker</item>
+        <item>@plurals/Theme.TMessages.Dialog.Alert</item>
+        <item>@plurals/Theme.TMessages.Dialog.Alert</item>
+        <item>0.9</item>
+        <item>3dp</item>
+    </plurals>
+    <plurals name="Theme.TMessages.BorderLessButton" parent="@android:style/Widget.Material.Light.ButtonBar.AlertDialog">
+        <item>#4991cc</item>
+    </plurals>
+    <plurals name="Theme.TMessages.CalendarView" parent="@android:style/Widget.Material.CalendarView">
+        <item>@plurals/Theme.TMessages.DayOfWeek</item>
+    </plurals>
+    <plurals name="Theme.TMessages.DatePicker" parent="@android:style/Widget.Material.Light.DatePicker">
+        <item>#408bc8</item>
+    </plurals>
+    <plurals name="Theme.TMessages.DayOfWeek" parent="@android:style/TextAppearance.Material.Caption">
+        <item>0dp</item>
+        <item>#00000000</item>
+    </plurals>
+    <plurals name="Theme.TMessages.Dialog.Alert" parent="@plurals/Theme.AppCompat.Light.Dialog.Alert">
+        <item>#808080</item>
+        <item>#527da3</item>
+        <item>#4991cc</item>
+    </plurals>
+    <plurals name="Theme.TMessages.ListView" parent="@android:style/Widget.Material.Light.ListView">
+        <item>0x0</item>
+        <item>@color/divider</item>
+        <item>1dp</item>
+    </plurals>
+    <plurals name="Theme.TMessages.MiniGame" parent="@plurals/Theme.AppCompat.Light">
+        <item>@color/color_FFF6F7F9</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/MyTextViewStyle</item>
+        <item>true</item>
+        <item>false</item>
+        <item>@plurals/ActionBar.Transparent.TMessages.Start</item>
+        <item>0.2</item>
+        <item>0.9</item>
+        <item>0.9</item>
+        <item>3dp</item>
+    </plurals>
+    <plurals name="Theme.TMessages.PopupNotification" parent="@plurals/Theme.TMessages">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>#99000000</item>
+        <item>#000000</item>
+    </plurals>
+    <plurals name="Theme.TMessages.Start" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+        <item>@android:color/white</item>
+        <item>@drawable/splash</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/MyTextViewStyle</item>
+        <item>true</item>
+        <item>false</item>
+        <item>@plurals/ActionBar.Transparent.TMessages.Start</item>
+        <item>#527da3</item>
+        <item>#426482</item>
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>0.2</item>
+        <item>0.9</item>
+        <item>0.9</item>
+        <item>3dp</item>
+    </plurals>
+    <plurals name="Theme.TMessages.TimePicker" parent="@android:style/Widget.Material.Light.TimePicker">
+        <item>#408bc8</item>
+    </plurals>
+    <plurals name="Theme.TMessages.Transparent" parent="@plurals/Theme.TMessages">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Theme.TMessages.TransparentWithAlerts" parent="@plurals/Theme.TMessages">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat" parent="@plurals/Base.ThemeOverlay.AppCompat">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.ActionBar" parent="@plurals/Base.ThemeOverlay.AppCompat.ActionBar">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.Dark" parent="@plurals/Base.ThemeOverlay.AppCompat.Dark">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.Dark.ActionBar" parent="@plurals/Base.ThemeOverlay.AppCompat.Dark.ActionBar">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.DayNight" parent="@plurals/ThemeOverlay.AppCompat.Light">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.DayNight.ActionBar" parent="@plurals/ThemeOverlay.AppCompat.DayNight">
+        <item>?android:attr/textColorPrimary</item>
+        <item>@plurals/Widget.AppCompat.SearchView.ActionBar</item>
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.Dialog" parent="@plurals/Base.ThemeOverlay.AppCompat.Dialog">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.Dialog.Alert" parent="@plurals/Base.ThemeOverlay.AppCompat.Dialog.Alert">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.Light" parent="@plurals/Base.ThemeOverlay.AppCompat.Light">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents" parent="@plurals/ThemeOverlay.AppCompat">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.ActionBar" parent="@plurals/ThemeOverlay.AppCompat.ActionBar">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.Dark" parent="@plurals/ThemeOverlay.AppCompat.Dark">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.Dark.ActionBar" parent="@plurals/ThemeOverlay.AppCompat.Dark.ActionBar">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.Dialog" parent="@plurals/Base.ThemeOverlay.MaterialComponents.Dialog">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.Dialog.Alert" parent="@plurals/Base.ThemeOverlay.MaterialComponents.Dialog.Alert">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.Light" parent="@plurals/ThemeOverlay.AppCompat.Light">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.TextInputEditText">
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.TextInputEditText.FilledBox" parent="@plurals/ThemeOverlay.MaterialComponents.TextInputEditText">
+        <item>@plurals/Widget.MaterialComponents.TextInputEditText.FilledBox</item>
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.TextInputEditText.FilledBox.Dense" parent="@plurals/ThemeOverlay.MaterialComponents.TextInputEditText.FilledBox">
+        <item>@plurals/Widget.MaterialComponents.TextInputEditText.FilledBox.Dense</item>
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.TextInputEditText.OutlinedBox" parent="@plurals/ThemeOverlay.MaterialComponents.TextInputEditText">
+        <item>@plurals/Widget.MaterialComponents.TextInputEditText.OutlinedBox</item>
+    </plurals>
+    <plurals name="ThemeOverlay.MaterialComponents.TextInputEditText.OutlinedBox.Dense" parent="@plurals/ThemeOverlay.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item>@plurals/Widget.MaterialComponents.TextInputEditText.OutlinedBox.Dense</item>
+    </plurals>
+    <plurals name="Theme_Game_Dialog_Fullscreen">
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@android:color/transparent</item>
+    </plurals>
+    <plurals name="TransparentDialog" parent="@android:style/Theme.Dialog">
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>false</item>
+        <item>false</item>
+        <item>@null</item>
+    </plurals>
+    <plurals name="VisualCallTheme" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+        <item>false</item>
+        <item>true</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionBar" parent="@plurals/Base.Widget.AppCompat.ActionBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionBar.Solid" parent="@plurals/Base.Widget.AppCompat.ActionBar.Solid">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionBar.TabBar" parent="@plurals/Base.Widget.AppCompat.ActionBar.TabBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionBar.TabText" parent="@plurals/Base.Widget.AppCompat.ActionBar.TabText">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionBar.TabView" parent="@plurals/Base.Widget.AppCompat.ActionBar.TabView">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionButton" parent="@plurals/Base.Widget.AppCompat.ActionButton">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionButton.CloseMode" parent="@plurals/Base.Widget.AppCompat.ActionButton.CloseMode">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionButton.Overflow" parent="@plurals/Base.Widget.AppCompat.ActionButton.Overflow">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActionMode" parent="@plurals/Base.Widget.AppCompat.ActionMode">
+    </plurals>
+    <plurals name="Widget.AppCompat.ActivityChooserView" parent="@plurals/Base.Widget.AppCompat.ActivityChooserView">
+    </plurals>
+    <plurals name="Widget.AppCompat.AutoCompleteTextView" parent="@plurals/Base.Widget.AppCompat.AutoCompleteTextView">
+    </plurals>
+    <plurals name="Widget.AppCompat.Button" parent="@plurals/Base.Widget.AppCompat.Button">
+    </plurals>
+    <plurals name="Widget.AppCompat.Button.Borderless" parent="@plurals/Base.Widget.AppCompat.Button.Borderless">
+    </plurals>
+    <plurals name="Widget.AppCompat.Button.Borderless.Colored" parent="@plurals/Base.Widget.AppCompat.Button.Borderless.Colored">
+    </plurals>
+    <plurals name="Widget.AppCompat.Button.ButtonBar.AlertDialog" parent="@plurals/Base.Widget.AppCompat.Button.ButtonBar.AlertDialog">
+    </plurals>
+    <plurals name="Widget.AppCompat.Button.Colored" parent="@plurals/Base.Widget.AppCompat.Button.Colored">
+    </plurals>
+    <plurals name="Widget.AppCompat.Button.Small" parent="@plurals/Base.Widget.AppCompat.Button.Small">
+    </plurals>
+    <plurals name="Widget.AppCompat.ButtonBar" parent="@plurals/Base.Widget.AppCompat.ButtonBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.ButtonBar.AlertDialog" parent="@plurals/Base.Widget.AppCompat.ButtonBar.AlertDialog">
+    </plurals>
+    <plurals name="Widget.AppCompat.CompoundButton.CheckBox" parent="@plurals/Base.Widget.AppCompat.CompoundButton.CheckBox">
+    </plurals>
+    <plurals name="Widget.AppCompat.CompoundButton.RadioButton" parent="@plurals/Base.Widget.AppCompat.CompoundButton.RadioButton">
+    </plurals>
+    <plurals name="Widget.AppCompat.CompoundButton.Switch" parent="@plurals/Base.Widget.AppCompat.CompoundButton.Switch">
+    </plurals>
+    <plurals name="Widget.AppCompat.DrawerArrowToggle" parent="@plurals/Base.Widget.AppCompat.DrawerArrowToggle">
+        <item>?style/colorControlNormal</item>
+    </plurals>
+    <plurals name="Widget.AppCompat.DropDownItem.Spinner" parent="@plurals/RtlOverlay.Widget.AppCompat.Search.DropDown.Text">
+    </plurals>
+    <plurals name="Widget.AppCompat.EditText" parent="@plurals/Base.Widget.AppCompat.EditText">
+    </plurals>
+    <plurals name="Widget.AppCompat.ImageButton" parent="@plurals/Base.Widget.AppCompat.ImageButton">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.Solid" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar.Solid">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.Solid.Inverse" parent="@plurals/Widget.AppCompat.Light.ActionBar.Solid">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.TabBar" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar.TabBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.TabBar.Inverse" parent="@plurals/Widget.AppCompat.Light.ActionBar.TabBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.TabText" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar.TabText">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.TabText.Inverse" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar.TabText.Inverse">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.TabView" parent="@plurals/Base.Widget.AppCompat.Light.ActionBar.TabView">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionBar.TabView.Inverse" parent="@plurals/Widget.AppCompat.Light.ActionBar.TabView">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionButton" parent="@plurals/Widget.AppCompat.ActionButton">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionButton.CloseMode" parent="@plurals/Widget.AppCompat.ActionButton.CloseMode">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionButton.Overflow" parent="@plurals/Widget.AppCompat.ActionButton.Overflow">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActionMode.Inverse" parent="@plurals/Widget.AppCompat.ActionMode">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ActivityChooserView" parent="@plurals/Widget.AppCompat.ActivityChooserView">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.AutoCompleteTextView" parent="@plurals/Widget.AppCompat.AutoCompleteTextView">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.DropDownItem.Spinner" parent="@plurals/Widget.AppCompat.DropDownItem.Spinner">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ListPopupWindow" parent="@plurals/Widget.AppCompat.ListPopupWindow">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.ListView.DropDown" parent="@plurals/Widget.AppCompat.ListView.DropDown">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.PopupMenu" parent="@plurals/Base.Widget.AppCompat.Light.PopupMenu">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.PopupMenu.Overflow" parent="@plurals/Base.Widget.AppCompat.Light.PopupMenu.Overflow">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.SearchView" parent="@plurals/Widget.AppCompat.SearchView">
+    </plurals>
+    <plurals name="Widget.AppCompat.Light.Spinner.DropDown.ActionBar" parent="@plurals/Widget.AppCompat.Spinner.DropDown.ActionBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.ListMenuView" parent="@plurals/Base.Widget.AppCompat.ListMenuView">
+    </plurals>
+    <plurals name="Widget.AppCompat.ListPopupWindow" parent="@plurals/Base.Widget.AppCompat.ListPopupWindow">
+    </plurals>
+    <plurals name="Widget.AppCompat.ListView" parent="@plurals/Base.Widget.AppCompat.ListView">
+    </plurals>
+    <plurals name="Widget.AppCompat.ListView.DropDown" parent="@plurals/Base.Widget.AppCompat.ListView.DropDown">
+    </plurals>
+    <plurals name="Widget.AppCompat.ListView.Menu" parent="@plurals/Base.Widget.AppCompat.ListView.Menu">
+    </plurals>
+    <plurals name="Widget.AppCompat.PopupMenu" parent="@plurals/Base.Widget.AppCompat.PopupMenu">
+    </plurals>
+    <plurals name="Widget.AppCompat.PopupMenu.Overflow" parent="@plurals/Base.Widget.AppCompat.PopupMenu.Overflow">
+    </plurals>
+    <plurals name="Widget.AppCompat.PopupWindow" parent="@plurals/Base.Widget.AppCompat.PopupWindow">
+    </plurals>
+    <plurals name="Widget.AppCompat.ProgressBar" parent="@plurals/Base.Widget.AppCompat.ProgressBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.ProgressBar.Horizontal" parent="@plurals/Base.Widget.AppCompat.ProgressBar.Horizontal">
+    </plurals>
+    <plurals name="Widget.AppCompat.RatingBar" parent="@plurals/Base.Widget.AppCompat.RatingBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.RatingBar.Indicator" parent="@plurals/Base.Widget.AppCompat.RatingBar.Indicator">
+    </plurals>
+    <plurals name="Widget.AppCompat.RatingBar.Small" parent="@plurals/Base.Widget.AppCompat.RatingBar.Small">
+    </plurals>
+    <plurals name="Widget.AppCompat.SearchView" parent="@plurals/Base.Widget.AppCompat.SearchView">
+    </plurals>
+    <plurals name="Widget.AppCompat.SearchView.ActionBar" parent="@plurals/Base.Widget.AppCompat.SearchView.ActionBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.SeekBar" parent="@plurals/Base.Widget.AppCompat.SeekBar">
+    </plurals>
+    <plurals name="Widget.AppCompat.SeekBar.Discrete" parent="@plurals/Base.Widget.AppCompat.SeekBar.Discrete">
+    </plurals>
+    <plurals name="Widget.AppCompat.Spinner" parent="@plurals/Base.Widget.AppCompat.Spinner">
+    </plurals>
+    <plurals name="Widget.AppCompat.Spinner.DropDown" parent="@plurals/Widget.AppCompat.Spinner">
+    </plurals>
+    <plurals name="Widget.AppCompat.Spinner.DropDown.ActionBar" parent="@plurals/Widget.AppCompat.Spinner.DropDown">
+    </plurals>
+    <plurals name="Widget.AppCompat.Spinner.Underlined" parent="@plurals/Base.Widget.AppCompat.Spinner.Underlined">
+    </plurals>
+    <plurals name="Widget.AppCompat.TextView" parent="@plurals/Base.Widget.AppCompat.TextView">
+    </plurals>
+    <plurals name="Widget.AppCompat.TextView.SpinnerItem" parent="@plurals/Base.Widget.AppCompat.TextView.SpinnerItem">
+    </plurals>
+    <plurals name="Widget.AppCompat.Toolbar" parent="@plurals/Base.Widget.AppCompat.Toolbar">
+    </plurals>
+    <plurals name="Widget.AppCompat.Toolbar.Button.Navigation" parent="@plurals/Base.Widget.AppCompat.Toolbar.Button.Navigation">
+    </plurals>
+    <plurals name="Widget.Compat.NotificationActionContainer">
+        <item>@drawable/notification_action_background</item>
+    </plurals>
+    <plurals name="Widget.Compat.NotificationActionText">
+        <item>?android:attr/textAppearanceButton</item>
+        <item>@dimen/notification_action_text_size</item>
+        <item>@color/androidx_core_secondary_text_default_material_light</item>
+    </plurals>
+    <plurals name="Widget.Design.AppBarLayout" parent="@android:style/Widget">
+        <item>?style/colorPrimary</item>
+        <item>@animator/design_appbar_state_list_animator</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Widget.Design.BottomNavigationView">
+        <item>@dimen/design_bottom_navigation_elevation</item>
+        <item>?style/selectableItemBackgroundBorderless</item>
+        <item>true</item>
+        <item>@dimen/design_bottom_navigation_icon_size</item>
+        <item>-1</item>
+    </plurals>
+    <plurals name="Widget.Design.BottomSheet.Modal" parent="@android:style/Widget">
+        <item>?android:attr/colorBackground</item>
+        <item>@dimen/design_bottom_sheet_modal_elevation</item>
+        <item>true</item>
+        <item>-1</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Widget.Design.CollapsingToolbar" parent="@android:style/Widget">
+        <item>32dp</item>
+        <item>?style/colorPrimaryDark</item>
+    </plurals>
+    <plurals name="Widget.Design.FloatingActionButton" parent="@android:style/Widget">
+        <item>@drawable/design_fab_background</item>
+        <item>true</item>
+        <item>true</item>
+        <item>?style/colorAccent</item>
+        <item>@dimen/design_fab_border_width</item>
+        <item>@dimen/design_fab_elevation</item>
+        <item>-1</item>
+        <item>@animator/design_fab_hide_motion_spec</item>
+        <item>@dimen/design_fab_translation_z_hovered_focused</item>
+        <item>@dimen/design_fab_image_size</item>
+        <item>@dimen/design_fab_translation_z_pressed</item>
+        <item>?style/colorControlHighlight</item>
+        <item>@animator/design_fab_show_motion_spec</item>
+    </plurals>
+    <plurals name="Widget.Design.NavigationView">
+        <item>?android:attr/windowBackground</item>
+        <item>true</item>
+        <item>@dimen/design_navigation_max_width</item>
+        <item>@dimen/design_navigation_elevation</item>
+        <item>@dimen/design_navigation_item_horizontal_padding</item>
+        <item>@dimen/design_navigation_item_icon_padding</item>
+    </plurals>
+    <plurals name="Widget.Design.ScrimInsetsFrameLayout">
+        <item>#0000</item>
+    </plurals>
+    <plurals name="Widget.Design.Snackbar" parent="@android:style/Widget">
+        <item>@drawable/design_snackbar_background</item>
+        <item>@dimen/design_snackbar_padding_horizontal</item>
+        <item>@dimen/design_snackbar_padding_horizontal</item>
+        <item>@dimen/design_snackbar_max_width</item>
+        <item>@dimen/design_snackbar_min_width</item>
+        <item>@dimen/design_snackbar_elevation</item>
+        <item>@dimen/design_snackbar_action_inline_max_width</item>
+    </plurals>
+    <plurals name="Widget.Design.TabLayout" parent="@plurals/Base.Widget.Design.TabLayout">
+        <item>0</item>
+        <item>true</item>
+        <item>1</item>
+    </plurals>
+    <plurals name="Widget.Design.TextInputLayout" parent="@android:style/Widget">
+        <item>0</item>
+        <item>@plurals/TextAppearance.Design.Counter.Overflow</item>
+        <item>@plurals/TextAppearance.Design.Counter</item>
+        <item>@plurals/TextAppearance.Design.Error</item>
+        <item>@plurals/TextAppearance.Design.HelperText</item>
+        <item>@plurals/TextAppearance.Design.Hint</item>
+        <item>@string/password_toggle_content_description</item>
+        <item>@drawable/design_password_eye</item>
+        <item>@color/design_tint_password_toggle</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.BottomAppBar" parent="@plurals/Widget.AppCompat.Toolbar">
+        <item>@android:color/white</item>
+        <item>@dimen/mtrl_bottomappbar_fab_cradle_margin</item>
+        <item>@dimen/mtrl_bottomappbar_fab_cradle_rounded_corner_radius</item>
+        <item>@dimen/mtrl_bottomappbar_fab_cradle_vertical_offset</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.BottomAppBar.Colored" parent="@plurals/Widget.MaterialComponents.BottomAppBar">
+        <item>?style/colorPrimary</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.BottomNavigationView" parent="@plurals/Widget.Design.BottomNavigationView">
+        <item>@android:color/white</item>
+        <item>true</item>
+        <item>false</item>
+        <item>@color/mtrl_bottom_nav_item_tint</item>
+        <item>?style/textAppearanceCaption</item>
+        <item>?style/textAppearanceCaption</item>
+        <item>@color/mtrl_bottom_nav_item_tint</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.BottomNavigationView.Colored" parent="@plurals/Widget.MaterialComponents.BottomNavigationView">
+        <item>?style/colorPrimary</item>
+        <item>@color/mtrl_bottom_nav_colored_item_tint</item>
+        <item>?style/textAppearanceCaption</item>
+        <item>?style/textAppearanceCaption</item>
+        <item>@color/mtrl_bottom_nav_colored_item_tint</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.BottomSheet.Modal" parent="@plurals/Widget.Design.BottomSheet.Modal">
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button" parent="@plurals/Widget.AppCompat.Button">
+        <item>?style/textAppearanceButton</item>
+        <item>@color/mtrl_btn_text_color_selector</item>
+        <item>@dimen/mtrl_btn_padding_left</item>
+        <item>@dimen/mtrl_btn_padding_top</item>
+        <item>@dimen/mtrl_btn_padding_right</item>
+        <item>@dimen/mtrl_btn_padding_bottom</item>
+        <item>0dp</item>
+        <item>0dp</item>
+        <item>@dimen/mtrl_btn_inset</item>
+        <item>@dimen/mtrl_btn_inset</item>
+        <item>@animator/mtrl_btn_state_list_anim</item>
+        <item>@color/mtrl_btn_bg_color_selector</item>
+        <item>@dimen/mtrl_btn_corner_radius</item>
+        <item>true</item>
+        <item>@dimen/mtrl_btn_icon_padding</item>
+        <item>@color/mtrl_btn_text_color_selector</item>
+        <item>@color/mtrl_btn_ripple_color</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.Icon" parent="@plurals/Widget.MaterialComponents.Button">
+        <item>@dimen/mtrl_btn_icon_btn_padding_left</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.OutlinedButton" parent="@plurals/Widget.MaterialComponents.Button.TextButton">
+        <item>@dimen/mtrl_btn_padding_left</item>
+        <item>@dimen/mtrl_btn_padding_right</item>
+        <item>@color/mtrl_btn_stroke_color_selector</item>
+        <item>@dimen/mtrl_btn_stroke_size</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.OutlinedButton.Icon" parent="@plurals/Widget.MaterialComponents.Button.OutlinedButton">
+        <item>@dimen/mtrl_btn_icon_btn_padding_left</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.TextButton" parent="@plurals/Widget.MaterialComponents.Button.UnelevatedButton">
+        <item>@color/mtrl_text_btn_text_color_selector</item>
+        <item>@dimen/mtrl_btn_text_btn_padding_left</item>
+        <item>@dimen/mtrl_btn_text_btn_padding_right</item>
+        <item>@color/mtrl_btn_transparent_bg_color</item>
+        <item>@dimen/mtrl_btn_text_btn_icon_padding</item>
+        <item>@color/mtrl_text_btn_text_color_selector</item>
+        <item>@color/mtrl_btn_text_btn_ripple_color</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.TextButton.Dialog" parent="@plurals/Widget.MaterialComponents.Button.TextButton">
+        <item>@dimen/mtrl_btn_dialog_btn_min_width</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.TextButton.Dialog.Icon" parent="@plurals/Widget.MaterialComponents.Button.TextButton.Dialog">
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.TextButton.Icon" parent="@plurals/Widget.MaterialComponents.Button.TextButton">
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.UnelevatedButton" parent="@plurals/Widget.MaterialComponents.Button">
+        <item>@animator/mtrl_btn_unelevated_state_list_anim</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Button.UnelevatedButton.Icon" parent="@plurals/Widget.MaterialComponents.Button.UnelevatedButton">
+        <item>@dimen/mtrl_btn_icon_btn_padding_left</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.CardView" parent="@plurals/CardView">
+        <item>?style/colorBackgroundFloating</item>
+        <item>@dimen/mtrl_card_elevation</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Chip.Action" parent="@plurals/Base.Widget.MaterialComponents.Chip">
+        <item>false</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Chip.Choice" parent="@plurals/Base.Widget.MaterialComponents.Chip">
+        <item>true</item>
+        <item>@drawable/ic_mtrl_chip_checked_black</item>
+        <item>false</item>
+        <item>false</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Chip.Entry" parent="@plurals/Base.Widget.MaterialComponents.Chip">
+        <item>true</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Chip.Filter" parent="@plurals/Base.Widget.MaterialComponents.Chip">
+        <item>true</item>
+        <item>@drawable/ic_mtrl_chip_checked_black</item>
+        <item>false</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.ChipGroup" parent="@android:style/Widget">
+        <item>4dp</item>
+        <item>false</item>
+        <item>false</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.FloatingActionButton" parent="@plurals/Widget.Design.FloatingActionButton">
+        <item>@dimen/mtrl_fab_elevation</item>
+        <item>@animator/mtrl_fab_hide_motion_spec</item>
+        <item>@dimen/mtrl_fab_translation_z_hovered_focused</item>
+        <item>@dimen/mtrl_fab_translation_z_pressed</item>
+        <item>@color/mtrl_fab_ripple_color</item>
+        <item>@animator/mtrl_fab_show_motion_spec</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.NavigationView" parent="@plurals/Widget.Design.NavigationView">
+        <item>@dimen/mtrl_navigation_elevation</item>
+        <item>@dimen/mtrl_navigation_item_horizontal_padding</item>
+        <item>@dimen/mtrl_navigation_item_icon_padding</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Snackbar" parent="@plurals/Widget.Design.Snackbar">
+        <item>@drawable/mtrl_snackbar_background</item>
+        <item>@dimen/mtrl_snackbar_margin</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Snackbar.FullWidth" parent="@plurals/Widget.Design.Snackbar">
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TabLayout" parent="@plurals/Widget.Design.TabLayout">
+        <item>@android:color/white</item>
+        <item>true</item>
+        <item>@color/mtrl_tabs_icon_color_selector</item>
+        <item>@integer/mtrl_tab_indicator_anim_duration_ms</item>
+        <item>?style/colorAccent</item>
+        <item>@color/mtrl_tabs_ripple_color</item>
+        <item>?style/textAppearanceButton</item>
+        <item>@color/mtrl_tabs_icon_color_selector</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TabLayout.Colored" parent="@plurals/Widget.MaterialComponents.TabLayout">
+        <item>?style/colorAccent</item>
+        <item>@color/mtrl_tabs_icon_color_selector_colored</item>
+        <item>@android:color/white</item>
+        <item>@color/mtrl_tabs_colored_ripple_color</item>
+        <item>@color/mtrl_tabs_icon_color_selector_colored</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputEditText.FilledBox" parent="@plurals/Base.Widget.MaterialComponents.TextInputEditText">
+        <item>20dp</item>
+        <item>16dp</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputEditText.FilledBox.Dense" parent="@plurals/Widget.MaterialComponents.TextInputEditText.FilledBox">
+        <item>16dp</item>
+        <item>16dp</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputEditText.OutlinedBox" parent="@plurals/Base.Widget.MaterialComponents.TextInputEditText">
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputEditText.OutlinedBox.Dense" parent="@plurals/Widget.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item>12dp</item>
+        <item>12dp</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputLayout.FilledBox" parent="@plurals/Base.Widget.MaterialComponents.TextInputLayout">
+        <item>@plurals/ThemeOverlay.MaterialComponents.TextInputEditText.FilledBox</item>
+        <item>@color/mtrl_textinput_filled_box_default_background_color</item>
+        <item>1</item>
+        <item>12dp</item>
+        <item>@dimen/mtrl_textinput_box_corner_radius_small</item>
+        <item>@dimen/mtrl_textinput_box_corner_radius_small</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputLayout.FilledBox.Dense" parent="@plurals/Widget.MaterialComponents.TextInputLayout.FilledBox">
+        <item>@plurals/ThemeOverlay.MaterialComponents.TextInputEditText.FilledBox.Dense</item>
+        <item>8dp</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputLayout.OutlinedBox" parent="@plurals/Base.Widget.MaterialComponents.TextInputLayout">
+        <item>@plurals/ThemeOverlay.MaterialComponents.TextInputEditText.OutlinedBox</item>
+        <item>0dp</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense" parent="@plurals/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item>@plurals/ThemeOverlay.MaterialComponents.TextInputEditText.OutlinedBox.Dense</item>
+    </plurals>
+    <plurals name="Widget.MaterialComponents.Toolbar" parent="@plurals/Widget.AppCompat.Toolbar">
+        <item>@dimen/mtrl_toolbar_default_height</item>
+        <item>?style/textAppearanceSubtitle1</item>
+        <item>?android:attr/textColorSecondary</item>
+        <item>?style/textAppearanceHeadline6</item>
+        <item>?android:attr/textColorPrimary</item>
+    </plurals>
+    <plurals name="Widget.Support.CoordinatorLayout" parent="@android:style/Widget">
+        <item>#000000</item>
+    </plurals>
+    <plurals name="actionActivity" parent="@android:style/Theme.Translucent.NoTitleBar">
+        <item>@android:color/transparent</item>
+    </plurals>
+    <plurals name="commondialog" parent="@plurals/Theme.AppCompat.Dialog">
+        <item>@android:color/transparent</item>
+        <item>true</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="custom_dialog2" parent="@android:style/Theme.Dialog">
+        <item>0.3</item>
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@null</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="dialog_trans_animation" parent="@android:style/Animation">
+        <item>@anim/anim_trans_in</item>
+        <item>@anim/anim_trans_out</item>
+    </plurals>
+    <plurals name="fc_key_board_panel">
+        <item>1</item>
+        <item>#ffffff</item>
+        <item>-1</item>
+        <item>-2</item>
+    </plurals>
+    <plurals name="picker_view_scale_anim" parent="@android:style/Animation">
+        <item>@anim/pickerview_dialog_scale_in</item>
+        <item>@anim/pickerview_dialog_scale_out</item>
+    </plurals>
+    <plurals name="picker_view_slide_anim" parent="@android:style/Animation">
+        <item>@anim/pickerview_slide_in_bottom</item>
+        <item>@anim/pickerview_slide_out_bottom</item>
+    </plurals>
+    <plurals name="red_pkg_dialog" parent="@android:style/Theme.Dialog">
+        <item>0.6</item>
+        <item>@android:color/transparent</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>true</item>
+        <item>true</item>
+        <item>@android:color/transparent</item>
+        <item>true</item>
+    </plurals>
+    <plurals name="scrollbarShapeStyle">
+        <item>8dp</item>
+        <item>@drawable/scrollbar_vertical_thumb_inset</item>
+        <item>@null</item>
+        <item>true</item>
+        <item>16777216</item>
+        <item>0x200</item>
+        <item>250</item>
+        <item>400</item>
+        <item>true</item>
+    </plurals>
+</resources>

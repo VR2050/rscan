@@ -1,0 +1,16 @@
+tool_cn,round,rc,ms,open_count,open_ports
+"rscan(aggressive, connect)",1,0,183,1,22
+"rscan(aggressive, connect)",2,0,219,1,22
+"rscan(aggressive, connect)",3,0,199,1,22
+"rscan(aggressive, connect)",4,0,227,1,22
+"rscan(aggressive, connect)",5,0,227,1,22
+rustscan(+nmap -sT),1,0,1377,1,22
+rustscan(+nmap -sT),2,0,1336,1,22
+rustscan(+nmap -sT),3,0,2013,1,22
+rustscan(+nmap -sT),4,0,1257,1,22
+rustscan(+nmap -sT),5,0,328,1,22
+nmap(-sT),1,0,104,1,22
+nmap(-sT),2,0,1201,1,22
+nmap(-sT),3,0,142,1,22
+nmap(-sT),4,0,124,1,22
+nmap(-sT),5,0,101,1,22

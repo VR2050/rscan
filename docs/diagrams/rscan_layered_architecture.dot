@@ -1,0 +1,51 @@
+digraph rscan_layered_architecture {
+  rankdir=TB;
+  splines=ortho;
+  nodesep=0.45;
+  ranksep=0.55;
+  bgcolor="white";
+  labelloc="t";
+  label="rscan_codex Layered Architecture (with TUI focus)";
+  fontsize=20;
+  fontname="Helvetica";
+
+  node [
+    shape=box
+    style="rounded,filled"
+    color="#2F5D8A"
+    fillcolor="#F4F8FF"
+    fontname="Helvetica"
+    fontsize=12
+    margin="0.18,0.08"
+  ];
+
+  edge [
+    color="#4B5B6B"
+    arrowsize=0.8
+    penwidth=1.2
+    fontname="Helvetica"
+    fontsize=10
+  ];
+
+  user [label="Users / Terminal Input\nkeyboard, command mode, shortcuts", fillcolor="#FFF7E6", color="#C27A00"];
+
+  tui [label="TUI Layer (src/tui)\n13. Dashboard / Task Mgmt / Results\n14. Native Zellij pane orchestration\n15. Event handling + state management", fillcolor="#E8F8EE", color="#2C8A57"];
+
+  orchestrator [label="Orchestration & Adapters\ncommand_build / command_exec / task_actions\ntranslate UI intent to CLI/task actions"];
+
+  modules [label="Module Layer (src/modules)\nport_scan | web_scan | vuln_check | reverse"];
+
+  cores [label="Core Capabilities (src/cores + src/services)\nhost/web/engine + service_probe"];
+
+  data [label="Data & Runtime Truth Source\ntasks/<id>/meta.json + events/logs\njobs/<id>/... + reverse_out/<id>/...\n.rscan/zellij/panes.json", fillcolor="#F2F2F2", color="#6A6A6A"];
+
+  advantages [label="Layering Advantages\nclear responsibilities | low coupling\ntestability | extensibility", fillcolor="#EEF7FF", color="#3A6B99"];
+
+  user -> tui [label="interaction"];
+  tui -> orchestrator [label="dispatch"];
+  orchestrator -> modules [label="invoke"];
+  modules -> cores [label="use"];
+  cores -> data [label="persist"];
+  data -> tui [label="state refresh", style=dashed, color="#2C8A57"];
+  tui -> advantages [style=dotted, arrowhead=none, color="#3A6B99"];
+}

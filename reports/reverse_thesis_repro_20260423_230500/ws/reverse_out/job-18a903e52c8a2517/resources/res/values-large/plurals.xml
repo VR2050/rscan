@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Base.Theme.AppCompat.DialogWhenLarge" parent="@plurals/Base.Theme.AppCompat.Dialog.FixedSize">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.DialogWhenLarge" parent="@plurals/Base.Theme.AppCompat.Light.Dialog.FixedSize">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.DialogWhenLarge" parent="@plurals/Base.Theme.MaterialComponents.Dialog.FixedSize">
+    </plurals>
+    <plurals name="Base.Theme.MaterialComponents.Light.DialogWhenLarge" parent="@plurals/Base.Theme.MaterialComponents.Light.Dialog.FixedSize">
+    </plurals>
+</resources>

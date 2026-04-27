@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<im.uwrkaxlmjj.ui.hviews.sliding.SlidingLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:id="@attr/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <im.uwrkaxlmjj.ui.hviews.search.MrySearchView
+        android:id="@attr/searchview"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_marginLeft="@dimen/dp_10"
+        android:layout_marginTop="@dimen/dp_10"
+        android:layout_marginRight="@dimen/dp_10"/>
+    <im.uwrkaxlmjj.ui.components.EmptyTextProgressView
+        android:id="@attr/emptyTextProgress"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="55dp"/>
+    <im.uwrkaxlmjj.ui.components.RecyclerListView
+        android:id="@attr/listview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/dp_10"/>
+</im.uwrkaxlmjj.ui.hviews.sliding.SlidingLayout>

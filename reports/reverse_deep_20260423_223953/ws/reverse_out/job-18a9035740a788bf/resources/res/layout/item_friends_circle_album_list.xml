@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@attr/rl_item_fc_album_list"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView
+        android:id="@attr/iv_fc_img_thumb"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"/>
+    <ImageView
+        android:id="@attr/iv_play_button"
+        android:visibility="gone"
+        android:layout_width="@dimen/dp_45"
+        android:layout_height="@dimen/dp_45"
+        android:src="@drawable/play_big"
+        android:scaleType="centerCrop"
+        android:layout_centerInParent="true"/>
+</RelativeLayout>

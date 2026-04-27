@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="550.0" y="36" text-anchor="middle" font-size="24" font-family="Arial">Full-Range Timing (1-65535)</text>
+<text x="550.0" y="58" text-anchor="middle" font-size="14" font-family="Arial" fill="#555">target=127.0.0.1, same command class across tools</text>
+<line x1="90" y1="70" x2="90" y2="490" stroke="black"/>
+<line x1="90" y1="490" x2="1065" y2="490" stroke="black"/>
+<line x1="85" y1="490.0" x2="90" y2="490.0" stroke="black"/>
+<text x="80" y="494.0" text-anchor="end" font-size="12" font-family="Arial">0</text>
+<line x1="85" y1="406.0" x2="90" y2="406.0" stroke="black"/>
+<text x="80" y="410.0" text-anchor="end" font-size="12" font-family="Arial">4193</text>
+<line x1="90" y1="406.0" x2="1065" y2="406.0" stroke="#ececec"/>
+<line x1="85" y1="322.0" x2="90" y2="322.0" stroke="black"/>
+<text x="80" y="326.0" text-anchor="end" font-size="12" font-family="Arial">8386</text>
+<line x1="90" y1="322.0" x2="1065" y2="322.0" stroke="#ececec"/>
+<line x1="85" y1="238.0" x2="90" y2="238.0" stroke="black"/>
+<text x="80" y="242.0" text-anchor="end" font-size="12" font-family="Arial">12579</text>
+<line x1="90" y1="238.0" x2="1065" y2="238.0" stroke="#ececec"/>
+<line x1="85" y1="154.0" x2="90" y2="154.0" stroke="black"/>
+<text x="80" y="158.0" text-anchor="end" font-size="12" font-family="Arial">16772</text>
+<line x1="90" y1="154.0" x2="1065" y2="154.0" stroke="#ececec"/>
+<line x1="85" y1="70.0" x2="90" y2="70.0" stroke="black"/>
+<text x="80" y="74.0" text-anchor="end" font-size="12" font-family="Arial">20966</text>
+<line x1="90" y1="70.0" x2="1065" y2="70.0" stroke="#ececec"/>
+<rect x="90.0" y="460.8" width="298.3" height="29.2" fill="#4E9F3D"/>
+<text x="239.2" y="452.8" text-anchor="middle" font-size="13" font-family="Arial">1458 ms</text>
+<text x="239.2" y="518" text-anchor="middle" font-size="14" font-family="Arial">nmap</text>
+<rect x="428.3" y="70.0" width="298.3" height="420.0" fill="#2E86AB"/>
+<text x="577.5" y="62.0" text-anchor="middle" font-size="13" font-family="Arial">20966 ms</text>
+<text x="577.5" y="518" text-anchor="middle" font-size="14" font-family="Arial">rscan</text>
+<rect x="766.7" y="452.3" width="298.3" height="37.7" fill="#F39C12"/>
+<text x="915.8" y="444.3" text-anchor="middle" font-size="13" font-family="Arial">1881 ms</text>
+<text x="915.8" y="518" text-anchor="middle" font-size="14" font-family="Arial">rustscan</text>
+</svg>

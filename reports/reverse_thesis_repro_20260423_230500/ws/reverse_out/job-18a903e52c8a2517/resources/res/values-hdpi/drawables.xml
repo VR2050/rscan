@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <drawable name="abc_list_divider_mtrl_alpha">AndroidManifest.xml/AndroidManifest.xml.9.png</drawable>
+    <drawable name="abc_list_focused_holo">/AndroidManifest.xml/AndroidManifest.9.png</drawable>
+    <drawable name="abc_list_longpressed_holo">resources.arsc/resources.arsc.9.png</drawable>
+    <drawable name="abc_list_pressed_holo_dark">/resources.arsc/..9.png</drawable>
+    <drawable name="abc_list_pressed_holo_light">classes.dex///.9.png</drawable>
+    <drawable name="abc_list_selector_disabled_holo_dark">/classes.dex////.9.png</drawable>
+    <drawable name="abc_list_selector_disabled_holo_light">kotlin/////.9.png</drawable>
+    <drawable name="abc_menu_hardkey_panel_mtrl_mult">META-INF/\\\\\\\\.9.png</drawable>
+    <drawable name="abc_popup_background_mtrl_mult">kotlin/annotation/\\\\\\\\\\\\.9.png</drawable>
+    <drawable name="abc_scrubber_control_off_mtrl_alpha">kotlin/collections/\\\\/.png</drawable>
+    <drawable name="abc_scrubber_control_to_pressed_mtrl_000">kotlin/coroutines/ .png</drawable>
+    <drawable name="abc_scrubber_control_to_pressed_mtrl_005">kotlin/internal/classes.dex.png</drawable>
+    <drawable name="abc_scrubber_primary_mtrl_alpha">kotlin/ranges/AndroidManifest.xml.9.png</drawable>
+    <drawable name="abc_scrubber_track_mtrl_alpha">kotlin/reflect/AndroidManifest.9.png</drawable>
+    <drawable name="common_google_signin_btn_icon_light_normal_background">AndroidManifest.xml/resources.arsc.9.png</drawable>
+    <drawable name="common_google_signin_btn_text_dark_normal_background">/AndroidManifest.xml/..9.png</drawable>
+    <drawable name="common_google_signin_btn_text_light_normal_background">resources.arsc///.9.png</drawable>
+    <drawable name="design_ic_visibility">/resources.arsc////.png</drawable>
+    <drawable name="design_ic_visibility_off">classes.dex/////.png</drawable>
+    <drawable name="googleg_disabled_color_18">/classes.dex/\\\\\\\\.png</drawable>
+    <drawable name="googleg_standard_color_18">kotlin/\\\\\\\\\\\\.png</drawable>
+    <drawable name="notification_bg_low_normal">META-INF/\\\\/.9.png</drawable>
+    <drawable name="notification_bg_low_pressed">kotlin/annotation/ .9.png</drawable>
+    <drawable name="notification_bg_normal">kotlin/collections/  .9.png</drawable>
+    <drawable name="notification_bg_normal_pressed">kotlin/coroutines/classes.dex.9.png</drawable>
+    <drawable name="notify_panel_notification_icon_bg">kotlin/internal/AndroidManifest.xml.png</drawable>
+</resources>

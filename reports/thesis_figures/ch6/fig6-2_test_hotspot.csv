@@ -1,0 +1,6 @@
+submodule,count
+modules/reverse,30
+cores/host,20
+cli/app_tests.rs,19
+modules/web_scan,17
+tui/reverse_workbench_support.rs,18

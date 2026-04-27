@@ -19,9 +19,10 @@ use crate::modules::reverse::{
 };
 use crate::modules::vuln_check::{
     AntiScanConfig, AntiScanReport, ContainerAuditReport, FragmentAuditConfig, FragmentAuditReport,
-    SafeTemplate, SystemGuardReport, VulnScanConfig, VulnScanReport,
-    audit_container_manifests_from_path, audit_http_anti_scan, audit_http_fragment_resilience,
-    audit_local_system_guard, load_safe_templates_from_path, vuln_scan_targets,
+    FuzzAttackConfig, FuzzAttackHit, PocHttpConfig, PocHttpReport, SafeTemplate, SystemGuardReport,
+    VulnScanConfig, VulnScanReport, audit_container_manifests_from_path, audit_http_anti_scan,
+    audit_http_fragment_resilience, audit_local_system_guard, load_safe_templates_from_path,
+    run_poc_http_probe, run_simple_fuzz_attack, vuln_scan_targets,
 };
 use crate::modules::web_scan::live_scan::ping as live_ping;
 use crate::modules::web_scan::{

@@ -256,10 +256,13 @@ fn classify_task_kind(head: &str) -> &'static str {
     match head {
         "host" | "h.quick" | "h.tcp" | "h.udp" | "h.syn" | "h.arp" => "host",
         "web" | "w.dir" | "w.fuzz" | "w.dns" | "w.crawl" | "w.live" => "web",
-        "vuln" | "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa" => "vuln",
+        "vuln" | "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa" | "v.fuzz" | "v.poc" => {
+            "vuln"
+        }
         "reverse" | "r.analyze" | "r.plan" | "r.run" | "r.jobs" | "r.status" | "r.logs"
         | "r.artifacts" | "r.funcs" | "r.show" | "r.search" | "r.clear" | "r.prune"
-        | "r.doctor" | "r.debug" => "reverse",
+        | "r.doctor" | "r.debug" | "r.backend" | "r.android" | "r.mal" | "r.shell"
+        | "r.console" => "reverse",
         _ => "task",
     }
 }

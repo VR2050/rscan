@@ -1,0 +1,25 @@
+package im.uwrkaxlmjj.ui.components;
+
+import android.text.TextPaint;
+import android.text.style.MetricAffectingSpan;
+
+/* JADX INFO: loaded from: classes5.dex */
+public class AnchorSpan extends MetricAffectingSpan {
+    private String name;
+
+    public AnchorSpan(String n) {
+        this.name = n.toLowerCase();
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    @Override // android.text.style.MetricAffectingSpan
+    public void updateMeasureState(TextPaint p) {
+    }
+
+    @Override // android.text.style.CharacterStyle
+    public void updateDrawState(TextPaint tp) {
+    }
+}

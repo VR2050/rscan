@@ -1,0 +1,6 @@
+build_time=2026-04-25T05:11:03Z
+target=x86_64-unknown-linux-gnu
+zellij_version=v0.44.1
+zellij_asset=zellij-x86_64-unknown-linux-musl.tar.gz
+zellij_sha_asset=zellij-x86_64-unknown-linux-musl.sha256sum
+include_ghidra=0

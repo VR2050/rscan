@@ -1,0 +1,151 @@
+package com.google.protobuf;
+
+import java.lang.reflect.Field;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
+import sun.misc.Unsafe;
+
+/* JADX INFO: loaded from: classes.dex */
+final class UnsafeUtil {
+    private static final Unsafe UNSAFE = getUnsafe();
+    private static final boolean HAS_UNSAFE_BYTEBUFFER_OPERATIONS = supportsUnsafeByteBufferOperations();
+    private static final boolean HAS_UNSAFE_ARRAY_OPERATIONS = supportsUnsafeArrayOperations();
+    private static final long ARRAY_BASE_OFFSET = byteArrayBaseOffset();
+    private static final long BUFFER_ADDRESS_OFFSET = fieldOffset(field(Buffer.class, "address"));
+
+    private UnsafeUtil() {
+    }
+
+    static boolean hasUnsafeArrayOperations() {
+        return HAS_UNSAFE_ARRAY_OPERATIONS;
+    }
+
+    static boolean hasUnsafeByteBufferOperations() {
+        return HAS_UNSAFE_BYTEBUFFER_OPERATIONS;
+    }
+
+    static long getArrayBaseOffset() {
+        return ARRAY_BASE_OFFSET;
+    }
+
+    static byte getByte(byte[] target, long offset) {
+        return UNSAFE.getByte(target, offset);
+    }
+
+    static void putByte(byte[] target, long offset, byte value) {
+        UNSAFE.putByte(target, offset, value);
+    }
+
+    static void copyMemory(byte[] src, long srcOffset, byte[] target, long targetOffset, long length) {
+        UNSAFE.copyMemory(src, srcOffset, target, targetOffset, length);
+    }
+
+    static long getLong(byte[] target, long offset) {
+        return UNSAFE.getLong(target, offset);
+    }
+
+    static byte getByte(long address) {
+        return UNSAFE.getByte(address);
+    }
+
+    static void putByte(long address, byte value) {
+        UNSAFE.putByte(address, value);
+    }
+
+    static long getLong(long address) {
+        return UNSAFE.getLong(address);
+    }
+
+    static void copyMemory(long srcAddress, long targetAddress, long length) {
+        UNSAFE.copyMemory(srcAddress, targetAddress, length);
+    }
+
+    static long addressOffset(ByteBuffer buffer) {
+        return UNSAFE.getLong(buffer, BUFFER_ADDRESS_OFFSET);
+    }
+
+    private static Unsafe getUnsafe() {
+        try {
+            Unsafe unsafe = (Unsafe) AccessController.doPrivileged(new PrivilegedExceptionAction<Unsafe>() { // from class: com.google.protobuf.UnsafeUtil.1
+                @Override // java.security.PrivilegedExceptionAction
+                public Unsafe run() throws Exception {
+                    for (Field f : Unsafe.class.getDeclaredFields()) {
+                        f.setAccessible(true);
+                        Object x = f.get(null);
+                        if (Unsafe.class.isInstance(x)) {
+                            return (Unsafe) Unsafe.class.cast(x);
+                        }
+                    }
+                    return null;
+                }
+            });
+            return unsafe;
+        } catch (Throwable th) {
+            return null;
+        }
+    }
+
+    private static boolean supportsUnsafeArrayOperations() {
+        Unsafe unsafe = UNSAFE;
+        if (unsafe == null) {
+            return false;
+        }
+        try {
+            Class<?> clazz = unsafe.getClass();
+            clazz.getMethod("arrayBaseOffset", Class.class);
+            clazz.getMethod("getByte", Object.class, Long.TYPE);
+            clazz.getMethod("putByte", Object.class, Long.TYPE, Byte.TYPE);
+            clazz.getMethod("getLong", Object.class, Long.TYPE);
+            clazz.getMethod("copyMemory", Object.class, Long.TYPE, Object.class, Long.TYPE, Long.TYPE);
+            return true;
+        } catch (Throwable th) {
+            return false;
+        }
+    }
+
+    private static boolean supportsUnsafeByteBufferOperations() {
+        Unsafe unsafe = UNSAFE;
+        if (unsafe == null) {
+            return false;
+        }
+        try {
+            Class<?> clazz = unsafe.getClass();
+            clazz.getMethod("objectFieldOffset", Field.class);
+            clazz.getMethod("getByte", Long.TYPE);
+            clazz.getMethod("getLong", Object.class, Long.TYPE);
+            clazz.getMethod("putByte", Long.TYPE, Byte.TYPE);
+            clazz.getMethod("getLong", Long.TYPE);
+            clazz.getMethod("copyMemory", Long.TYPE, Long.TYPE, Long.TYPE);
+            return true;
+        } catch (Throwable th) {
+            return false;
+        }
+    }
+
+    private static int byteArrayBaseOffset() {
+        if (HAS_UNSAFE_ARRAY_OPERATIONS) {
+            return UNSAFE.arrayBaseOffset(byte[].class);
+        }
+        return -1;
+    }
+
+    private static long fieldOffset(Field field) {
+        Unsafe unsafe;
+        if (field == null || (unsafe = UNSAFE) == null) {
+            return -1L;
+        }
+        return unsafe.objectFieldOffset(field);
+    }
+
+    private static Field field(Class<?> clazz, String fieldName) {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field;
+        } catch (Throwable th) {
+            return null;
+        }
+    }
+}

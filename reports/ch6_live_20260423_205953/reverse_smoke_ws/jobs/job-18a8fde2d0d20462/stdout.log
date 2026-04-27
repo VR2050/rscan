@@ -1,0 +1,1 @@
+rust index arch=X86_64 rows=301 funcs=301 recovered_prologues=264 asm=24592 calls=1641 xrefs=836 strings16=0

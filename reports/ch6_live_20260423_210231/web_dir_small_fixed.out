@@ -1,0 +1,7 @@
+2026-04-23T13:02:41.079494Z  INFO rscan::cli::app: Starting rscan, log_level=info
+CLIENT 404    335B http://192.168.8.128/login
+    OK 200    3.1K http://192.168.8.128/
+CLIENT 404    335B http://192.168.8.128/index.php
+CLIENT 404    335B http://192.168.8.128/phpinfo.php
+CLIENT 404    335B http://192.168.8.128/robots.txt
+CLIENT 404    335B http://192.168.8.128/admin

@@ -95,20 +95,54 @@ pub(super) fn format_engine_scan_pretty(results: &[EngineScanResult], color: boo
     if results.is_empty() {
         return colorize("no results", "90", color);
     }
+    let open_rows: Vec<&EngineScanResult> = results
+        .iter()
+        .filter(|r| {
+            matches!(
+                r.status,
+                crate::cores::engine::scan_result::ScanStatus::Open
+            )
+        })
+        .collect();
+    let suppressed = results.len().saturating_sub(open_rows.len());
+    if open_rows.is_empty() {
+        return if suppressed > 0 {
+            format!(
+                "{} (suppressed non-open rows={})",
+                colorize("no open ports", "90", color),
+                suppressed
+            )
+        } else {
+            colorize("no open ports", "90", color)
+        };
+    }
     let mut out = Vec::new();
     out.push(format!(
-        "{:>15} {:>6} {:>5} {:>9} {:>10} {}",
-        "IP", "PORT", "PROTO", "STATUS", "LAT(ms)", "META"
+        "open_rows={} suppressed_non_open={}",
+        open_rows.len(),
+        suppressed
     ));
-    for r in results {
-        let status = format!("{:?}", r.status);
-        let status_col = if status.eq_ignore_ascii_case("open") {
-            colorize(&format!("{:>9}", status.to_lowercase()), "32", color)
-        } else if status.eq_ignore_ascii_case("closed") {
-            colorize(&format!("{:>9}", status.to_lowercase()), "90", color)
+    out.push(format!(
+        "{:>15} {:>6} {:>5} {:>8} {:<14} {:<12} {}",
+        "IP", "PORT", "PROTO", "LAT(ms)", "SERVICE", "VERSION", "BANNER"
+    ));
+    let meta_value = |row: &EngineScanResult, key: &str| -> Option<String> {
+        row.metadata
+            .iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.clone())
+    };
+    let normalize_banner = |s: &str| -> String {
+        let compact = s.replace(['\r', '\n'], " ");
+        const MAX: usize = 120;
+        if compact.chars().count() > MAX {
+            let truncated: String = compact.chars().take(MAX.saturating_sub(3)).collect();
+            format!("{truncated}...")
         } else {
-            colorize(&format!("{:>9}", status.to_lowercase()), "33", color)
-        };
+            compact
+        }
+    };
+    for r in open_rows {
         let proto = colorize(&format!("{:?}", r.protocol).to_lowercase(), "36", color);
         let lat = r
             .latency_ms
@@ -118,9 +152,17 @@ pub(super) fn format_engine_scan_pretty(results: &[EngineScanResult], color: boo
             .port
             .map(|p| p.to_string())
             .unwrap_or_else(|| "-".to_string());
+        let service = meta_value(r, "service")
+            .or_else(|| meta_value(r, "probe"))
+            .unwrap_or_else(|| "-".to_string());
+        let version = meta_value(r, "service_version").unwrap_or_else(|| "-".to_string());
+        let banner = meta_value(r, "banner_text")
+            .as_deref()
+            .map(normalize_banner)
+            .unwrap_or_else(|| "".to_string());
         out.push(format!(
-            "{:>15} {:>6} {:>5} {} {:>10} {:?}",
-            r.target_ip, port, proto, status_col, lat, r.metadata
+            "{:>15} {:>6} {:>5} {:>8} {:<14} {:<12} {}",
+            r.target_ip, port, proto, lat, service, version, banner
         ));
     }
     out.join("\n")

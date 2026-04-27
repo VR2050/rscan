@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Base.Theme.AppCompat.Dialog" parent="@plurals/Base.V21.Theme.AppCompat.Dialog">
+        <item>false</item>
+        <item>0dp</item>
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light.Dialog" parent="@plurals/Base.V21.Theme.AppCompat.Light.Dialog">
+        <item>false</item>
+        <item>0dp</item>
+    </plurals>
+    <plurals name="Base.ThemeOverlay.AppCompat.Dialog" parent="@plurals/Base.V21.ThemeOverlay.AppCompat.Dialog">
+        <item>false</item>
+        <item>0dp</item>
+    </plurals>
+</resources>

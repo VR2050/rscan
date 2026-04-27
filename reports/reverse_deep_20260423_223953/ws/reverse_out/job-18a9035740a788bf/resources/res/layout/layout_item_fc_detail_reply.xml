@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <View
+        android:id="@attr/view_gray_line"
+        android:background="@color/color_FFF6F7F9"
+        android:layout_width="@dimen/dp_2"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@attr/tv_do_reply"
+        android:layout_alignParentTop="true"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@attr/rv_fc_comm_reply"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/dp_8"
+        android:layout_marginStart="@dimen/dp_8"
+        android:layout_toEndOf="@attr/view_gray_line"/>
+    <include
+        android:id="@attr/tv_do_reply"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/dp_8"
+        android:layout_below="@attr/rv_fc_comm_reply"
+        android:layout_marginStart="@dimen/dp_8"
+        android:layout_toEndOf="@attr/view_gray_line"
+        layout="@layout/item_friends_circle_home_comment"/>
+</RelativeLayout>

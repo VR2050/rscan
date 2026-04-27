@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Base.Theme.AppCompat" parent="@plurals/Base.V22.Theme.AppCompat">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light" parent="@plurals/Base.V22.Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Base.V22.Theme.AppCompat" parent="@plurals/Base.V21.Theme.AppCompat">
+        <item>?android:attr/actionModeShareDrawable</item>
+        <item>?android:attr/editTextBackground</item>
+    </plurals>
+    <plurals name="Base.V22.Theme.AppCompat.Light" parent="@plurals/Base.V21.Theme.AppCompat.Light">
+        <item>?android:attr/actionModeShareDrawable</item>
+        <item>?android:attr/editTextBackground</item>
+    </plurals>
+</resources>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:id="@attr/emptyLayout"
+    android:background="@color/window_background_gray"
+    android:visibility="gone"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingStart="@dimen/dp_16"
+    android:paddingEnd="@dimen/dp_16">
+    <FrameLayout
+        android:orientation="vertical"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="80dp">
+        <ImageView
+            android:id="@attr/ivEmpty"
+            android:background="@drawable/shape_circle_stroke_bg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@+id/ic_add_bank_card2"
+            android:scaleType="centerInside"
+            app:tint="@color/icon_secondary_color"/>
+        <im.uwrkaxlmjj.ui.load.SpinKitView
+            android:layout_gravity="center"
+            android:id="@attr/loadView"
+            android:fitsSystemWindows="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:SpinKit_Color="#ff0080ff"
+            app:SpinKit_Style="7"
+            style="@plurals/SpinKitView"/>
+    </FrameLayout>
+    <TextView
+        android:textSize="@dimen/sp_16"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary_color"
+        android:gravity="center"
+        android:id="@attr/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dp_16"
+        android:text="No Bank Card"/>
+    <TextView
+        android:textSize="@dimen/sp_12"
+        android:textColor="@color/text_descriptive_color"
+        android:gravity="center"
+        android:id="@attr/tvDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dp_8"/>
+    <im.uwrkaxlmjj.ui.components.AppTextView
+        android:textSize="@dimen/sp_16"
+        android:textStyle="bold"
+        android:textColor="@color/text_white_color"
+        android:gravity="center"
+        android:id="@attr/btnEmpty"
+        android:background="@drawable/btn_primary_selector"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_60"
+        android:layout_marginTop="66dp"
+        android:text="Add Card"/>
+</LinearLayout>

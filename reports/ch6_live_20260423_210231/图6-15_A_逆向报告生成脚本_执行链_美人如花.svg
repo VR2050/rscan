@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <rect width="1600" height="980" fill="#0b1020"/>
+  <rect x="32" y="24" width="1536" height="932" rx="12" fill="#111827" stroke="#374151"/>
+  <text x="60" y="74" fill="#e5e7eb" font-family="monospace" font-size="34" font-weight="700">图6-15A 逆向链路执行图（样本：美人如花.apK）</text>
+  <rect x="60" y="104" width="1480" height="170" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="80" y="146" fill="#93c5fd" font-family="monospace" font-size="24">执行命令（项目实测）</text>
+  <text x="80" y="184" fill="#e5e7eb" font-family="monospace" font-size="20">$ rscan reverse analyze --input 违法apk/美人如花.apK --output json</text>
+  <text x="80" y="216" fill="#e5e7eb" font-family="monospace" font-size="20">$ rscan reverse malware-triage --input 违法apk/美人如花.apK --output json</text>
+  <text x="80" y="248" fill="#e5e7eb" font-family="monospace" font-size="20">$ rscan reverse android-analyze --input 违法apk/美人如花.apK --output json</text>
+  <rect x="60" y="296" width="1480" height="300" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="80" y="338" fill="#93c5fd" font-family="monospace" font-size="24">运行结果</text>
+  <text x="80" y="374" fill="#86efac" font-family="monospace" font-size="20">analyze.rc = 0</text>
+  <text x="80" y="406" fill="#86efac" font-family="monospace" font-size="20">triage.rc = 0</text>
+  <text x="80" y="438" fill="#86efac" font-family="monospace" font-size="20">android_analyze.rc = 0</text>
+  <text x="80" y="482" fill="#e5e7eb" font-family="monospace" font-size="20">输出目录: /home/vr2050/RUST/rscan_codex/reports/ch6_reverse_case_meirenruhua_20260423_214528</text>
+  <text x="80" y="514" fill="#e5e7eb" font-family="monospace" font-size="20">结构化产物: analyze.json / triage.json / android_analyze.json</text>
+  <rect x="60" y="620" width="1480" height="300" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="80" y="662" fill="#93c5fd" font-family="monospace" font-size="24">工程结论</text>
+  <text x="80" y="702" fill="#fcd34d" font-family="monospace" font-size="20">reverse 分析链路可执行，且可稳定产出结构化结果。</text>
+  <text x="80" y="734" fill="#fcd34d" font-family="monospace" font-size="20">本节展示“链路能力证据”，不声明公开样本识别率统计。</text>
+</svg>

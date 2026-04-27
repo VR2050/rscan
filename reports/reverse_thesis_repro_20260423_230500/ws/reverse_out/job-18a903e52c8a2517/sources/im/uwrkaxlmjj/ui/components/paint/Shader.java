@@ -1,0 +1,117 @@
+package im.uwrkaxlmjj.ui.components.paint;
+
+import android.graphics.Color;
+import android.opengl.GLES20;
+import im.uwrkaxlmjj.messenger.BuildVars;
+import im.uwrkaxlmjj.messenger.FileLog;
+import java.util.HashMap;
+import java.util.Map;
+
+/* JADX INFO: loaded from: classes5.dex */
+public class Shader {
+    private int fragmentShader;
+    private int vertexShader;
+    protected Map<String, Integer> uniformsMap = new HashMap();
+    protected int program = GLES20.glCreateProgram();
+
+    public Shader(String vertexShader, String fragmentShader, String[] attributes, String[] uniforms) {
+        CompilationResult vResult = compileShader(35633, vertexShader);
+        if (vResult.status == 0) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("Vertex shader compilation failed");
+            }
+            destroyShader(vResult.shader, 0, this.program);
+            return;
+        }
+        CompilationResult fResult = compileShader(35632, fragmentShader);
+        if (fResult.status == 0) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("Fragment shader compilation failed");
+            }
+            destroyShader(vResult.shader, fResult.shader, this.program);
+            return;
+        }
+        GLES20.glAttachShader(this.program, vResult.shader);
+        GLES20.glAttachShader(this.program, fResult.shader);
+        for (int i = 0; i < attributes.length; i++) {
+            GLES20.glBindAttribLocation(this.program, i, attributes[i]);
+        }
+        int i2 = this.program;
+        if (linkProgram(i2) == 0) {
+            destroyShader(vResult.shader, fResult.shader, this.program);
+            return;
+        }
+        for (String uniform : uniforms) {
+            this.uniformsMap.put(uniform, Integer.valueOf(GLES20.glGetUniformLocation(this.program, uniform)));
+        }
+        if (vResult.shader != 0) {
+            GLES20.glDeleteShader(vResult.shader);
+        }
+        if (fResult.shader != 0) {
+            GLES20.glDeleteShader(fResult.shader);
+        }
+    }
+
+    public void cleanResources() {
+        if (this.program != 0) {
+            GLES20.glDeleteProgram(this.vertexShader);
+            this.program = 0;
+        }
+    }
+
+    private class CompilationResult {
+        int shader;
+        int status;
+
+        CompilationResult(int shader, int status) {
+            this.shader = shader;
+            this.status = status;
+        }
+    }
+
+    public int getUniform(String key) {
+        return this.uniformsMap.get(key).intValue();
+    }
+
+    private CompilationResult compileShader(int type, String shaderCode) {
+        int shader = GLES20.glCreateShader(type);
+        GLES20.glShaderSource(shader, shaderCode);
+        GLES20.glCompileShader(shader);
+        int[] compileStatus = new int[1];
+        GLES20.glGetShaderiv(shader, 35713, compileStatus, 0);
+        if (compileStatus[0] == 0 && BuildVars.LOGS_ENABLED) {
+            FileLog.e(GLES20.glGetShaderInfoLog(shader));
+        }
+        return new CompilationResult(shader, compileStatus[0]);
+    }
+
+    private int linkProgram(int program) {
+        GLES20.glLinkProgram(program);
+        int[] linkStatus = new int[1];
+        GLES20.glGetProgramiv(program, 35714, linkStatus, 0);
+        if (linkStatus[0] == 0 && BuildVars.LOGS_ENABLED) {
+            FileLog.e(GLES20.glGetProgramInfoLog(program));
+        }
+        return linkStatus[0];
+    }
+
+    private void destroyShader(int vertexShader, int fragmentShader, int program) {
+        if (vertexShader != 0) {
+            GLES20.glDeleteShader(vertexShader);
+        }
+        if (fragmentShader != 0) {
+            GLES20.glDeleteShader(fragmentShader);
+        }
+        if (program != 0) {
+            GLES20.glDeleteProgram(vertexShader);
+        }
+    }
+
+    public static void SetColorUniform(int location, int color) {
+        float r = Color.red(color) / 255.0f;
+        float g = Color.green(color) / 255.0f;
+        float b = Color.blue(color) / 255.0f;
+        float a = Color.alpha(color) / 255.0f;
+        GLES20.glUniform4f(location, r, g, b, a);
+    }
+}

@@ -1,0 +1,4 @@
+2026-04-23T13:00:01.250616Z  INFO rscan::cli::app: Starting rscan, log_level=info
+LIVE METHOD  URL
+ ERR GET http://192.168.8.128 error sending request for url (http://192.168.8.128/)
+ ERR GET https://192.168.8.128 error sending request for url (https://192.168.8.128/)

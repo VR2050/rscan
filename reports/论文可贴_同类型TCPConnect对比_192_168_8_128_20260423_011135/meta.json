@@ -1,0 +1,10 @@
+{
+  "target": "192.168.8.128",
+  "scan_range": "1-1024",
+  "rounds": 5,
+  "alignment": "all tcp connect",
+  "ref_tool": "nmap -sT",
+  "ref_ports_union": [
+    22
+  ]
+}

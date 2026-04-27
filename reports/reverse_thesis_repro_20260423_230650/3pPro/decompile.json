@@ -1,0 +1,33 @@
+{
+  "job": {
+    "id": "job-18a903f2aee22718",
+    "kind": "decompile",
+    "backend": "jadx",
+    "mode": "full",
+    "function": null,
+    "target": "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk",
+    "workspace": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws",
+    "status": "Succeeded",
+    "created_at": 1776955868,
+    "started_at": 1776955868,
+    "ended_at": 1776955873,
+    "exit_code": 0,
+    "program": "/usr/bin/jadx",
+    "args": [
+      "-d",
+      "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/reverse_out/job-18a903f2aee22718",
+      "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk"
+    ],
+    "note": "JADX source export for APK",
+    "artifacts": [
+      "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/jobs/job-18a903f2aee22718/stdout.log",
+      "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/jobs/job-18a903f2aee22718/stderr.log",
+      "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/reverse_out/job-18a903f2aee22718/sources",
+      "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/reverse_out/job-18a903f2aee22718/resources",
+      "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/reverse_out/job-18a903f2aee22718/ir.jsonl"
+    ],
+    "error": null
+  },
+  "stdout_log": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/jobs/job-18a903f2aee22718/stdout.log",
+  "stderr_log": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws/jobs/job-18a903f2aee22718/stderr.log"
+}

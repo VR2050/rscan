@@ -1,0 +1,33 @@
+{
+  "id": "job-18a8fdc30ad647ba",
+  "kind": "decompile",
+  "backend": "rust-index",
+  "mode": "index",
+  "function": null,
+  "target": "/bin/ls",
+  "workspace": "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws",
+  "status": "Succeeded",
+  "created_at": 1776949067,
+  "started_at": 1776949067,
+  "ended_at": 1776949067,
+  "exit_code": 0,
+  "program": "rust-index",
+  "args": [],
+  "note": "rust index backend (no Ghidra)",
+  "artifacts": [
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/index.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/asm_preview.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/calls_preview.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/xrefs_preview.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/sections.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/strings_ascii.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/strings_utf16.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/ir.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/calls_functions.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/xrefs_functions.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/cfg_functions.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/asm_functions.jsonl",
+    "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205706/reverse_smoke_ws/reverse_out/job-18a8fdc30ad647ba/strings_functions.jsonl"
+  ],
+  "error": null
+}

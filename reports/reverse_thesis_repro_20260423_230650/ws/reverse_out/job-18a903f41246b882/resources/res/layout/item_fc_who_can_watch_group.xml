@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="20dp"
+    android:paddingRight="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="65dp">
+    <im.uwrkaxlmjj.ui.components.CheckBox2
+        android:id="@attr/checkBox"
+        android:layout_width="21dp"
+        android:layout_height="21dp"/>
+    <im.uwrkaxlmjj.ui.hviews.MryTextView
+        android:textSize="15sp"
+        android:ellipsize="end"
+        android:id="@attr/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="13dp"
+        android:singleLine="true"/>
+    <im.uwrkaxlmjj.ui.hviews.MryTextView
+        android:textSize="15sp"
+        android:ellipsize="end"
+        android:id="@attr/tvSubTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="13dp"
+        android:singleLine="true"
+        android:layout_weight="1"/>
+    <ImageView
+        android:id="@attr/ivArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@+id/icon_arrow_right"
+        android:rotation="90"/>
+</LinearLayout>

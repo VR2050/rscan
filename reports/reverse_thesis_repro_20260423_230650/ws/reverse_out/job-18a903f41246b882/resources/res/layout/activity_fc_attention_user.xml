@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cn.dreamtobe.kpswitch.widget.KPSwitchRootFrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.scwang.smartrefresh.layout.SmartRefreshLayout
+        android:id="@attr/smartRefreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:srlEnablePreviewInEditMode="false">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@attr/rec"
+            android:tag="@string/key_windowBackgroundGray"
+            android:background="#f2f2f2"
+            android:paddingTop="10dp"
+            android:clipToPadding="false"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </com.scwang.smartrefresh.layout.SmartRefreshLayout>
+    <LinearLayout
+        android:gravity="center"
+        android:orientation="vertical"
+        android:id="@attr/lin_empty"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <ImageView
+            android:background="@+id/img_empty_default"
+            android:layout_width="167dp"
+            android:layout_height="122dp"/>
+        <im.uwrkaxlmjj.ui.components.ColorTextView
+            android:textSize="14sp"
+            android:textColor="#ff666666"
+            android:id="@attr/txt_empty_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="43dp"
+            android:text="@string/friendscircle_no_followed_friends"
+            app:stringkey="friendscircle_no_followed_friends"/>
+    </LinearLayout>
+</cn.dreamtobe.kpswitch.widget.KPSwitchRootFrameLayout>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="65dp">
+    <ImageView
+        android:id="@attr/iv_arrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="12dp"
+        android:src="@+id/ic_grouping_arrow"
+        android:layout_centerVertical="true"/>
+    <im.uwrkaxlmjj.ui.hviews.MryTextView
+        android:textSize="15sp"
+        android:textColor="@color/black"
+        android:id="@attr/tv_group_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="7dp"
+        android:layout_toRightOf="@attr/iv_arrow"
+        android:layout_centerVertical="true"
+        app:render="true"
+        app:textKey="MyGoodFriends"/>
+    <ImageView
+        android:id="@attr/icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="12dp"
+        android:src="@+id/ic_group_move"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"/>
+    <im.uwrkaxlmjj.ui.hviews.MryTextView
+        android:textSize="14sp"
+        android:textColor="#8b8d99"
+        android:id="@attr/tv_member_number"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="10dp"
+        android:text="1/12"
+        android:layout_toLeftOf="@attr/icon"
+        android:layout_centerVertical="true"/>
+    <im.uwrkaxlmjj.ui.hcells.MryDividerCell
+        android:id="@attr/divider"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_alignLeft="@attr/tv_group_name"
+        android:layout_alignParentBottom="true"/>
+</RelativeLayout>

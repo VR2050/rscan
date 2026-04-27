@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="525.0" y="36" text-anchor="middle" font-size="24" font-family="Arial">Full-Range Timing (Median of 5 Runs)</text>
+<line x1="90" y1="70" x2="90" y2="490" stroke="black"/>
+<line x1="90" y1="490" x2="1015" y2="490" stroke="black"/>
+<line x1="85" y1="490.0" x2="90" y2="490.0" stroke="black"/>
+<text x="80" y="494.0" text-anchor="end" font-size="12" font-family="Arial">0</text>
+<line x1="85" y1="406.0" x2="90" y2="406.0" stroke="black"/>
+<text x="80" y="410.0" text-anchor="end" font-size="12" font-family="Arial">368</text>
+<line x1="90" y1="406.0" x2="1015" y2="406.0" stroke="#ececec"/>
+<line x1="85" y1="322.0" x2="90" y2="322.0" stroke="black"/>
+<text x="80" y="326.0" text-anchor="end" font-size="12" font-family="Arial">737</text>
+<line x1="90" y1="322.0" x2="1015" y2="322.0" stroke="#ececec"/>
+<line x1="85" y1="238.0" x2="90" y2="238.0" stroke="black"/>
+<text x="80" y="242.0" text-anchor="end" font-size="12" font-family="Arial">1106</text>
+<line x1="90" y1="238.0" x2="1015" y2="238.0" stroke="#ececec"/>
+<line x1="85" y1="154.0" x2="90" y2="154.0" stroke="black"/>
+<text x="80" y="158.0" text-anchor="end" font-size="12" font-family="Arial">1475</text>
+<line x1="90" y1="154.0" x2="1015" y2="154.0" stroke="#ececec"/>
+<line x1="85" y1="70.0" x2="90" y2="70.0" stroke="black"/>
+<text x="80" y="74.0" text-anchor="end" font-size="12" font-family="Arial">1844</text>
+<line x1="90" y1="70.0" x2="1015" y2="70.0" stroke="#ececec"/>
+<rect x="90.0" y="390.7" width="281.7" height="99.3" fill="#2E86AB"/>
+<text x="230.8" y="382.7" text-anchor="middle" font-size="12" font-family="Arial">436 ms</text>
+<text x="230.8" y="520" text-anchor="middle" font-size="13" font-family="Arial">rscan_aggressive</text>
+<rect x="411.7" y="162.7" width="281.7" height="327.3" fill="#4E9F3D"/>
+<text x="552.5" y="154.7" text-anchor="middle" font-size="12" font-family="Arial">1437 ms</text>
+<text x="552.5" y="520" text-anchor="middle" font-size="13" font-family="Arial">nmap_default</text>
+<rect x="733.3" y="70.0" width="281.7" height="420.0" fill="#F39C12"/>
+<text x="874.2" y="62.0" text-anchor="middle" font-size="12" font-family="Arial">1844 ms</text>
+<text x="874.2" y="520" text-anchor="middle" font-size="13" font-family="Arial">rustscan_default</text>
+</svg>

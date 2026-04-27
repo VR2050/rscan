@@ -1,0 +1,2 @@
+{"total": 2, "ok": 2, "failed": 0, "success_rate": 1.0, "elapsed_ms_avg": 163.5, "elapsed_ms_p95": 156, "results_file": "/home/vr2050/RUST/rscan_codex/reports/ch6_reverse_case_20260423_213250/reverse_baseline/results.jsonl"}
+[baseline] report: /home/vr2050/RUST/rscan_codex/reports/ch6_reverse_case_20260423_213250/reverse_baseline/report.json

@@ -1,0 +1,33 @@
+package com.google.android.gms.wearable.internal;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+import com.google.android.gms.common.internal.safeparcel.SafeParcelReader;
+
+/* JADX INFO: loaded from: classes.dex */
+public final class zzdl implements Parcelable.Creator<zzdk> {
+    @Override // android.os.Parcelable.Creator
+    public final /* synthetic */ zzdk[] newArray(int i) {
+        return new zzdk[i];
+    }
+
+    @Override // android.os.Parcelable.Creator
+    public final /* synthetic */ zzdk createFromParcel(Parcel parcel) {
+        int iValidateObjectHeader = SafeParcelReader.validateObjectHeader(parcel);
+        int i = 0;
+        zzah zzahVar = null;
+        while (parcel.dataPosition() < iValidateObjectHeader) {
+            int header = SafeParcelReader.readHeader(parcel);
+            int fieldId = SafeParcelReader.getFieldId(header);
+            if (fieldId == 2) {
+                i = SafeParcelReader.readInt(parcel, header);
+            } else if (fieldId == 3) {
+                zzahVar = (zzah) SafeParcelReader.createParcelable(parcel, header, zzah.CREATOR);
+            } else {
+                SafeParcelReader.skipUnknownField(parcel, header);
+            }
+        }
+        SafeParcelReader.ensureAtEnd(parcel, iValidateObjectHeader);
+        return new zzdk(i, zzahVar);
+    }
+}

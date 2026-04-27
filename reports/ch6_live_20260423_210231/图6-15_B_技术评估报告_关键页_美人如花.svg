@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+  <rect width="1600" height="1120" fill="#111827"/>
+  <rect x="32" y="24" width="1536" height="1072" rx="12" fill="#0b1020" stroke="#334155"/>
+  <text x="60" y="74" fill="#e5e7eb" font-family="monospace" font-size="34" font-weight="700">图6-15B 技术评估报告关键页（美人如花.apK）</text>
+  <rect x="60" y="104" width="1480" height="960" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="80" y="144" fill="#93c5fd" font-family="monospace" font-size="24">样本与摘要</text>
+  <text x="80" y="176" fill="#e5e7eb" font-family="monospace" font-size="20">样本: 违法apk/美人如花.apK</text>
+  <text x="80" y="206" fill="#e5e7eb" font-family="monospace" font-size="20">SHA256: df34a2bf02e883a2a3285ec8aa054fa8ee37daf189f1f148b71edbc1a93ea602</text>
+  <text x="80" y="236" fill="#e5e7eb" font-family="monospace" font-size="20">package: com.nearbubble</text>
+  <text x="80" y="266" fill="#e5e7eb" font-family="monospace" font-size="20">entropy: 7.963 / malware_confidence: 44</text>
+  <text x="80" y="296" fill="#e5e7eb" font-family="monospace" font-size="20">cleartext_traffic: true / exported_components: 26</text>
+  <text x="80" y="326" fill="#e5e7eb" font-family="monospace" font-size="20">score.total: 100</text>
+
+  <text x="80" y="352" fill="#93c5fd" font-family="monospace" font-size="22">危险权限（节选）</text>
+  <text x="80" y="380" fill="#fca5a5" font-family="monospace" font-size="19">- android.permission.ACCESS_COARSE_LOCATION</text><text x="80" y="410" fill="#fca5a5" font-family="monospace" font-size="19">- android.permission.ACCESS_FINE_LOCATION</text><text x="80" y="440" fill="#fca5a5" font-family="monospace" font-size="19">- android.permission.CAMERA</text><text x="80" y="470" fill="#fca5a5" font-family="monospace" font-size="19">- android.permission.QUERY_ALL_PACKAGES</text><text x="80" y="500" fill="#fca5a5" font-family="monospace" font-size="19">- android.permission.RECORD_AUDIO</text><text x="80" y="530" fill="#fca5a5" font-family="monospace" font-size="19">- android.permission.REQUEST_INSTALL_PACKAGES</text>
+
+  <text x="80" y="612" fill="#93c5fd" font-family="monospace" font-size="22">敏感 API 命中（节选）</text>
+  <text x="80" y="640" fill="#86efac" font-family="monospace" font-size="19">- WebView: 265</text><text x="80" y="670" fill="#86efac" font-family="monospace" font-size="19">- loadUrl: 38</text><text x="80" y="700" fill="#86efac" font-family="monospace" font-size="19">- DexClassLoader: 28</text><text x="80" y="730" fill="#86efac" font-family="monospace" font-size="19">- getDeviceId: 18</text><text x="80" y="760" fill="#86efac" font-family="monospace" font-size="19">- TelephonyManager: 16</text><text x="80" y="790" fill="#86efac" font-family="monospace" font-size="19">- addJavascriptInterface: 8</text>
+
+  <text x="80" y="846" fill="#fcd34d" font-family="monospace" font-size="21">技术结论：</text>
+  <text x="80" y="878" fill="#fcd34d" font-family="monospace" font-size="20">本项目 reverse 链路可对该 APK 产出结构化技术评估结果；</text>
+  <text x="80" y="910" fill="#fcd34d" font-family="monospace" font-size="20">本节按论文口径仅给“链路可执行”结论，不给识别率统计。</text>
+</svg>

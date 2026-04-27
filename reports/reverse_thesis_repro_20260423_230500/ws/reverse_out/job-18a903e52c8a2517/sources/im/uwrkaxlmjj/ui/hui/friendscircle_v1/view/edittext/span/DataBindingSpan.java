@@ -1,0 +1,9 @@
+package im.uwrkaxlmjj.ui.hui.friendscircle_v1.view.edittext.span;
+
+import kotlin.Metadata;
+
+/* JADX INFO: compiled from: DataBindingSpan.kt */
+/* JADX INFO: loaded from: classes5.dex */
+@Metadata(bv = {1, 0, 3}, d1 = {"\u0000\n\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0000\bf\u0018\u00002\u00020\u0001¨\u0006\u0002"}, d2 = {"Lim/uwrkaxlmjj/ui/hui/friendscircle_v1/view/edittext/span/DataBindingSpan;", "", "HMessagesPrj_prodRelease"}, k = 1, mv = {1, 1, 16})
+public interface DataBindingSpan {
+}

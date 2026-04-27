@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Theme.AppCompat.DayNight" parent="@plurals/Theme.AppCompat">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.DarkActionBar" parent="@plurals/Theme.AppCompat">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.Dialog" parent="@plurals/Theme.AppCompat.Dialog">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.Dialog.Alert" parent="@plurals/Theme.AppCompat.Dialog.Alert">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.Dialog.MinWidth" parent="@plurals/Theme.AppCompat.Dialog.MinWidth">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.DialogWhenLarge" parent="@plurals/Theme.AppCompat.DialogWhenLarge">
+    </plurals>
+    <plurals name="Theme.AppCompat.DayNight.NoActionBar" parent="@plurals/Theme.AppCompat.NoActionBar">
+    </plurals>
+    <plurals name="ThemeOverlay.AppCompat.DayNight" parent="@plurals/ThemeOverlay.AppCompat.Dark">
+    </plurals>
+</resources>

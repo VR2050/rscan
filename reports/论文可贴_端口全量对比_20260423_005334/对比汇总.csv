@@ -1,0 +1,4 @@
+rank,tool_cn,mean_ms,median_ms,min_ms,max_ms,std_ms,mean_precision,mean_recall,mean_f1,speed_norm,score
+1,nmap(默认),640.2,442,433,1446,402.92,1.0,1.0,1.0,1.0,1.0
+2,rscan(aggressive),432.4,442,378,474,34.47,0.964706,1.0,0.981818,1.0,0.989091
+3,rustscan(默认),1799.6,1795,1760,1838,29.95,0.954248,1.0,0.976114,0.24624,0.684164

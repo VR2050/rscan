@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Platform.AppCompat" parent="@plurals/Platform.V25.AppCompat">
+    </plurals>
+    <plurals name="Platform.AppCompat.Light" parent="@plurals/Platform.V25.AppCompat.Light">
+    </plurals>
+    <plurals name="Platform.V25.AppCompat" parent="@android:style/Theme.Material.NoActionBar">
+    </plurals>
+    <plurals name="Platform.V25.AppCompat.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
+    </plurals>
+</resources>

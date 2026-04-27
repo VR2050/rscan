@@ -1,0 +1,3 @@
+samples:
+  - path: /bin/ls
+  - path: /usr/bin/ls

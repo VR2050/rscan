@@ -247,7 +247,7 @@ pub(crate) fn build_launcher_detail_lines(
     lines.push(Line::from(""));
     lines.push(Line::from("支持模块: host / web / vuln / reverse"));
     lines.push(Line::from(
-        "按 : 进入命令模式可手动输入 (h.quick|h.tcp|w.dir|w.fuzz|w.dns|v.scan|r.analyze|r.plan|r.run)",
+        "按 : 进入命令模式可手动输入 (h.quick|h.tcp|w.dir|w.fuzz|w.dns|v.scan|v.fuzz|v.poc|r.analyze|r.plan|r.run)",
     ));
     lines.push(Line::from(
         "也支持层级命令: host/web/vuln/reverse (Tab 补全)",

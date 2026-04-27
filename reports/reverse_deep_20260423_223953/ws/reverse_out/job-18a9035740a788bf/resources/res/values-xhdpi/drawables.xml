@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <drawable name="abc_ab_share_pack_mtrl_alpha">resources.arsc////.9.png</drawable>
+    <drawable name="abc_btn_check_to_on_mtrl_000">/resources.arsc/////.png</drawable>
+    <drawable name="abc_btn_check_to_on_mtrl_015">classes.dex/\\\\\\\\.png</drawable>
+    <drawable name="abc_btn_radio_to_on_mtrl_000">/classes.dex/\\\\\\\\\\\\.png</drawable>
+    <drawable name="abc_btn_radio_to_on_mtrl_015">kotlin/ .png</drawable>
+    <drawable name="abc_btn_switch_to_on_mtrl_00001">META-INF/classes.dex.9.png</drawable>
+    <drawable name="abc_btn_switch_to_on_mtrl_00012">kotlin/annotation/AndroidManifest.xml.9.png</drawable>
+    <drawable name="abc_cab_background_top_mtrl_alpha">kotlin/collections/AndroidManifest.9.png</drawable>
+    <drawable name="abc_ic_commit_search_api_mtrl_alpha">kotlin/coroutines/resources.arsc.png</drawable>
+    <drawable name="abc_list_divider_mtrl_alpha">kotlin/internal/..9.png</drawable>
+    <drawable name="abc_list_focused_holo">kotlin/ranges///.9.png</drawable>
+    <drawable name="abc_list_longpressed_holo">kotlin/reflect/////.9.png</drawable>
+    <drawable name="abc_switch_track_mtrl_alpha">AndroidManifest.xml/////.9.png</drawable>
+    <drawable name="abc_tab_indicator_mtrl_alpha">/AndroidManifest.xml/\\\\\\\\.9.png</drawable>
+    <drawable name="abc_text_select_handle_left_mtrl">resources.arsc/\\\\\\\\\\\\.png</drawable>
+    <drawable name="abc_text_select_handle_middle_mtrl">/resources.arsc/\\\\/.png</drawable>
+    <drawable name="abc_text_select_handle_right_mtrl">classes.dex/ .png</drawable>
+    <drawable name="abc_textfield_activated_mtrl_alpha">/classes.dex/  .9.png</drawable>
+    <drawable name="abc_textfield_default_mtrl_alpha">kotlin/classes.dex.9.png</drawable>
+    <drawable name="abc_textfield_search_activated_mtrl_alpha">META-INF/AndroidManifest.xml.9.png</drawable>
+    <drawable name="abc_textfield_search_default_mtrl_alpha">kotlin/annotation/AndroidManifest.9.png</drawable>
+    <drawable name="common_full_open_on_phone">kotlin/collections/resources.arsc.png</drawable>
+    <drawable name="common_google_signin_btn_icon_dark_normal_background">kotlin/coroutines/..9.png</drawable>
+    <drawable name="common_google_signin_btn_icon_light_normal_background">kotlin/internal///.9.png</drawable>
+    <drawable name="common_google_signin_btn_text_dark_normal_background">kotlin/ranges////.9.png</drawable>
+    <drawable name="common_google_signin_btn_text_light_normal_background">kotlin/reflect/\\\\\\\\.9.png</drawable>
+</resources>

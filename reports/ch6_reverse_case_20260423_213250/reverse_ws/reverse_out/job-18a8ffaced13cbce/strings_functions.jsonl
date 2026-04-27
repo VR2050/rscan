@@ -1,0 +1,301 @@
+{"func":"0x3000","name":"sub_3000","strings":[]}
+{"func":"0x30c0","name":"sub_30c0","strings":[".shstrtab"]}
+{"func":"0x313d","name":"sub_313d","strings":[".shstrtab"]}
+{"func":"0x31b5","name":"sub_31b5","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x31df","name":"sub_31df","strings":[".shstrtab"]}
+{"func":"0x324a","name":"error","strings":[".fini_array"]}
+{"func":"0x32f7","name":"sub_32f7","strings":[".shstrtab"]}
+{"func":"0x33fc","name":"error_at_line","strings":[]}
+{"func":"0x3400","name":"sub_3400","strings":[".fini_array"]}
+{"func":"0x34ad","name":"sub_34ad","strings":[]}
+{"func":"0x34e1","name":"sub_34e1","strings":[]}
+{"func":"0x352d","name":"sub_352d","strings":[]}
+{"func":"0x3560","name":"sub_3560","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103",".gnu.hash",".fini","vdir",".note.gnu.build-id",".note.gnu.property"]}
+{"func":"0x54f0","name":"sub_54f0","strings":[]}
+{"func":"0x5520","name":"sub_5520","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x5590","name":"sub_5590","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x55e0","name":"sub_55e0","strings":[]}
+{"func":"0x5610","name":"sub_5610","strings":[]}
+{"func":"0x5640","name":"sub_5640","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x5680","name":"sub_5680","strings":[]}
+{"func":"0x56a0","name":"sub_56a0","strings":[".gnu.hash","GCC: (GNU) 15.2.1 20260103",".note.gnu.build-id",".note.gnu.property",".shstrtab"]}
+{"func":"0x5940","name":"sub_5940","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x5a50","name":"sub_5a50","strings":[]}
+{"func":"0x5a60","name":"sub_5a60","strings":[]}
+{"func":"0x5a6d","name":"sub_5a6d","strings":[]}
+{"func":"0x5aa0","name":"sub_5aa0","strings":[".comment",".shstrtab"]}
+{"func":"0x5b70","name":"sub_5b70","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x5be0","name":"sub_5be0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x5c10","name":"sub_5c10","strings":["GCC: (GNU) 15.2.1 20260103",".note.gnu.property",".shstrtab"]}
+{"func":"0x5fd0","name":"sub_5fd0","strings":[]}
+{"func":"0x6040","name":"sub_6040","strings":[]}
+{"func":"0x604f","name":"sub_604f","strings":[".note.gnu.property"]}
+{"func":"0x6220","name":"sub_6220","strings":[]}
+{"func":"0x6250","name":"sub_6250","strings":[]}
+{"func":"0x62d0","name":"sub_62d0","strings":[]}
+{"func":"0x62f0","name":"sub_62f0","strings":[]}
+{"func":"0x6300","name":"sub_6300","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x6450","name":"sub_6450","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x6470","name":"sub_6470","strings":[]}
+{"func":"0x6550","name":"sub_6550","strings":[".shstrtab"]}
+{"func":"0x6600","name":"sub_6600","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab","vdir"]}
+{"func":"0x6a60","name":"sub_6a60","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x6a80","name":"sub_6a80","strings":[]}
+{"func":"0x6a96","name":"sub_6a96","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x6b00","name":"sub_6b00","strings":[]}
+{"func":"0x6b60","name":"sub_6b60","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x6e20","name":"sub_6e20","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x6ec0","name":"sub_6ec0","strings":[]}
+{"func":"0x6ed5","name":"sub_6ed5","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103",".note.gnu.build-id"]}
+{"func":"0x7430","name":"sub_7430","strings":[]}
+{"func":"0x74e0","name":"sub_74e0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x76d0","name":"sub_76d0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x7960","name":"sub_7960","strings":[]}
+{"func":"0x79a0","name":"sub_79a0","strings":[]}
+{"func":"0x7a90","name":"sub_7a90","strings":[]}
+{"func":"0x7b10","name":"sub_7b10","strings":[]}
+{"func":"0x7b70","name":"sub_7b70","strings":[]}
+{"func":"0x7bc0","name":"sub_7bc0","strings":[]}
+{"func":"0x7c10","name":"sub_7c10","strings":[]}
+{"func":"0x7c60","name":"sub_7c60","strings":[".fini","GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x7d60","name":"sub_7d60","strings":[".shstrtab"]}
+{"func":"0x7dc0","name":"sub_7dc0","strings":[]}
+{"func":"0x7df0","name":"sub_7df0","strings":[]}
+{"func":"0x7e80","name":"sub_7e80","strings":[]}
+{"func":"0x7ee0","name":"sub_7ee0","strings":[]}
+{"func":"0x7f20","name":"sub_7f20","strings":[]}
+{"func":"0x7fd0","name":"sub_7fd0","strings":[]}
+{"func":"0x8050","name":"sub_8050","strings":[]}
+{"func":"0x80d0","name":"sub_80d0","strings":[]}
+{"func":"0x8150","name":"sub_8150","strings":[]}
+{"func":"0x81d0","name":"sub_81d0","strings":[]}
+{"func":"0x8250","name":"sub_8250","strings":[]}
+{"func":"0x82d0","name":"sub_82d0","strings":[]}
+{"func":"0x8350","name":"sub_8350","strings":[]}
+{"func":"0x83d0","name":"sub_83d0","strings":["GCC: (GNU) 15.2.1 20260103",".fini_array",".shstrtab"]}
+{"func":"0x8600","name":"sub_8600","strings":[]}
+{"func":"0x8660","name":"sub_8660","strings":[]}
+{"func":"0x86b0","name":"sub_86b0","strings":[]}
+{"func":"0x8700","name":"sub_8700","strings":[]}
+{"func":"0x8750","name":"sub_8750","strings":[]}
+{"func":"0x8810","name":"sub_8810","strings":[]}
+{"func":"0x88d0","name":"sub_88d0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x89c0","name":"sub_89c0","strings":[]}
+{"func":"0x8a50","name":"sub_8a50","strings":[]}
+{"func":"0x8ae0","name":"sub_8ae0","strings":[]}
+{"func":"0x8b90","name":"sub_8b90","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x8d90","name":"sub_8d90","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x8e20","name":"sub_8e20","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x8ef0","name":"sub_8ef0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x8f80","name":"sub_8f80","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x90e0","name":"sub_90e0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9230","name":"sub_9230","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9300","name":"sub_9300","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9390","name":"sub_9390","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x94e0","name":"sub_94e0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x95b0","name":"sub_95b0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9640","name":"sub_9640","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9790","name":"sub_9790","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9860","name":"sub_9860","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9930","name":"sub_9930","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x99e0","name":"sub_99e0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9ab0","name":"sub_9ab0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9b60","name":"sub_9b60","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9c20","name":"sub_9c20","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9d70","name":"sub_9d70","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9e90","name":"sub_9e90","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x9fb0","name":"sub_9fb0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa0d0","name":"sub_a0d0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa160","name":"sub_a160","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa1f0","name":"sub_a1f0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa280","name":"sub_a280","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa300","name":"sub_a300","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa3c0","name":"sub_a3c0","strings":[]}
+{"func":"0xa410","name":"sub_a410","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xa810","name":"sub_a810","strings":["GCC: (GNU) 15.2.1 20260103",".fini_array",".rela.dyn",".shstrtab",".fini"]}
+{"func":"0xae70","name":"sub_ae70","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103",".note.gnu.property",".note.gnu.build-id"]}
+{"func":"0xbab0","name":"sub_bab0","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xbd30","name":"sub_bd30","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xbee0","name":"sub_bee0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0xc320","name":"sub_c320","strings":[".fini_array","GCC: (GNU) 15.2.1 20260103",".shstrtab",".note.gnu.property"]}
+{"func":"0xd4d0","name":"sub_d4d0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0xdc00","name":"sub_dc00","strings":[".fini_array",".shstrtab","GCC: (GNU) 15.2.1 20260103","vdir"]}
+{"func":"0xf320","name":"sub_f320","strings":[]}
+{"func":"0xf360","name":"sub_f360","strings":["GCC: (GNU) 15.2.1 20260103",".note.gnu.property"]}
+{"func":"0xf500","name":"sub_f500","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xf610","name":"sub_f610","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xf680","name":"sub_f680","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xf720","name":"sub_f720","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xf860","name":"sub_f860","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xf930","name":"sub_f930","strings":[]}
+{"func":"0xf9a0","name":"sub_f9a0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xfa60","name":"sub_fa60","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xfaa0","name":"sub_faa0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0xfb40","name":"sub_fb40","strings":[".note.gnu.property","GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x10560","name":"sub_10560","strings":[]}
+{"func":"0x10640","name":"sub_10640","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x106a0","name":"sub_106a0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x10720","name":"sub_10720","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x10820","name":"sub_10820","strings":[]}
+{"func":"0x10850","name":"sub_10850","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x10dd0","name":"sub_10dd0","strings":[]}
+{"func":"0x10df0","name":"sub_10df0","strings":[".fini_array",".note.gnu.property","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x10e80","name":"sub_10e80","strings":[]}
+{"func":"0x10e9c","name":"sub_10e9c","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x10f10","name":"sub_10f10","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x10f70","name":"sub_10f70","strings":[".rela.dyn","GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x11100","name":"sub_11100","strings":[]}
+{"func":"0x11110","name":"sub_11110","strings":[]}
+{"func":"0x11130","name":"sub_11130","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x11240","name":"sub_11240","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x11340","name":"sub_11340","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x11930","name":"sub_11930","strings":[]}
+{"func":"0x11950","name":"sub_11950","strings":[]}
+{"func":"0x11960","name":"sub_11960","strings":[]}
+{"func":"0x11970","name":"sub_11970","strings":[]}
+{"func":"0x119c0","name":"sub_119c0","strings":["GCC: (GNU) 15.2.1 20260103",".note.gnu.property"]}
+{"func":"0x11a40","name":"sub_11a40","strings":["GCC: (GNU) 15.2.1 20260103",".note.gnu.property"]}
+{"func":"0x11b20","name":"sub_11b20","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x11bc0","name":"sub_11bc0","strings":[]}
+{"func":"0x11bd0","name":"sub_11bd0","strings":["=fff?","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x11c60","name":"sub_11c60","strings":[]}
+{"func":"0x11d80","name":"sub_11d80","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x11f10","name":"sub_11f10","strings":[]}
+{"func":"0x11f20","name":"sub_11f20","strings":[]}
+{"func":"0x11f30","name":"sub_11f30","strings":[]}
+{"func":"0x11f40","name":"sub_11f40","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x11fb0","name":"sub_11fb0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x12020","name":"sub_12020","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x12180","name":"sub_12180","strings":[]}
+{"func":"0x12230","name":"sub_12230","strings":[]}
+{"func":"0x12290","name":"sub_12290","strings":[]}
+{"func":"0x12350","name":"sub_12350","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x123c0","name":"sub_123c0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x12460","name":"sub_12460","strings":[]}
+{"func":"0x12482","name":"sub_12482","strings":[".note.gnu.property","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x12640","name":"sub_12640","strings":[]}
+{"func":"0x126f0","name":"sub_126f0","strings":[]}
+{"func":"0x12810","name":"sub_12810","strings":[".fini","GCC: (GNU) 15.2.1 20260103",".note.gnu.property"]}
+{"func":"0x12a90","name":"sub_12a90","strings":["GCC: (GNU) 15.2.1 20260103",".note.gnu.property"]}
+{"func":"0x12cc0","name":"sub_12cc0","strings":[]}
+{"func":"0x12d20","name":"sub_12d20","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x12ed0","name":"sub_12ed0","strings":[]}
+{"func":"0x12f50","name":"sub_12f50","strings":[]}
+{"func":"0x12f80","name":"sub_12f80","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x13000","name":"sub_13000","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab",".note.gnu.property"]}
+{"func":"0x13d90","name":"sub_13d90","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x13f60","name":"sub_13f60","strings":[]}
+{"func":"0x14020","name":"sub_14020","strings":[]}
+{"func":"0x14160","name":"sub_14160","strings":[]}
+{"func":"0x14220","name":"sub_14220","strings":[]}
+{"func":"0x14380","name":"sub_14380","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x14440","name":"sub_14440","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x144b0","name":"sub_144b0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x145a0","name":"sub_145a0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x14750","name":"sub_14750","strings":[]}
+{"func":"0x14780","name":"sub_14780","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x14a60","name":"sub_14a60","strings":[".shstrtab"]}
+{"func":"0x14a70","name":"sub_14a70","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x14ac0","name":"sub_14ac0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x14b40","name":"sub_14b40","strings":[".shstrtab"]}
+{"func":"0x14c00","name":"sub_14c00","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103",".note.gnu.build-id"]}
+{"func":"0x14ee0","name":"sub_14ee0","strings":[".note.gnu.property","GCC: (GNU) 15.2.1 20260103",".shstrtab",".relr.dyn",".note.gnu.build-id",".gnu.hash",".rela.dyn"]}
+{"func":"0x17660","name":"sub_17660","strings":[]}
+{"func":"0x1767d","name":"sub_1767d","strings":[".shstrtab",".gnu.version"]}
+{"func":"0x17800","name":"sub_17800","strings":[".shstrtab"]}
+{"func":"0x17850","name":"sub_17850","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x179c0","name":"sub_179c0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x179e0","name":"sub_179e0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x17a10","name":"sub_17a10","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab",".bss"]}
+{"func":"0x17bd0","name":"sub_17bd0","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x17ca0","name":"sub_17ca0","strings":[]}
+{"func":"0x17d30","name":"sub_17d30","strings":[".shstrtab"]}
+{"func":"0x17de0","name":"sub_17de0","strings":[]}
+{"func":"0x17ec0","name":"sub_17ec0","strings":["GCC: (GNU) 15.2.1 20260103",".note.gnu.build-id",".shstrtab",".note.gnu.property",".relr.dyn",".gnu.version_r"]}
+{"func":"0x19710","name":"sub_19710","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x19854","name":"sub_19854","strings":[]}
+{"func":"0x198f0","name":"sub_198f0","strings":[]}
+{"func":"0x19940","name":"sub_19940","strings":[]}
+{"func":"0x19960","name":"sub_19960","strings":[]}
+{"func":"0x19980","name":"sub_19980","strings":[".note.gnu.build-id","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x199c0","name":"sub_199c0","strings":[]}
+{"func":"0x199e0","name":"sub_199e0","strings":[]}
+{"func":"0x19a20","name":"sub_19a20","strings":[]}
+{"func":"0x19aa0","name":"sub_19aa0","strings":[]}
+{"func":"0x19b90","name":"sub_19b90","strings":[]}
+{"func":"0x19ba0","name":"sub_19ba0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x19c50","name":"sub_19c50","strings":[]}
+{"func":"0x19c70","name":"sub_19c70","strings":[]}
+{"func":"0x19cc0","name":"sub_19cc0","strings":[]}
+{"func":"0x19da0","name":"sub_19da0","strings":[]}
+{"func":"0x19e10","name":"sub_19e10","strings":[]}
+{"func":"0x19e80","name":"sub_19e80","strings":[".note.gnu.build-id"]}
+{"func":"0x19f20","name":"sub_19f20","strings":[".note.gnu.build-id"]}
+{"func":"0x19fc0","name":"sub_19fc0","strings":[]}
+{"func":"0x1a050","name":"sub_1a050","strings":[]}
+{"func":"0x1a0d0","name":"sub_1a0d0","strings":[]}
+{"func":"0x1a150","name":"sub_1a150","strings":[]}
+{"func":"0x1a1f0","name":"sub_1a1f0","strings":[]}
+{"func":"0x1a290","name":"sub_1a290","strings":[]}
+{"func":"0x1a330","name":"sub_1a330","strings":[]}
+{"func":"0x1a3d0","name":"sub_1a3d0","strings":[]}
+{"func":"0x1a400","name":"sub_1a400","strings":[]}
+{"func":"0x1a420","name":"sub_1a420","strings":[]}
+{"func":"0x1a440","name":"sub_1a440","strings":[]}
+{"func":"0x1a450","name":"sub_1a450","strings":[]}
+{"func":"0x1a460","name":"sub_1a460","strings":[]}
+{"func":"0x1a470","name":"sub_1a470","strings":[]}
+{"func":"0x1a520","name":"sub_1a520","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a5b0","name":"sub_1a5b0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a670","name":"sub_1a670","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a7b0","name":"sub_1a7b0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a800","name":"sub_1a800","strings":[]}
+{"func":"0x1a814","name":"sub_1a814","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a900","name":"sub_1a900","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a920","name":"sub_1a920","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1a9d0","name":"sub_1a9d0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1ab00","name":"sub_1ab00","strings":[".shstrtab"]}
+{"func":"0x1ac40","name":"sub_1ac40","strings":[".shstrtab"]}
+{"func":"0x1ae54","name":"sub_1ae54","strings":[".shstrtab"]}
+{"func":"0x1af22","name":"sub_1af22","strings":[".shstrtab","GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b045","name":"sub_1b045","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b0e0","name":"sub_1b0e0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b1c0","name":"sub_1b1c0","strings":[".shstrtab"]}
+{"func":"0x1b280","name":"sub_1b280","strings":[]}
+{"func":"0x1b2a0","name":"sub_1b2a0","strings":[]}
+{"func":"0x1b2c0","name":"sub_1b2c0","strings":[]}
+{"func":"0x1b2e0","name":"sub_1b2e0","strings":[]}
+{"func":"0x1b300","name":"sub_1b300","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b330","name":"sub_1b330","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b360","name":"sub_1b360","strings":[]}
+{"func":"0x1b380","name":"sub_1b380","strings":[]}
+{"func":"0x1b3a0","name":"sub_1b3a0","strings":[]}
+{"func":"0x1b3d0","name":"sub_1b3d0","strings":[]}
+{"func":"0x1b400","name":"sub_1b400","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b4d0","name":"sub_1b4d0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b5c0","name":"sub_1b5c0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b5e0","name":"sub_1b5e0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1b600","name":"sub_1b600","strings":[]}
+{"func":"0x1b620","name":"sub_1b620","strings":[]}
+{"func":"0x1b640","name":"sub_1b640","strings":[]}
+{"func":"0x1b680","name":"sub_1b680","strings":[]}
+{"func":"0x1b6c0","name":"sub_1b6c0","strings":[]}
+{"func":"0x1b710","name":"sub_1b710","strings":[]}
+{"func":"0x1b760","name":"sub_1b760","strings":[]}
+{"func":"0x1b7b0","name":"sub_1b7b0","strings":["GCC: (GNU) 15.2.1 20260103",".shstrtab"]}
+{"func":"0x1b8d0","name":"sub_1b8d0","strings":[]}
+{"func":"0x1b900","name":"sub_1b900","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1ba30","name":"sub_1ba30","strings":[]}
+{"func":"0x1ba90","name":"sub_1ba90","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1bb60","name":"sub_1bb60","strings":["GCC: (GNU) 15.2.1 20260103",".dynsym",".shstrtab"]}
+{"func":"0x1c100","name":"sub_1c100","strings":[]}
+{"func":"0x1c170","name":"sub_1c170","strings":[]}
+{"func":"0x1c1a0","name":"sub_1c1a0","strings":[]}
+{"func":"0x1c1e0","name":"sub_1c1e0","strings":[]}
+{"func":"0x1c200","name":"sub_1c200","strings":[]}
+{"func":"0x1c210","name":"sub_1c210","strings":[]}
+{"func":"0x1c270","name":"sub_1c270","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1c291","name":"sub_1c291","strings":[".note.gnu.property"]}
+{"func":"0x1c2b0","name":"sub_1c2b0","strings":["GCC: (GNU) 15.2.1 20260103"]}
+{"func":"0x1c330","name":"sub_1c330","strings":[]}
+{"func":"0x1c344","name":"sub_1c344","strings":[]}

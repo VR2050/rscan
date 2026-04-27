@@ -1,0 +1,4 @@
+[smoke] backend status
+[smoke] analyze: /bin/ls
+[smoke] decompile index: /bin/ls
+[smoke] PASS

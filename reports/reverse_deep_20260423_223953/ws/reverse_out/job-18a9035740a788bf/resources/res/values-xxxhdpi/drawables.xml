@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <drawable name="abc_text_select_handle_left_mtrl">AndroidManifest.xml/abc_text_select_handle_left_mtrl.png</drawable>
+    <drawable name="abc_text_select_handle_right_mtrl">resources.arsc/abc_text_select_handle_right_mtrl.png</drawable>
+    <drawable name="design_ic_visibility">classes.dex/design_ic_visibility.png</drawable>
+    <drawable name="design_ic_visibility_off">/classes.dex/design_ic_visibility_off.png</drawable>
+</resources>

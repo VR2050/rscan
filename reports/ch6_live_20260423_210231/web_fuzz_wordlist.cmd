@@ -1,0 +1,1 @@
+/home/vr2050/RUST/rscan_codex/target/release/rscan web fuzz -u http://192.168.8.128/FUZZ --keywords-file /home/vr2050/fuzzDicts/directoryDicts/top7000.txt -c 50 --per-host-concurrency 50 --smart-fast -o raw 

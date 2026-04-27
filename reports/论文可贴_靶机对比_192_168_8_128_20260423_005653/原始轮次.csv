@@ -1,0 +1,16 @@
+tool_cn,round,rc,ms,open_count,open_ports
+rscan(aggressive),1,0,945,1,22
+rscan(aggressive),2,0,985,1,22
+rscan(aggressive),3,0,977,1,22
+rscan(aggressive),4,0,221,1,22
+rscan(aggressive),5,0,202,1,22
+rustscan(默认),1,0,343,1,22
+rustscan(默认),2,0,250,1,22
+rustscan(默认),3,0,265,1,22
+rustscan(默认),4,0,1297,1,22
+rustscan(默认),5,0,309,1,22
+nmap(默认),1,0,123,1,22
+nmap(默认),2,0,3242,1,22
+nmap(默认),3,0,108,1,22
+nmap(默认),4,0,110,1,22
+nmap(默认),5,0,119,1,22

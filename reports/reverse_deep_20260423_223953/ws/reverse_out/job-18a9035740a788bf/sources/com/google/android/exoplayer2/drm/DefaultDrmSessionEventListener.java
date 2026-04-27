@@ -1,0 +1,25 @@
+package com.google.android.exoplayer2.drm;
+
+/* JADX INFO: loaded from: classes2.dex */
+public interface DefaultDrmSessionEventListener {
+    void onDrmKeysLoaded();
+
+    void onDrmKeysRemoved();
+
+    void onDrmKeysRestored();
+
+    void onDrmSessionAcquired();
+
+    void onDrmSessionManagerError(Exception exc);
+
+    void onDrmSessionReleased();
+
+    /* JADX INFO: renamed from: com.google.android.exoplayer2.drm.DefaultDrmSessionEventListener$-CC, reason: invalid class name */
+    public final /* synthetic */ class CC {
+        public static void $default$onDrmSessionAcquired(DefaultDrmSessionEventListener _this) {
+        }
+
+        public static void $default$onDrmSessionReleased(DefaultDrmSessionEventListener _this) {
+        }
+    }
+}

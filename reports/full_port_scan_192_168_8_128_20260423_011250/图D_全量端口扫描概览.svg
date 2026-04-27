@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="550.0" y="48" text-anchor="middle" font-size="32" font-family="Arial">图D 全量端口扫描结果概览</text>
+<text x="550.0" y="80" text-anchor="middle" font-size="16" font-family="Arial" fill="#555">目标 192.168.8.128，端口范围 1-65535，扫描方式 rscan tcp aggressive</text>
+<text x="120" y="150" font-size="20" font-family="Arial">开放端口数</text>
+<rect x="120" y="170" width="20.0" height="68" fill="#2E86AB"/>
+<rect x="120" y="170" width="820" height="68" fill="none" stroke="#999"/>
+<text x="960" y="214" font-size="24" font-family="Arial">7 个</text>
+<text x="120" y="268" font-size="16" font-family="Arial" fill="#555">占比：0.0107%</text>
+<text x="120" y="300" font-size="20" font-family="Arial">非开放端口数</text>
+<rect x="120" y="320" width="820" height="68" fill="#D5DBDB"/>
+<rect x="120" y="320" width="820" height="68" fill="none" stroke="#999"/>
+<text x="960" y="364" font-size="24" font-family="Arial">65528 个</text>
+<text x="120" y="418" font-size="16" font-family="Arial" fill="#555">占比：99.9893%</text>
+<text x="120" y="500" font-size="18" font-family="Arial">开放端口：22, 1716, 2234, 6174, 7897, 8082, 18789</text>
+</svg>

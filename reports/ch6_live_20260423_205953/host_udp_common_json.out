@@ -1,0 +1,2 @@
+2026-04-23T12:59:55.229400Z  INFO rscan::cli::app: Starting rscan, log_level=info
+{"host":"192.168.8.128","ip":"192.168.8.128","protocol":"Udp","open_ports":[],"open_ports_count":0,"filtered_ports":[53,67,68,69,123,137,138,139,161,162,500,514,520,4500],"filtered_ports_count":14,"details":[],"scan_duration_ms":6002,"total_scanned":14,"errors":0}

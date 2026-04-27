@@ -1,0 +1,2 @@
+2026-04-23T13:02:31.339442Z  INFO rscan::cli::app: Starting rscan, log_level=info
+{"host":"192.168.8.128","ip":"192.168.8.128","protocol":"Tcp","open_ports":[22,80],"open_ports_count":2,"filtered_ports":[],"filtered_ports_count":0,"details":[{"port":22,"protocol":"Tcp","latency_ms":2,"banner":null},{"port":80,"protocol":"Tcp","latency_ms":2,"banner":null}],"scan_duration_ms":15,"total_scanned":18,"errors":0}

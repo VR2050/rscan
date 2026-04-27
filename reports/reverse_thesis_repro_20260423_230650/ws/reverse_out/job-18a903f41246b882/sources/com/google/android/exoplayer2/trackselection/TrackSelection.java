@@ -1,0 +1,86 @@
+package com.google.android.exoplayer2.trackselection;
+
+import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.source.TrackGroup;
+import com.google.android.exoplayer2.source.chunk.MediaChunk;
+import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
+import java.util.List;
+
+/* JADX INFO: loaded from: classes2.dex */
+public interface TrackSelection {
+    boolean blacklist(int i, long j);
+
+    void disable();
+
+    void enable();
+
+    int evaluateQueueSize(long j, List<? extends MediaChunk> list);
+
+    Format getFormat(int i);
+
+    int getIndexInTrackGroup(int i);
+
+    Format getSelectedFormat();
+
+    int getSelectedIndex();
+
+    int getSelectedIndexInTrackGroup();
+
+    Object getSelectionData();
+
+    int getSelectionReason();
+
+    TrackGroup getTrackGroup();
+
+    int indexOf(int i);
+
+    int indexOf(Format format);
+
+    int length();
+
+    void onDiscontinuity();
+
+    void onPlaybackSpeed(float f);
+
+    @Deprecated
+    void updateSelectedTrack(long j, long j2, long j3);
+
+    void updateSelectedTrack(long j, long j2, long j3, List<? extends MediaChunk> list, MediaChunkIterator[] mediaChunkIteratorArr);
+
+    public static final class Definition {
+        public final TrackGroup group;
+        public final int[] tracks;
+
+        public Definition(TrackGroup group, int... tracks) {
+            this.group = group;
+            this.tracks = tracks;
+        }
+    }
+
+    public interface Factory {
+        @Deprecated
+        TrackSelection createTrackSelection(TrackGroup trackGroup, BandwidthMeter bandwidthMeter, int... iArr);
+
+        TrackSelection[] createTrackSelections(Definition[] definitionArr, BandwidthMeter bandwidthMeter);
+
+        /* JADX INFO: renamed from: com.google.android.exoplayer2.trackselection.TrackSelection$Factory$-CC, reason: invalid class name */
+        public final /* synthetic */ class CC {
+            @Deprecated
+            public static TrackSelection $default$createTrackSelection(Factory _this, TrackGroup group, BandwidthMeter bandwidthMeter, int... tracks) {
+                throw new UnsupportedOperationException();
+            }
+        }
+    }
+
+    /* JADX INFO: renamed from: com.google.android.exoplayer2.trackselection.TrackSelection$-CC, reason: invalid class name */
+    public final /* synthetic */ class CC {
+        public static void $default$onDiscontinuity(TrackSelection _this) {
+        }
+
+        @Deprecated
+        public static void $default$updateSelectedTrack(TrackSelection _this, long playbackPositionUs, long bufferedDurationUs, long availableDurationUs) {
+            throw new UnsupportedOperationException();
+        }
+    }
+}

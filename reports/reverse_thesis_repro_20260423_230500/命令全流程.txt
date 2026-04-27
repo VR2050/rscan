@@ -1,0 +1,30 @@
+# 复现命令全流程
+# 生成时间: 2026-04-23 22:50:03
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse backend-status --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/backend_status.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse analyze --input "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/3pPro/analyze.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse malware-triage --input "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/3pPro/triage.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse android-analyze --input "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/3pPro/android_analyze.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse decompile-run --input "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk" --engine auto --mode full --workspace "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/ws" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/3pPro/decompile.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse analyze --input "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/6c685e54ee9446889353feda8dc510d8/analyze.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse malware-triage --input "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/6c685e54ee9446889353feda8dc510d8/triage.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse android-analyze --input "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/6c685e54ee9446889353feda8dc510d8/android_analyze.json"
+  -> rc=0
+
+$ "/home/vr2050/RUST/rscan_codex/target/release/rscan" reverse decompile-run --input "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk" --engine auto --mode full --workspace "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/ws" --output json --out "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230500/6c685e54ee9446889353feda8dc510d8/decompile.json"
+  -> rc=0
+

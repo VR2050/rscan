@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060">
+  <rect width="1600" height="1060" fill="#111827"/>
+  <rect x="32" y="24" width="1536" height="1012" rx="12" fill="#0b1020" stroke="#334155"/>
+  <text x="60" y="74" fill="#e5e7eb" font-family="monospace" font-size="34" font-weight="700">图6-15B 技术评估报告关键页</text>
+
+  <rect x="60" y="104" width="1480" height="900" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="80" y="144" fill="#93c5fd" font-family="monospace" font-size="24">来源：docs/xjwh_apk_technical_malware_assessment.md</text>
+  <text x="80" y="180" fill="#e5e7eb" font-family="monospace" font-size="21">xjwh.apk 恶意行为技术评估报告（静态）</text>
+
+  <text x="80" y="228" fill="#a7f3d0" font-family="monospace" font-size="20">样本：/home/vr2050/RUST/rscan_codex/违法apk/xjwh.apk</text>
+  <text x="80" y="260" fill="#e5e7eb" font-family="monospace" font-size="20">SHA256: c86d761926b873ccb91a4f1a7df7a360d3c191e83682d793a607fe53171a3059</text>
+  <text x="80" y="292" fill="#e5e7eb" font-family="monospace" font-size="20">triage malware_confidence: 44</text>
+
+  <text x="80" y="344" fill="#93c5fd" font-family="monospace" font-size="22">已确认技术风险</text>
+  <text x="80" y="378" fill="#fca5a5" font-family="monospace" font-size="20">- 远程更新控制面存在且使用明文 HTTP 链路</text>
+  <text x="80" y="410" fill="#fca5a5" font-family="monospace" font-size="20">- WebView/Cordova 访问与导航策略过宽</text>
+  <text x="80" y="442" fill="#fca5a5" font-family="monospace" font-size="20">- 运行时动态部署路径切换能力存在</text>
+  <text x="80" y="474" fill="#fca5a5" font-family="monospace" font-size="20">- InAppBrowser 高权限 Web 能力暴露</text>
+
+  <text x="80" y="528" fill="#93c5fd" font-family="monospace" font-size="22">本轮静态分析未观察到/具缓解意义项</text>
+  <text x="80" y="562" fill="#86efac" font-family="monospace" font-size="20">- 未发现显式开机持久化或无障碍滥用组件</text>
+  <text x="80" y="594" fill="#86efac" font-family="monospace" font-size="20">- InAppBrowser SSL 错误回调使用 cancel() 路径</text>
+  <text x="80" y="626" fill="#86efac" font-family="monospace" font-size="20">- 关键范围未命中 Runtime.exec / ProcessBuilder / su</text>
+
+  <text x="80" y="690" fill="#fcd34d" font-family="monospace" font-size="21">技术结论（对应章节表述）：</text>
+  <text x="80" y="724" fill="#fcd34d" font-family="monospace" font-size="20">逆向分析链路可执行；本节给出工程链路证据，</text>
+  <text x="80" y="756" fill="#fcd34d" font-family="monospace" font-size="20">不提供公开样本识别率类统计结论。</text>
+
+  <text x="80" y="820" fill="#cbd5e1" font-family="monospace" font-size="18">建议与图6-15A（脚本执行链）拼为一张组合图展示。</text>
+  <text x="80" y="852" fill="#cbd5e1" font-family="monospace" font-size="18">本页内容基于仓库文档提炼，用于论文图示。</text>
+</svg>

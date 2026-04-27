@@ -1,0 +1,54 @@
+package com.danikula.videocache;
+
+import android.content.Context;
+import android.os.Environment;
+import java.io.File;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.webrtc.utils.RecvStatsReportCommon;
+
+/* JADX INFO: loaded from: classes.dex */
+final class StorageUtils {
+    private static final String INDIVIDUAL_DIR_NAME = "video-cache";
+    private static final Logger LOG = LoggerFactory.getLogger("StorageUtils");
+
+    StorageUtils() {
+    }
+
+    public static File getIndividualCacheDirectory(Context context) {
+        File cacheDir = getCacheDirectory(context, true);
+        return new File(cacheDir, INDIVIDUAL_DIR_NAME);
+    }
+
+    private static File getCacheDirectory(Context context, boolean preferExternal) {
+        String externalStorageState;
+        File appCacheDir = null;
+        try {
+            externalStorageState = Environment.getExternalStorageState();
+        } catch (NullPointerException e) {
+            externalStorageState = "";
+        }
+        if (preferExternal && "mounted".equals(externalStorageState)) {
+            appCacheDir = getExternalCacheDir(context);
+        }
+        if (appCacheDir == null) {
+            appCacheDir = context.getCacheDir();
+        }
+        if (appCacheDir == null) {
+            String cacheDirPath = "/data/data/" + context.getPackageName() + "/cache/";
+            LOG.warn("Can't define system cache directory! '" + cacheDirPath + "%s' will be used.");
+            return new File(cacheDirPath);
+        }
+        return appCacheDir;
+    }
+
+    private static File getExternalCacheDir(Context context) {
+        File dataDir = new File(new File(Environment.getExternalStorageDirectory(), RecvStatsReportCommon.sdk_platform), "data");
+        File appCacheDir = new File(new File(dataDir, context.getPackageName()), "cache");
+        if (!appCacheDir.exists() && !appCacheDir.mkdirs()) {
+            LOG.warn("Unable to create external cache directory");
+            return null;
+        }
+        return appCacheDir;
+    }
+}

@@ -1,0 +1,1283 @@
+{"off":"0x3c5","s":"/lib64/ld-linux-x86-64.so.2"}
+{"off":"0x10e2","s":"_ITM_deregisterTMCloneTable"}
+{"off":"0x10fe","s":"__gmon_start__"}
+{"off":"0x110d","s":"_ITM_registerTMCloneTable"}
+{"off":"0x1127","s":"_IO_stdin_used"}
+{"off":"0x1136","s":"cap_free"}
+{"off":"0x113f","s":"cap_get_file"}
+{"off":"0x114c","s":"cap_to_text"}
+{"off":"0x1158","s":"optind"}
+{"off":"0x115f","s":"nl_langinfo"}
+{"off":"0x116b","s":"obstack_alloc_failed_handler"}
+{"off":"0x1188","s":"error_message_count"}
+{"off":"0x119c","s":"gethostname"}
+{"off":"0x11a8","s":"mempcpy"}
+{"off":"0x11b0","s":"snprintf"}
+{"off":"0x11b9","s":"getgrgid"}
+{"off":"0x11c2","s":"program_invocation_short_name"}
+{"off":"0x11e0","s":"nl_langinfo_l"}
+{"off":"0x11ee","s":"_setjmp"}
+{"off":"0x11f6","s":"fputc_unlocked"}
+{"off":"0x1205","s":"strcoll"}
+{"off":"0x120d","s":"dirfd"}
+{"off":"0x1213","s":"__strcpy_chk"}
+{"off":"0x1220","s":"clock_gettime"}
+{"off":"0x122e","s":"dcgettext"}
+{"off":"0x1238","s":"__ctype_toupper_loc"}
+{"off":"0x124c","s":"uselocale"}
+{"off":"0x1256","s":"tzset"}
+{"off":"0x125c","s":"__stack_chk_fail"}
+{"off":"0x126d","s":"__printf_chk"}
+{"off":"0x127a","s":"statx"}
+{"off":"0x1280","s":"__assert_fail"}
+{"off":"0x128e","s":"sigaddset"}
+{"off":"0x1298","s":"stat"}
+{"off":"0x129d","s":"sigismember"}
+{"off":"0x12a9","s":"rawmemchr"}
+{"off":"0x12b3","s":"sigaction"}
+{"off":"0x12bd","s":"fcntl"}
+{"off":"0x12c3","s":"fnmatch"}
+{"off":"0x12cb","s":"closedir"}
+{"off":"0x12d4","s":"__ctype_get_mb_cur_max"}
+{"off":"0x12eb","s":"strspn"}
+{"off":"0x12f2","s":"strrchr"}
+{"off":"0x12fa","s":"memmove"}
+{"off":"0x1302","s":"__mempcpy_chk"}
+{"off":"0x1310","s":"error"}
+{"off":"0x1316","s":"timegm"}
+{"off":"0x131d","s":"getpwuid"}
+{"off":"0x1326","s":"localtime_r"}
+{"off":"0x1332","s":"strlen"}
+{"off":"0x1339","s":"getgrnam"}
+{"off":"0x1342","s":"__ctype_b_loc"}
+{"off":"0x1350","s":"__fpending"}
+{"off":"0x135b","s":"unsetenv"}
+{"off":"0x1364","s":"__memcpy_chk"}
+{"off":"0x1371","s":"faccessat"}
+{"off":"0x137b","s":"strnlen"}
+{"off":"0x1383","s":"__vfprintf_chk"}
+{"off":"0x1392","s":"mbsinit"}
+{"off":"0x139a","s":"fflush_unlocked"}
+{"off":"0x13aa","s":"readlink"}
+{"off":"0x13b3","s":"stdout"}
+{"off":"0x13ba","s":"optarg"}
+{"off":"0x13c1","s":"realloc"}
+{"off":"0x13c9","s":"isatty"}
+{"off":"0x13d0","s":"gmtime_r"}
+{"off":"0x13d9","s":"__sprintf_chk"}
+{"off":"0x13e7","s":"_exit"}
+{"off":"0x13ed","s":"getpwnam"}
+{"off":"0x13f6","s":"bindtextdomain"}
+{"off":"0x1405","s":"__memmove_chk"}
+{"off":"0x1413","s":"error_one_per_line"}
+{"off":"0x1426","s":"strftime"}
+{"off":"0x142f","s":"__fprintf_chk"}
+{"off":"0x143d","s":"localeconv"}
+{"off":"0x1448","s":"strcspn"}
+{"off":"0x1450","s":"malloc"}
+{"off":"0x1457","s":"__libc_start_main"}
+{"off":"0x1469","s":"iswprint"}
+{"off":"0x1472","s":"sigprocmask"}
+{"off":"0x147e","s":"error_at_line"}
+{"off":"0x148c","s":"stderr"}
+{"off":"0x1493","s":"__isoc23_strtoumax"}
+{"off":"0x14a6","s":"mktime"}
+{"off":"0x14ad","s":"__memset_chk"}
+{"off":"0x14ba","s":"llistxattr"}
+{"off":"0x14c5","s":"iswcntrl"}
+{"off":"0x14ce","s":"fwrite_unlocked"}
+{"off":"0x14de","s":"raise"}
+{"off":"0x14e4","s":"__ctype_tolower_loc"}
+{"off":"0x14f8","s":"__cxa_finalize"}
+{"off":"0x1507","s":"setlocale"}
+{"off":"0x1511","s":"strchr"}
+{"off":"0x1518","s":"fgetxattr"}
+{"off":"0x1522","s":"readdir"}
+{"off":"0x152a","s":"lgetxattr"}
+{"off":"0x1534","s":"getenv"}
+{"off":"0x153b","s":"calloc"}
+{"off":"0x1542","s":"memcmp"}
+{"off":"0x1549","s":"fclose"}
+{"off":"0x1550","s":"memset"}
+{"off":"0x1557","s":"ioctl"}
+{"off":"0x155d","s":"fputs_unlocked"}
+{"off":"0x156c","s":"signal"}
+{"off":"0x1573","s":"program_invocation_name"}
+{"off":"0x158b","s":"opendir"}
+{"off":"0x1593","s":"__snprintf_chk"}
+{"off":"0x15a2","s":"sigemptyset"}
+{"off":"0x15ae","s":"wcwidth"}
+{"off":"0x15b6","s":"memcpy"}
+{"off":"0x15bd","s":"getcwd"}
+{"off":"0x15c4","s":"__readlink_chk"}
+{"off":"0x15d3","s":"strcmp"}
+{"off":"0x15da","s":"__errno_location"}
+{"off":"0x15eb","s":"abort"}
+{"off":"0x15f1","s":"getopt_long"}
+{"off":"0x15fd","s":"strerror_r"}
+{"off":"0x1608","s":"mbrtoc32"}
+{"off":"0x1611","s":"__overflow"}
+{"off":"0x161c","s":"error_print_progname"}
+{"off":"0x1631","s":"tcgetpgrp"}
+{"off":"0x163b","s":"strncmp"}
+{"off":"0x1643","s":"flistxattr"}
+{"off":"0x164e","s":"__progname_full"}
+{"off":"0x165e","s":"__progname"}
+{"off":"0x1669","s":"__cxa_atexit"}
+{"off":"0x1676","s":"libcap.so.2"}
+{"off":"0x1682","s":"libc.so.6"}
+{"off":"0x168c","s":"GLIBC_ABI_DT_RELR"}
+{"off":"0x169e","s":"GLIBC_2.28"}
+{"off":"0x16a9","s":"GLIBC_2.38"}
+{"off":"0x16b4","s":"GLIBC_2.14"}
+{"off":"0x16bf","s":"GLIBC_2.33"}
+{"off":"0x16ca","s":"GLIBC_2.16"}
+{"off":"0x16d5","s":"GLIBC_2.17"}
+{"off":"0x16e0","s":"GLIBC_2.4"}
+{"off":"0x16ea","s":"GLIBC_2.34"}
+{"off":"0x16f5","s":"GLIBC_2.3.4"}
+{"off":"0x1701","s":"GLIBC_2.2.5"}
+{"off":"0x170d","s":"GLIBC_2.3"}
+{"off":"0x2481","s":"#\"\"\"\"\"\"\"EDDD"}
+{"off":"0x3178","s":"G(H;G0r"}
+{"off":"0x31b1","s":"[A\\]"}
+{"off":"0x323e","s":"[A\\A]A^]"}
+{"off":"0x33e2","s":"A]A^A_]"}
+{"off":"0x33f2","s":"[A\\A]A^A_]"}
+{"off":"0x3569","s":"AWAVL"}
+{"off":"0x3c0f","s":"[A\\A]A^A_]"}
+{"off":"0x3de9","s":"AZA["}
+{"off":"0x3f81","s":"AYAZ"}
+{"off":"0x41ef","s":"AXAY"}
+{"off":"0x4833","s":"M;<$u"}
+{"off":"0x48d9","s":"tFA:"}
+{"off":"0x48e1","s":"E:4Cu"}
+{"off":"0x4a22","s":"G(H;G0"}
+{"off":"0x5502","s":"PTE1"}
+{"off":"0x559c","s":"u3UH"}
+{"off":"0x56fd","s":":uvA"}
+{"off":"0x5713","s":"[A\\A]]"}
+{"off":"0x5c15","s":"AWAVH"}
+{"off":"0x5c20","s":"AUATSH"}
+{"off":"0x5eaf","s":"[A\\A]A^A_]"}
+{"off":"0x5fd5","s":"AVAUA"}
+{"off":"0x6033","s":"A\\A]A^]"}
+{"off":"0x6048","s":"ATSH"}
+{"off":"0x6099","s":"[A\\]"}
+{"off":"0x62b1","s":">A\\A]A^]"}
+{"off":"0x62c1","s":"[A\\A]A^]"}
+{"off":"0x630a","s":"AVAUA"}
+{"off":"0x6311","s":"ATSH"}
+{"off":"0x6401","s":"[A\\A]A^A_]"}
+{"off":"0x64a7","s":"sEL9"}
+{"off":"0x650a","s":"[A\\]"}
+{"off":"0x6555","s":"ATSH"}
+{"off":"0x657e","s":"H#V0H"}
+{"off":"0x65ca","s":"G(H;G0s"}
+{"off":"0x65dd","s":"[A\\]"}
+{"off":"0x6605","s":"AWAVAUI"}
+{"off":"0x68c5","s":"[A\\A]A^A_]"}
+{"off":"0x6a85","s":"AUATI"}
+{"off":"0x6ace","s":"[A\\A]]"}
+{"off":"0x6af1","s":"[A\\A]]"}
+{"off":"0x6b07","s":"G H)"}
+{"off":"0x6b65","s":"AWAVAUL"}
+{"off":"0x6b72","s":"ATSH"}
+{"off":"0x6bfa","s":"[A\\A]A^A_]"}
+{"off":"0x6c42","s":"[A\\A]A^A_]"}
+{"off":"0x6e2c","s":"AVSH"}
+{"off":"0x6eca","s":"AVAUI"}
+{"off":"0x7032","s":"[A\\A]A^A_]"}
+{"off":"0x7081","s":"$A8E"}
+{"off":"0x7435","s":"ATSH"}
+{"off":"0x74cf","s":"[A\\]"}
+{"off":"0x76f4","s":"ATSL"}
+{"off":"0x7897","s":"[A\\A]A^]"}
+{"off":"0x78df","s":"psL)"}
+{"off":"0x7969","s":"ATSH"}
+{"off":"0x7988","s":"[A\\]"}
+{"off":"0x7999","s":"[A\\]"}
+{"off":"0x79a5","s":"AUATSH"}
+{"off":"0x7a7e","s":"[A\\A]]"}
+{"off":"0x7a99","s":"ATSH"}
+{"off":"0x7ab8","s":"[A\\]"}
+{"off":"0x7ac9","s":"[A\\]"}
+{"off":"0x7ad7","s":"GHH9FH"}
+{"off":"0x7b7b","s":"H9Fp"}
+{"off":"0x7b8c","s":"GxH9Fx"}
+{"off":"0x7bcb","s":"H9F`"}
+{"off":"0x7bdc","s":"GhH9Fh"}
+{"off":"0x7c1b","s":"H9Fp"}
+{"off":"0x7c2c","s":"GxH9Fx"}
+{"off":"0x7c65","s":"ATSH"}
+{"off":"0x7d47","s":"[A\\]"}
+{"off":"0x7dc9","s":"ATSL"}
+{"off":"0x7de4","s":"[A\\]"}
+{"off":"0x7df9","s":"ATSL"}
+{"off":"0x7e14","s":"[A\\]"}
+{"off":"0x7e27","s":"FHH9GH"}
+{"off":"0x7e3b","s":"u4UH"}
+{"off":"0x7e87","s":"GHH9FH"}
+{"off":"0x7e9b","s":"u4UH"}
+{"off":"0x7ee7","s":"FHH9GH"}
+{"off":"0x7f60","s":"[A\\]"}
+{"off":"0x7f77","s":"[A\\]"}
+{"off":"0x8011","s":"u6UH"}
+{"off":"0x8091","s":"u6UH"}
+{"off":"0x80db","s":"H9Gp"}
+{"off":"0x80ec","s":"FxH9Gx"}
+{"off":"0x8105","s":"u:UH"}
+{"off":"0x815b","s":"H9Fp"}
+{"off":"0x816c","s":"GxH9Fx"}
+{"off":"0x8185","s":"u:UH"}
+{"off":"0x81db","s":"H9G`"}
+{"off":"0x81ec","s":"FhH9Gh"}
+{"off":"0x8205","s":"u:UH"}
+{"off":"0x825b","s":"H9F`"}
+{"off":"0x826c","s":"GhH9Fh"}
+{"off":"0x8285","s":"u:UH"}
+{"off":"0x82db","s":"H9Gp"}
+{"off":"0x82ec","s":"FxH9Gx"}
+{"off":"0x8305","s":"u:UH"}
+{"off":"0x835b","s":"H9Fp"}
+{"off":"0x836c","s":"GxH9Fx"}
+{"off":"0x8385","s":"u:UH"}
+{"off":"0x83d5","s":"ATSH"}
+{"off":"0x853a","s":"[A\\]"}
+{"off":"0x866b","s":"H9Gp"}
+{"off":"0x867c","s":"FxH9Gx"}
+{"off":"0x86bb","s":"H9G`"}
+{"off":"0x86cc","s":"FhH9Gh"}
+{"off":"0x870b","s":"H9Gp"}
+{"off":"0x871c","s":"FxH9Gx"}
+{"off":"0x87a1","s":"[A\\]"}
+{"off":"0x87b7","s":"[A\\]"}
+{"off":"0x8861","s":"[A\\]"}
+{"off":"0x8877","s":"[A\\]"}
+{"off":"0x88d5","s":"ATSH"}
+{"off":"0x8952","s":"G(H;G0s"}
+{"off":"0x896e","s":"[A\\]"}
+{"off":"0x89ad","s":"[A\\]"}
+{"off":"0x89c9","s":"AVAUATI"}
+{"off":"0x8a36","s":"A]A^]"}
+{"off":"0x8a41","s":"[A\\A]A^]"}
+{"off":"0x8a59","s":"AVAUATI"}
+{"off":"0x8ac6","s":"A]A^]"}
+{"off":"0x8ad1","s":"[A\\A]A^]"}
+{"off":"0x8b20","s":"[A\\]"}
+{"off":"0x8b37","s":"[A\\]"}
+{"off":"0x8b95","s":"AWAVA"}
+{"off":"0x8ba1","s":"ATSH"}
+{"off":"0x8d2c","s":"[A\\A]A^A_]"}
+{"off":"0x915c","s":"H9Gp"}
+{"off":"0x916d","s":"FxH9Gx"}
+{"off":"0x92ac","s":"H9Fp"}
+{"off":"0x92bd","s":"GxH9Fx"}
+{"off":"0x940c","s":"H9G`"}
+{"off":"0x941d","s":"FhH9Gh"}
+{"off":"0x955c","s":"H9F`"}
+{"off":"0x956d","s":"GhH9Fh"}
+{"off":"0x96bc","s":"H9Gp"}
+{"off":"0x96cd","s":"FxH9Gx"}
+{"off":"0x980c","s":"H9Fp"}
+{"off":"0x981d","s":"GxH9Fx"}
+{"off":"0x98d8","s":"FHH9GH"}
+{"off":"0x99a8","s":"FHH9GH"}
+{"off":"0x9a58","s":"GHH9FH"}
+{"off":"0x9b28","s":"GHH9FH"}
+{"off":"0xa415","s":"AWAVAUATSH"}
+{"off":"0xa642","s":"G(H;G0"}
+{"off":"0xa693","s":"[A\\A]A^A_]"}
+{"off":"0xa732","s":"G(H;G0"}
+{"off":"0xa785","s":"G(H;G0sgH"}
+{"off":"0xa81d","s":"AVAUATI"}
+{"off":"0xa882","s":"[A\\A]A^A_]"}
+{"off":"0xa8ae","s":"t$0A"}
+{"off":"0xab2b","s":"_AXH"}
+{"off":"0xac4e","s":"It1H"}
+{"off":"0xae75","s":"AWAVAUATSH"}
+{"off":"0xaf05","s":"oD$p"}
+{"off":"0xaf31","s":"|$ H"}
+{"off":"0xb0d4","s":"_AXH"}
+{"off":"0xb172","s":"D$0%"}
+{"off":"0xb187","s":"|$HL"}
+{"off":"0xb336","s":"[A\\A]A^A_]"}
+{"off":"0xb378","s":"????????H"}
+{"off":"0xb49b","s":"W(H;W0"}
+{"off":"0xb4e3","s":"|$(H"}
+{"off":"0xb509","s":"t$8H"}
+{"off":"0xb53c","s":"t$4H"}
+{"off":"0xb589","s":"t$4H"}
+{"off":"0xb5b4","s":"oD$pf"}
+{"off":"0xb5eb","s":"oD$`"}
+{"off":"0xb9b3","s":"|$XL"}
+{"off":"0xbab5","s":"AVATSH"}
+{"off":"0xbc2c","s":"[A\\A^]"}
+{"off":"0xbc63","s":"W(H;W0"}
+{"off":"0xbd35","s":"AWAVAUATSH"}
+{"off":"0xbdc4","s":"G(H;G0"}
+{"off":"0xbde4","s":"G(H;G0"}
+{"off":"0xbe69","s":"G(H;G0sPH"}
+{"off":"0xbe7f","s":"[A\\A]A^A_]"}
+{"off":"0xbec8","s":"[A\\A]A^A_]"}
+{"off":"0xbef9","s":"AWAVAUATSH"}
+{"off":"0xbfb6","s":"G(H;G0"}
+{"off":"0xc017","s":"G(H;G0"}
+{"off":"0xc041","s":"([A\\A]A^A_]"}
+{"off":"0xc079","s":":0uw"}
+{"off":"0xc0a9","s":"G(H;G0"}
+{"off":"0xc153","s":"G(H;G0"}
+{"off":"0xc266","s":"G(H;G0ssH"}
+{"off":"0xc28a","s":"([A\\A]A^A_]"}
+{"off":"0xc301","s":"[A\\A]A^A_]"}
+{"off":"0xc325","s":"AWAVAUA"}
+{"off":"0xc758","s":"<$/t"}
+{"off":"0xc8be","s":"<$/t"}
+{"off":"0xc903","s":"<$/t"}
+{"off":"0xcc7f","s":"[A\\A]A^A_]"}
+{"off":"0xcfb5","s":"<$/t"}
+{"off":"0xd402","s":"<$/t"}
+{"off":"0xd4d5","s":"AWAVI"}
+{"off":"0xd4dc","s":"AUATSH"}
+{"off":"0xd822","s":"[A\\A]A^A_]"}
+{"off":"0xd8e6","s":"[A\\A]A^A_]"}
+{"off":"0xda48","s":"[A\\A]A^A_]"}
+{"off":"0xdb0a","s":"G(H;G0syH"}
+{"off":"0xdbd9","s":"[A\\A]A^A_]"}
+{"off":"0xdc09","s":"AVAUATSH"}
+{"off":"0xf373","s":"AWAVAUI"}
+{"off":"0xf382","s":"?ATSH"}
+{"off":"0xf3fa","s":"xML9"}
+{"off":"0xf47a","s":"[A\\A]A^A_]"}
+{"off":"0xf495","s":"t*M9"}
+{"off":"0xf509","s":"AWAVAUATSH"}
+{"off":"0xf5ec","s":"8[A\\A]A^A_]"}
+{"off":"0xf61e","s":"ATSH"}
+{"off":"0xf65a","s":"[A\\A]]"}
+{"off":"0xf66c","s":"[A\\A]]"}
+{"off":"0xf744","s":"ATE1"}
+{"off":"0xf812","s":"G(H;G0s"}
+{"off":"0xf829","s":"[A\\A]A^A_]"}
+{"off":"0xf842","s":"[A\\A]A^A_]"}
+{"off":"0xf873","s":"AUATI"}
+{"off":"0xf8fa","s":"[A\\A]A^A_]"}
+{"off":"0xf923","s":"[A\\A]A^A_]"}
+{"off":"0xf939","s":"AWAVAUATSH"}
+{"off":"0xf98a","s":"[A\\A]A^A_]"}
+{"off":"0xf9d2","s":"</t+"}
+{"off":"0xfa13","s":"</t3"}
+{"off":"0xfaad","s":"trUI"}
+{"off":"0xfacf","s":"tB@8"}
+{"off":"0xfb4e","s":"AWAVH"}
+{"off":"0xfb59","s":"AUATSH"}
+{"off":"0xfc25","s":"\"ti1"}
+{"off":"0xfc85","s":"[A\\A]A^A_]"}
+{"off":"0xfd70","s":".u7A"}
+{"off":"0xfd77","s":".u0H"}
+{"off":"0xfeb8","s":"<$/uQL"}
+{"off":"0x10590","s":"AVSg"}
+{"off":"0x105c0","s":"uU[A^]"}
+{"off":"0x1072f","s":"AUATA"}
+{"off":"0x10760","s":"[A\\A]A^A_]"}
+{"off":"0x107c5","s":"[A\\A]A^A_]"}
+{"off":"0x10800","s":"A\\A]A^A_]"}
+{"off":"0x10859","s":"AWAVAUA"}
+{"off":"0x1093d","s":"[A\\A]A^A_]"}
+{"off":"0x1099d","s":"<$I9"}
+{"off":"0x10bf8","s":"EVERYONE"}
+{"off":"0x10c94","s":"OWNE"}
+{"off":"0x10ca0","s":"<$GROUu"}
+{"off":"0x10edb","s":"t-H9"}
+{"off":"0x10ee9","s":"[A^A_]"}
+{"off":"0x10efd","s":"[A^A_]"}
+{"off":"0x11139","s":"AWAVI"}
+{"off":"0x11140","s":"AUATI"}
+{"off":"0x11182","s":"/t*E1"}
+{"off":"0x111ab","s":">/tz"}
+{"off":"0x11217","s":"[A\\A]A^A_]"}
+{"off":"0x11259","s":"xqH9"}
+{"off":"0x1134f","s":"ATSH9"}
+{"off":"0x1154e","s":"wqE)"}
+{"off":"0x11583","s":"vAH9"}
+{"off":"0x1175c","s":"AVSH"}
+{"off":"0x117aa","s":".tfM"}
+{"off":"0x11816","s":" [A^]"}
+{"off":"0x11891","s":".t-A"}
+{"off":"0x119c9","s":"AUATSH"}
+{"off":"0x11a18","s":"[A\\A]]"}
+{"off":"0x11a4f","s":"ATSH"}
+{"off":"0x11a67","s":"t@I9"}
+{"off":"0x11a9f","s":"[A\\A]]"}
+{"off":"0x11b68","s":"POSIt"}
+{"off":"0x11c87","s":"U0I;E"}
+{"off":"0x11ca7","s":"txL9"}
+{"off":"0x11cef","s":"[A\\A]A^A_]"}
+{"off":"0x11d27","s":"[A\\A]A^A_]"}
+{"off":"0x11d64","s":"[A\\A]A^A_]"}
+{"off":"0x11d85","s":"AWAVI"}
+{"off":"0x11d91","s":"ATSH"}
+{"off":"0x11d9d","s":"&L;f"}
+{"off":"0x11e6d","s":"V0I;F"}
+{"off":"0x11e98","s":"VHfH"}
+{"off":"0x11eda","s":"[A\\A]A^A_]"}
+{"off":"0x12010","s":"I9P "}
+{"off":"0x12029","s":"AVAUE1"}
+{"off":"0x121a1","s":"U0I;E"}
+{"off":"0x121ec","s":"[A\\A]]"}
+{"off":"0x12203","s":"A\\A]]"}
+{"off":"0x12218","s":"[A\\H"}
+{"off":"0x122ab","s":"T$0I;D$"}
+{"off":"0x12349","s":"[A\\]H"}
+{"off":"0x123c9","s":"AWAVAUATSH"}
+{"off":"0x123d8","s":"7L;w"}
+{"off":"0x12408","s":"[A\\A]A^A_]"}
+{"off":"0x12475","s":"AVAUATI"}
+{"off":"0x12554","s":"[A\\A]A^A_]"}
+{"off":"0x12649","s":"AUATI"}
+{"off":"0x12657","s":"/L;o"}
+{"off":"0x12665","s":"M;l$"}
+{"off":"0x12679","s":"T$@H"}
+{"off":"0x12698","s":"T$@H"}
+{"off":"0x126a1","s":"L$HH"}
+{"off":"0x126b1","s":"\\$HH"}
+{"off":"0x126d1","s":"M;l$"}
+{"off":"0x126e6","s":"[A\\A]]"}
+{"off":"0x126f9","s":"AWAVAUI"}
+{"off":"0x12702","s":"ATSH"}
+{"off":"0x127fd","s":"[A\\A]A^A_]"}
+{"off":"0x12819","s":"AWAVATSH"}
+{"off":"0x1282c","s":"c(dH"}
+{"off":"0x128fe","s":"oC0H"}
+{"off":"0x129c3","s":"[A\\A^A_]"}
+{"off":"0x12a99","s":"AVAUATSH"}
+{"off":"0x12b77","s":"[A\\A]A^]"}
+{"off":"0x12eed","s":"I3D$"}
+{"off":"0x12ef5","s":"[A\\]H"}
+{"off":"0x13009","s":"AWAVI"}
+{"off":"0x13010","s":"AUATSH"}
+{"off":"0x133a8","s":"A[[H"}
+{"off":"0x135c2","s":"[A\\A]A^A_]"}
+{"off":"0x137af","s":"<~v.I"}
+{"off":"0x13d9e","s":"AUATSH"}
+{"off":"0x13e26","s":"[A\\A]A^]"}
+{"off":"0x13f69","s":"AVSH"}
+{"off":"0x13fa0","s":"[A^]"}
+{"off":"0x1402e","s":"ATSH"}
+{"off":"0x14058","s":"t'D8c"}
+{"off":"0x14078","s":"[A\\A]]"}
+{"off":"0x140a8","s":"t'D8c"}
+{"off":"0x140c7","s":"[A\\A]]"}
+{"off":"0x14169","s":"AVSH"}
+{"off":"0x141a0","s":"[A^]"}
+{"off":"0x1422e","s":"ATSH"}
+{"off":"0x14258","s":"t'D8c"}
+{"off":"0x14278","s":"[A\\A]]"}
+{"off":"0x142a8","s":"t'D8c"}
+{"off":"0x142c7","s":"[A\\A]]"}
+{"off":"0x14391","s":"gfffffff"}
+{"off":"0x144b9","s":"AWAVAUATSH"}
+{"off":"0x14518","s":"[A\\A]A^A_]"}
+{"off":"0x145ad","s":"<7AVE1"}
+{"off":"0x145b4","s":"AUATSH"}
+{"off":"0x14648","s":"[A\\A]A^A_]"}
+{"off":"0x1478b","s":"AWAVAUATSH"}
+{"off":"0x14859","s":"[A\\L)"}
+{"off":"0x1499c","s":"H[A\\A]A^A_]"}
+{"off":"0x14c8a","s":"gfffH"}
+{"off":"0x14e1e","s":"gfffH"}
+{"off":"0x14eef","s":"AUATSH"}
+{"off":"0x150de","s":"zw H"}
+{"off":"0x15236","s":"[A\\A]A^A_]"}
+{"off":"0x156bc","s":"u7Ai"}
+{"off":"0x15ba6","s":"ASAR"}
+{"off":"0x15e72","s":"gfffffffH"}
+{"off":"0x1648e","s":"gfff"}
+{"off":"0x1650e","s":"gfffA"}
+{"off":"0x17678","s":"ATSL"}
+{"off":"0x176ed","s":"[A\\A]A^A_]"}
+{"off":"0x1773a","s":":th_T"}
+{"off":"0x17746","s":":fa_Itd"}
+{"off":"0x1774e","s":":am_E"}
+{"off":"0x17a1b","s":"AWAVAUATI"}
+{"off":"0x17aa4","s":"T$8I"}
+{"off":"0x17ab5","s":"T$0M"}
+{"off":"0x17ad6","s":"D$ I"}
+{"off":"0x17b0b","s":"I#T$0I"}
+{"off":"0x17b15","s":"I9D$"}
+{"off":"0x17b33","s":"[A\\A]A^A_]"}
+{"off":"0x17b43","s":"|$HH"}
+{"off":"0x17b4b","s":"T$8I"}
+{"off":"0x17b6b","s":"|$HL"}
+{"off":"0x17ba6","s":"H90s"}
+{"off":"0x17bde","s":"ATSH"}
+{"off":"0x17c14","s":"L9(s(L"}
+{"off":"0x17c58","s":"[A\\A]]"}
+{"off":"0x17cda","s":"/.lit!H"}
+{"off":"0x17d04","s":"ibs/u"}
+{"off":"0x17d3e","s":"AVSH"}
+{"off":"0x17d81","s":"[A^]"}
+{"off":"0x17dea","s":"AVSH"}
+{"off":"0x17e36","s":"[A^]"}
+{"off":"0x17eca","s":"AVAUATSH"}
+{"off":"0x180f7","s":"t/L9"}
+{"off":"0x18801","s":"?wEH"}
+{"off":"0x18faf","s":"t/L9"}
+{"off":"0x19175","s":"[A\\A]A^A_]"}
+{"off":"0x19433","s":"[<!w"}
+{"off":"0x1949a","s":"t:L9"}
+{"off":"0x19715","s":"AWAVAUATSHc"}
+{"off":"0x1980d","s":"w(AVH"}
+{"off":"0x1981d","s":" H;E"}
+{"off":"0x1987c","s":"w(AV"}
+{"off":"0x198a6","s":"[A\\A]A^A_]"}
+{"off":"0x198f9","s":"AUATSH"}
+{"off":"0x19935","s":"[A\\A]]"}
+{"off":"0x19a30","s":"AUATSH"}
+{"off":"0x19a93","s":"[A\\A]]"}
+{"off":"0x19aba","s":"AUATI"}
+{"off":"0x19b05","s":"s(ARL"}
+{"off":"0x19b7f","s":"[A\\A]A^A_]"}
+{"off":"0x19ba9","s":"AUATSH"}
+{"off":"0x19c45","s":"[A\\A]]"}
+{"off":"0x1a4b4","s":"[A\\A]]"}
+{"off":"0x1a4d7","s":"[A\\A]]"}
+{"off":"0x1a525","s":"AVAUATSH"}
+{"off":"0x1a554","s":",$E1"}
+{"off":"0x1a579","s":"[A\\A]A^]"}
+{"off":"0x1a5b9","s":"ATSH"}
+{"off":"0x1a633","s":"[A\\]"}
+{"off":"0x1a668","s":"[A\\]"}
+{"off":"0x1a675","s":"AVAUATSH"}
+{"off":"0x1a697","s":"F8I9"}
+{"off":"0x1a71e","s":"[A\\A]A^]"}
+{"off":"0x1a7b9","s":"t6UH"}
+{"off":"0x1a868","s":"[A\\]"}
+{"off":"0x1a8db","s":"[A\\]"}
+{"off":"0x1a8f1","s":"[A\\]"}
+{"off":"0x1a929","s":"AVAUI"}
+{"off":"0x1a930","s":"ATSH"}
+{"off":"0x1a980","s":"[A\\A]A^]"}
+{"off":"0x1a9a2","s":"A\\A]A^]"}
+{"off":"0x1a9ba","s":"A]A^]"}
+{"off":"0x1a9d9","s":"AVAUATSH"}
+{"off":"0x1aa6b","s":"[A\\A]A^]"}
+{"off":"0x1aae7","s":"[A\\A]A^]"}
+{"off":"0x1ab09","s":"AWAVAUM"}
+{"off":"0x1abf3","s":"\\$0M"}
+{"off":"0x1ac09","s":"D$ M"}
+{"off":"0x1ac1a","s":"t$8M"}
+{"off":"0x1ac80","s":"[A\\A]A^A_]"}
+{"off":"0x1acb3","s":"D$0M"}
+{"off":"0x1acc9","s":"T$ M"}
+{"off":"0x1acd8","s":"|$@H"}
+{"off":"0x1ace1","s":"t$8M"}
+{"off":"0x1ad0a","s":"AWAV"}
+{"off":"0x1ad1b","s":"ARAUL"}
+{"off":"0x1ad65","s":"A]A^A_]"}
+{"off":"0x1adb3","s":"A\\A]A^A_]"}
+{"off":"0x1ae10","s":"A\\A]A^A_]"}
+{"off":"0x1ae7f","s":"[A\\A]A^A_]"}
+{"off":"0x1ae93","s":"D$ M"}
+{"off":"0x1aee3","s":"T$(M"}
+{"off":"0x1af5a","s":"[A\\A]A^A_]"}
+{"off":"0x1af6b","s":"\\$0M"}
+{"off":"0x1af81","s":"D$ M"}
+{"off":"0x1afc1","s":"D$0M"}
+{"off":"0x1afd7","s":"T$ M"}
+{"off":"0x1afe6","s":"|$@H"}
+{"off":"0x1afef","s":"t$8M"}
+{"off":"0x1b43c","s":"$[A\\]"}
+{"off":"0x1b49d","s":"$[A\\]"}
+{"off":"0x1b561","s":"$[A\\]"}
+{"off":"0x1b6d2","s":"ATSH"}
+{"off":"0x1b6fd","s":"A\\A]]"}
+{"off":"0x1b7c3","s":"AUATI"}
+{"off":"0x1b884","s":"([A\\A]A^A_]"}
+{"off":"0x1b909","s":"AWE1"}
+{"off":"0x1b91a","s":"AUATSH"}
+{"off":"0x1ba02","s":"[A\\A]A^A_]"}
+{"off":"0x1ba42","s":"ATSH"}
+{"off":"0x1ba65","s":"[A\\A^]"}
+{"off":"0x1ba9f","s":"AVAUATSH"}
+{"off":"0x1bb69","s":"AWAVA"}
+{"off":"0x1bb70","s":"AUATI"}
+{"off":"0x1bbb0","s":" t L"}
+{"off":"0x1bc0b","s":"uDE1"}
+{"off":"0x1bc41","s":"[A\\A]A^A_]"}
+{"off":"0x1bca3","s":"</wzH"}
+{"off":"0x1bd30","s":"5wBL"}
+{"off":"0x1c109","s":"AVSH"}
+{"off":"0x1c14e","s":"[A^]"}
+{"off":"0x1d008","s":"=fff?"}
+{"off":"0x1d5e1","s":"dev_ino_pop"}
+{"off":"0x1d629","s":"sort_files"}
+{"off":"0x1d634","s":"posix-"}
+{"off":"0x1d63b","s":"main"}
+{"off":"0x1d6ee","s":"[K30;4234;4237;4430;4337;4101;3501;3201;3301;3301;353301;3601;340m"}
+{"off":"0x1d741","s":"lcrcecrsnofidilnpisobdcdmiorexdosusgstowtwcamhcl"}
+{"off":"0x1d8b1","s":"?pcdb-lswd"}
+{"off":"0x1d921","s":"# Configuration file for dircolors, a utility to help you set the"}
+{"off":"0x1d963","s":"# LS_COLORS environment variable used by GNU ls with the --color option."}
+{"off":"0x1d9ac","s":"# Copyright (C) 1996-2026 Free Software Foundation, Inc."}
+{"off":"0x1d9e5","s":"# Copying and distribution of this file, with or without modification,"}
+{"off":"0x1da2c","s":"# are permitted provided the copyright notice and this notice are preserved."}
+{"off":"0x1da7b","s":"# The keywords COLOR, OPTIONS, and EIGHTBIT (honored by the"}
+{"off":"0x1dab7","s":"# slackware version of dircolors) are recognized but ignored."}
+{"off":"0x1daf5","s":"# Global config options can be specified before TERM or COLORTERM entries"}
+{"off":"0x1db3f","s":"# ==================================================================="}
+{"off":"0x1db85","s":"# Terminal filters"}
+{"off":"0x1db98","s":"# ==================================================================="}
+{"off":"0x1dbde","s":"# Below are TERM or COLORTERM entries, which can be glob patterns, which"}
+{"off":"0x1dc27","s":"# restrict following config to systems with matching environment variables."}
+{"off":"0x1dc73","s":"COLORTERM ?*"}
+{"off":"0x1dc80","s":"TERM Eterm"}
+{"off":"0x1dc8b","s":"TERM ansi"}
+{"off":"0x1dc95","s":"TERM *color*"}
+{"off":"0x1dca2","s":"TERM con[0-9]*x[0-9]*"}
+{"off":"0x1dcb8","s":"TERM cons25"}
+{"off":"0x1dcc4","s":"TERM console"}
+{"off":"0x1dcd1","s":"TERM cygwin"}
+{"off":"0x1dcdd","s":"TERM *direct*"}
+{"off":"0x1dceb","s":"TERM dtterm"}
+{"off":"0x1dcf7","s":"TERM gnome"}
+{"off":"0x1dd02","s":"TERM hurd"}
+{"off":"0x1dd0c","s":"TERM jfbterm"}
+{"off":"0x1dd19","s":"TERM konsole"}
+{"off":"0x1dd26","s":"TERM kterm"}
+{"off":"0x1dd31","s":"TERM linux"}
+{"off":"0x1dd3c","s":"TERM linux-c"}
+{"off":"0x1dd49","s":"TERM mlterm"}
+{"off":"0x1dd55","s":"TERM putty"}
+{"off":"0x1dd60","s":"TERM rxvt*"}
+{"off":"0x1dd6b","s":"TERM screen*"}
+{"off":"0x1dd78","s":"TERM st"}
+{"off":"0x1dd80","s":"TERM terminator"}
+{"off":"0x1dd90","s":"TERM tmux*"}
+{"off":"0x1dd9b","s":"TERM vt100"}
+{"off":"0x1dda6","s":"TERM vt220"}
+{"off":"0x1ddb1","s":"TERM xterm*"}
+{"off":"0x1ddbd","s":"# ==================================================================="}
+{"off":"0x1de03","s":"# Basic file attributes"}
+{"off":"0x1de1b","s":"# ==================================================================="}
+{"off":"0x1de61","s":"# Below are the color init strings for the basic file types."}
+{"off":"0x1de9e","s":"# One can use codes for 256 or more colors supported by modern terminals."}
+{"off":"0x1dee8","s":"# The default color codes use the capabilities of an 8 color terminal"}
+{"off":"0x1df2e","s":"# with some additional attributes as per the following codes:"}
+{"off":"0x1df6c","s":"# Attribute codes:"}
+{"off":"0x1df7f","s":"# 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed"}
+{"off":"0x1dfc0","s":"# Text color codes:"}
+{"off":"0x1dfd4","s":"# 30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white"}
+{"off":"0x1e01d","s":"# Background color codes:"}
+{"off":"0x1e037","s":"# 40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white"}
+{"off":"0x1e080","s":"#NORMAL 00 # no color code at all"}
+{"off":"0x1e0a2","s":"#FILE 00 # regular file: use no color at all"}
+{"off":"0x1e0cf","s":"RESET 0 # reset to \"normal\" color"}
+{"off":"0x1e0f1","s":"DIR 01;34 # directory"}
+{"off":"0x1e107","s":"LINK 01;36 # symbolic link. (If you set this to 'target' instead of a"}
+{"off":"0x1e14d","s":" # numerical value, the color is as for the file pointed to.)"}
+{"off":"0x1e18b","s":"MULTIHARDLINK 00 # regular file with more than one link"}
+{"off":"0x1e1c3","s":"FIFO 40;33 # pipe"}
+{"off":"0x1e1d5","s":"SOCK 01;35 # socket"}
+{"off":"0x1e1e9","s":"DOOR 01;35 # door"}
+{"off":"0x1e1fb","s":"BLK 40;33;01 # block device driver"}
+{"off":"0x1e21e","s":"CHR 40;33;01 # character device driver"}
+{"off":"0x1e245","s":"ORPHAN 40;31;01 # symlink to nonexistent file, or non-stat'able file ..."}
+{"off":"0x1e28e","s":"MISSING 00 # ... and the files they point to"}
+{"off":"0x1e2bb","s":"SETUID 37;41 # regular file that is setuid (u+s)"}
+{"off":"0x1e2ec","s":"SETGID 30;43 # regular file that is setgid (g+s)"}
+{"off":"0x1e31d","s":"CAPABILITY 00 # regular file with capability (very expensive to lookup)"}
+{"off":"0x1e365","s":"STICKY_OTHER_WRITABLE 30;42 # dir that is sticky and other-writable (+t,o+w)"}
+{"off":"0x1e3b2","s":"OTHER_WRITABLE 34;42 # dir that is other-writable (o+w) and not sticky"}
+{"off":"0x1e3f9","s":"STICKY 37;44 # dir with the sticky bit set (+t) and not other-writable"}
+{"off":"0x1e440","s":"# This is for regular files with execute permission:"}
+{"off":"0x1e475","s":"EXEC 01;32"}
+{"off":"0x1e480","s":"# ==================================================================="}
+{"off":"0x1e4c6","s":"# File extension attributes"}
+{"off":"0x1e4e2","s":"# ==================================================================="}
+{"off":"0x1e528","s":"# List any file extensions like '.gz' or '.tar' that you would like ls"}
+{"off":"0x1e56f","s":"# to color below. Put the suffix, a space, and the color init string."}
+{"off":"0x1e5b5","s":"# (and any comments you want to add after a '#')."}
+{"off":"0x1e5e7","s":"# Suffixes are matched case insensitively, but if you define different"}
+{"off":"0x1e62e","s":"# init strings for separate cases, those will be honored."}
+{"off":"0x1e66a","s":"# If you use DOS-style suffixes, you may want to uncomment the following:"}
+{"off":"0x1e6b4","s":"#.cmd 01;32 # executables (bright green)"}
+{"off":"0x1e6dd","s":"#.exe 01;32"}
+{"off":"0x1e6e9","s":"#.com 01;32"}
+{"off":"0x1e6f5","s":"#.btm 01;32"}
+{"off":"0x1e701","s":"#.bat 01;32"}
+{"off":"0x1e70d","s":"# Or if you want to color scripts even if they do not have the"}
+{"off":"0x1e74c","s":"# executable bit actually set."}
+{"off":"0x1e76b","s":"#.sh 01;32"}
+{"off":"0x1e776","s":"#.csh 01;32"}
+{"off":"0x1e782","s":"# archives or compressed (bright red)"}
+{"off":"0x1e7a8","s":".7z 01;31"}
+{"off":"0x1e7b2","s":".ace 01;31"}
+{"off":"0x1e7bd","s":".alz 01;31"}
+{"off":"0x1e7c8","s":".apk 01;31"}
+{"off":"0x1e7d3","s":".arc 01;31"}
+{"off":"0x1e7de","s":".arj 01;31"}
+{"off":"0x1e7e9","s":".bz 01;31"}
+{"off":"0x1e7f3","s":".bz2 01;31"}
+{"off":"0x1e7fe","s":".cab 01;31"}
+{"off":"0x1e809","s":".cpio 01;31"}
+{"off":"0x1e815","s":".crate 01;31"}
+{"off":"0x1e822","s":".deb 01;31"}
+{"off":"0x1e82d","s":".drpm 01;31"}
+{"off":"0x1e839","s":".dwm 01;31"}
+{"off":"0x1e844","s":".dz 01;31"}
+{"off":"0x1e84e","s":".ear 01;31"}
+{"off":"0x1e859","s":".egg 01;31"}
+{"off":"0x1e864","s":".esd 01;31"}
+{"off":"0x1e86f","s":".gz 01;31"}
+{"off":"0x1e879","s":".jar 01;31"}
+{"off":"0x1e884","s":".lha 01;31"}
+{"off":"0x1e88f","s":".lrz 01;31"}
+{"off":"0x1e89a","s":".lz 01;31"}
+{"off":"0x1e8a4","s":".lz4 01;31"}
+{"off":"0x1e8af","s":".lzh 01;31"}
+{"off":"0x1e8ba","s":".lzma 01;31"}
+{"off":"0x1e8c6","s":".lzo 01;31"}
+{"off":"0x1e8d1","s":".pyz 01;31"}
+{"off":"0x1e8dc","s":".rar 01;31"}
+{"off":"0x1e8e7","s":".rpm 01;31"}
+{"off":"0x1e8f2","s":".rz 01;31"}
+{"off":"0x1e8fc","s":".sar 01;31"}
+{"off":"0x1e907","s":".swm 01;31"}
+{"off":"0x1e912","s":".t7z 01;31"}
+{"off":"0x1e91d","s":".tar 01;31"}
+{"off":"0x1e928","s":".taz 01;31"}
+{"off":"0x1e933","s":".tbz 01;31"}
+{"off":"0x1e93e","s":".tbz2 01;31"}
+{"off":"0x1e94a","s":".tgz 01;31"}
+{"off":"0x1e955","s":".tlz 01;31"}
+{"off":"0x1e960","s":".txz 01;31"}
+{"off":"0x1e96b","s":".tz 01;31"}
+{"off":"0x1e975","s":".tzo 01;31"}
+{"off":"0x1e980","s":".tzst 01;31"}
+{"off":"0x1e98c","s":".udeb 01;31"}
+{"off":"0x1e998","s":".war 01;31"}
+{"off":"0x1e9a3","s":".whl 01;31"}
+{"off":"0x1e9ae","s":".wim 01;31"}
+{"off":"0x1e9b9","s":".xz 01;31"}
+{"off":"0x1e9c3","s":".z 01;31"}
+{"off":"0x1e9cc","s":".zip 01;31"}
+{"off":"0x1e9d7","s":".zoo 01;31"}
+{"off":"0x1e9e2","s":".zst 01;31"}
+{"off":"0x1e9ed","s":"# image formats"}
+{"off":"0x1e9fd","s":".avif 01;35"}
+{"off":"0x1ea09","s":".jpg 01;35"}
+{"off":"0x1ea14","s":".jpeg 01;35"}
+{"off":"0x1ea20","s":".jxl 01;35"}
+{"off":"0x1ea2b","s":".mjpg 01;35"}
+{"off":"0x1ea37","s":".mjpeg 01;35"}
+{"off":"0x1ea44","s":".gif 01;35"}
+{"off":"0x1ea4f","s":".bmp 01;35"}
+{"off":"0x1ea5a","s":".pbm 01;35"}
+{"off":"0x1ea65","s":".pgm 01;35"}
+{"off":"0x1ea70","s":".ppm 01;35"}
+{"off":"0x1ea7b","s":".tga 01;35"}
+{"off":"0x1ea86","s":".xbm 01;35"}
+{"off":"0x1ea91","s":".xpm 01;35"}
+{"off":"0x1ea9c","s":".tif 01;35"}
+{"off":"0x1eaa7","s":".tiff 01;35"}
+{"off":"0x1eab3","s":".png 01;35"}
+{"off":"0x1eabe","s":".svg 01;35"}
+{"off":"0x1eac9","s":".svgz 01;35"}
+{"off":"0x1ead5","s":".mng 01;35"}
+{"off":"0x1eae0","s":".pcx 01;35"}
+{"off":"0x1eaeb","s":".mov 01;35"}
+{"off":"0x1eaf6","s":".mpg 01;35"}
+{"off":"0x1eb01","s":".mpeg 01;35"}
+{"off":"0x1eb0d","s":".m2v 01;35"}
+{"off":"0x1eb18","s":".mkv 01;35"}
+{"off":"0x1eb23","s":".webm 01;35"}
+{"off":"0x1eb2f","s":".webp 01;35"}
+{"off":"0x1eb3b","s":".ogm 01;35"}
+{"off":"0x1eb46","s":".mp4 01;35"}
+{"off":"0x1eb51","s":".m4v 01;35"}
+{"off":"0x1eb5c","s":".mp4v 01;35"}
+{"off":"0x1eb68","s":".vob 01;35"}
+{"off":"0x1eb73","s":".qt 01;35"}
+{"off":"0x1eb7d","s":".nuv 01;35"}
+{"off":"0x1eb88","s":".wmv 01;35"}
+{"off":"0x1eb93","s":".asf 01;35"}
+{"off":"0x1eb9e","s":".rm 01;35"}
+{"off":"0x1eba8","s":".rmvb 01;35"}
+{"off":"0x1ebb4","s":".flc 01;35"}
+{"off":"0x1ebbf","s":".avi 01;35"}
+{"off":"0x1ebca","s":".fli 01;35"}
+{"off":"0x1ebd5","s":".flv 01;35"}
+{"off":"0x1ebe0","s":".gl 01;35"}
+{"off":"0x1ebea","s":".dl 01;35"}
+{"off":"0x1ebf4","s":".xcf 01;35"}
+{"off":"0x1ebff","s":".xwd 01;35"}
+{"off":"0x1ec0a","s":".yuv 01;35"}
+{"off":"0x1ec15","s":".cgm 01;35"}
+{"off":"0x1ec20","s":".emf 01;35"}
+{"off":"0x1ec2b","s":"# https://wiki.xiph.org/MIME_Types_and_File_Extensions"}
+{"off":"0x1ec62","s":".ogv 01;35"}
+{"off":"0x1ec6d","s":".ogx 01;35"}
+{"off":"0x1ec78","s":"# audio formats"}
+{"off":"0x1ec88","s":".aac 00;36"}
+{"off":"0x1ec93","s":".au 00;36"}
+{"off":"0x1ec9d","s":".flac 00;36"}
+{"off":"0x1eca9","s":".m4a 00;36"}
+{"off":"0x1ecb4","s":".mid 00;36"}
+{"off":"0x1ecbf","s":".midi 00;36"}
+{"off":"0x1eccb","s":".mka 00;36"}
+{"off":"0x1ecd6","s":".mp3 00;36"}
+{"off":"0x1ece1","s":".mpc 00;36"}
+{"off":"0x1ecec","s":".ogg 00;36"}
+{"off":"0x1ecf7","s":".ra 00;36"}
+{"off":"0x1ed01","s":".wav 00;36"}
+{"off":"0x1ed0c","s":"# https://wiki.xiph.org/MIME_Types_and_File_Extensions"}
+{"off":"0x1ed43","s":".oga 00;36"}
+{"off":"0x1ed4e","s":".opus 00;36"}
+{"off":"0x1ed5a","s":".spx 00;36"}
+{"off":"0x1ed65","s":".xspf 00;36"}
+{"off":"0x1ed71","s":"# backup files"}
+{"off":"0x1ed80","s":"*~ 00;90"}
+{"off":"0x1ed89","s":"*# 00;90"}
+{"off":"0x1ed92","s":".bak 00;90"}
+{"off":"0x1ed9d","s":".crdownload 00;90"}
+{"off":"0x1edaf","s":".dpkg-dist 00;90"}
+{"off":"0x1edc0","s":".dpkg-new 00;90"}
+{"off":"0x1edd0","s":".dpkg-old 00;90"}
+{"off":"0x1ede0","s":".dpkg-tmp 00;90"}
+{"off":"0x1edf0","s":".old 00;90"}
+{"off":"0x1edfb","s":".orig 00;90"}
+{"off":"0x1ee07","s":".part 00;90"}
+{"off":"0x1ee13","s":".rej 00;90"}
+{"off":"0x1ee1e","s":".rpmnew 00;90"}
+{"off":"0x1ee2c","s":".rpmorig 00;90"}
+{"off":"0x1ee3b","s":".rpmsave 00;90"}
+{"off":"0x1ee4a","s":".swp 00;90"}
+{"off":"0x1ee55","s":".tmp 00;90"}
+{"off":"0x1ee60","s":".ucf-dist 00;90"}
+{"off":"0x1ee70","s":".ucf-new 00;90"}
+{"off":"0x1ee7f","s":".ucf-old 00;90"}
+{"off":"0x1ee90","s":"# Subsequent TERM or COLORTERM entries, can be used to add / override"}
+{"off":"0x1eed6","s":"# config specific to those matching environment variables."}
+{"off":"0x1ef11","s":"%.*s%s%s"}
+{"off":"0x1ef1a","s":"%%%02x"}
+{"off":"0x1ef21","s":" %jd"}
+{"off":"0x1ef26","s":"test"}
+{"off":"0x1ef2b","s":"cksum"}
+{"off":"0x1ef31","s":"dumb"}
+{"off":"0x1ef3a","s":",=[ "}
+{"off":"0x1ef40","s":"vdir"}
+{"off":"0x1ef45","s":"b2sum"}
+{"off":"0x1ef4b","s":"md5sum"}
+{"off":"0x1ef52","s":"sha1sum"}
+{"off":"0x1ef5a","s":"sha224sum"}
+{"off":"0x1ef64","s":"sha256sum"}
+{"off":"0x1ef6e","s":"sha384sum"}
+{"off":"0x1ef78","s":"sha512sum"}
+{"off":"0x1ef82","s":"--help"}
+{"off":"0x1ef89","s":"--version"}
+{"off":"0x1ef94","s":"]8;;%s%s#%s%.*s"}
+{"off":"0x1efa5","s":"]8;;%s#%s%.*s"}
+{"off":"0x1efbe","s":"]8;;"}
+{"off":"0x1efc9","s":"src/ls.c"}
+{"off":"0x1efd2","s":"sort_type != sort_version"}
+{"off":"0x1efed","s":"]8;;file://%s%s%s"}
+{"off":"0x1f003","s":"%s %*s "}
+{"off":"0x1f00e","s":"%*ju, %*ju "}
+{"off":"0x1f01a","s":" -> "}
+{"off":"0x1f01f","s":"%*s%s "}
+{"off":"0x1f026","s":"error canonicalizing %s"}
+{"off":"0x1f03e","s":"cannot access %s"}
+{"off":"0x1f04f","s":"security.capability"}
+{"off":"0x1f063","s":"cannot read symbolic link %s"}
+{"off":"0x1f080","s":"cannot open directory %s"}
+{"off":"0x1f099","s":"reading directory %s"}
+{"off":"0x1f0ae","s":"closing directory %s"}
+{"off":"0x1f0c3","s":"total"}
+{"off":"0x1f0cb","s":"test invocation"}
+{"off":"0x1f0db","s":"Multi-call invocation"}
+{"off":"0x1f0f1","s":"sha2 utilities"}
+{"off":"0x1f100","s":"  -f"}
+{"off":"0x1f105","s":"         same as -a -U"}
+{"off":"0x1f121","s":"Full documentation <%s%s>"}
+{"off":"0x1f13c","s":"full-iso"}
+{"off":"0x1f145","s":"/usr/share/locale"}
+{"off":"0x1f157","s":"invalid line width"}
+{"off":"0x1f16a","s":"%s: %s"}
+{"off":"0x1f175","s":"--classify"}
+{"off":"0x1f180","s":"invalid tab size"}
+{"off":"0x1f191","s":"--sort"}
+{"off":"0x1f198","s":"--time"}
+{"off":"0x1f19f","s":"--format"}
+{"off":"0x1f1a8","s":"--color"}
+{"off":"0x1f1b0","s":"--hyperlink"}
+{"off":"0x1f1bc","s":"--indicator-style"}
+{"off":"0x1f1ce","s":"--quoting-style"}
+{"off":"0x1f1de","s":"David MacKenzie"}
+{"off":"0x1f1ee","s":"Richard M. Stallman"}
+{"off":"0x1f202","s":"GNU coreutils"}
+{"off":"0x1f210","s":"LS_BLOCK_SIZE"}
+{"off":"0x1f21e","s":"COLUMNS"}
+{"off":"0x1f226","s":"TABSIZE"}
+{"off":"0x1f22e","s":"QUOTING_STYLE"}
+{"off":"0x1f23c","s":"*=>@|"}
+{"off":"0x1f242","s":"TIME_STYLE"}
+{"off":"0x1f24d","s":"invalid time style format %s"}
+{"off":"0x1f26a","s":"time style"}
+{"off":"0x1f275","s":"Valid arguments are:"}
+{"off":"0x1f28b","s":"[posix-]"}
+{"off":"0x1f294","s":"  - %s%s"}
+{"off":"0x1f29e","s":"%Y-%m-%d %H:%M:%S.%N %z"}
+{"off":"0x1f2b6","s":"%Y-%m-%d %H:%M"}
+{"off":"0x1f2c5","s":"%Y-%m-%d "}
+{"off":"0x1f2cf","s":"LS_COLORS"}
+{"off":"0x1f2d9","s":"COLORTERM"}
+{"off":"0x1f2e3","s":"TERM "}
+{"off":"0x1f2e9","s":"unrecognized prefix: %s"}
+{"off":"0x1f301","s":"target"}
+{"off":"0x1f30b","s":"found"}
+{"off":"0x1f311","s":"//DIRED//"}
+{"off":"0x1f31b","s":"//SUBDIRED//"}
+{"off":"0x1f32c","s":"force"}
+{"off":"0x1f332","s":"never"}
+{"off":"0x1f33b","s":"none"}
+{"off":"0x1f340","s":"auto"}
+{"off":"0x1f345","s":"if-tty"}
+{"off":"0x1f34c","s":"atime"}
+{"off":"0x1f356","s":"ctime"}
+{"off":"0x1f35c","s":"status"}
+{"off":"0x1f363","s":"mtime"}
+{"off":"0x1f369","s":"modification"}
+{"off":"0x1f376","s":"birth"}
+{"off":"0x1f37c","s":"creation"}
+{"off":"0x1f385","s":"extension"}
+{"off":"0x1f38f","s":"verbose"}
+{"off":"0x1f397","s":"long"}
+{"off":"0x1f39c","s":"commas"}
+{"off":"0x1f3a3","s":"horizontal"}
+{"off":"0x1f3ae","s":"across"}
+{"off":"0x1f3b5","s":"vertical"}
+{"off":"0x1f3be","s":"single-column"}
+{"off":"0x1f3cc","s":"directory"}
+{"off":"0x1f3d6","s":"dired"}
+{"off":"0x1f3dc","s":"full-time"}
+{"off":"0x1f3e6","s":"group-directories-first"}
+{"off":"0x1f3fe","s":"human-readable"}
+{"off":"0x1f40d","s":"inode"}
+{"off":"0x1f413","s":"kibibytes"}
+{"off":"0x1f41d","s":"numeric-uid-gid"}
+{"off":"0x1f42d","s":"no-group"}
+{"off":"0x1f436","s":"hide-control-chars"}
+{"off":"0x1f449","s":"reverse"}
+{"off":"0x1f451","s":"almost-all"}
+{"off":"0x1f45c","s":"ignore-backups"}
+{"off":"0x1f46b","s":"file-type"}
+{"off":"0x1f478","s":"dereference-command-line"}
+{"off":"0x1f491","s":"hide"}
+{"off":"0x1f496","s":"ignore"}
+{"off":"0x1f49d","s":"dereference"}
+{"off":"0x1f4a9","s":"literal"}
+{"off":"0x1f4b1","s":"quote-name"}
+{"off":"0x1f4bc","s":"recursive"}
+{"off":"0x1f4c6","s":"show-control-chars"}
+{"off":"0x1f4d9","s":"tabsize"}
+{"off":"0x1f4e1","s":"time-style"}
+{"off":"0x1f4ec","s":"zero"}
+{"off":"0x1f4f1","s":"block-size"}
+{"off":"0x1f4fc","s":"context"}
+{"off":"0x1f504","s":"author"}
+{"off":"0x1f50b","s":"%b %e  %Y"}
+{"off":"0x1f515","s":"%b %e %H:%M"}
+{"off":"0x1f521","s":"slash"}
+{"off":"0x1f527","s":"long-iso"}
+{"off":"0x1f530","s":"9.10"}
+{"off":"0x1f535","s":"invalid argument %s for %s"}
+{"off":"0x1f550","s":"gnulib"}
+{"off":"0x1f557","s":"ambiguous argument %s for %s"}
+{"off":"0x1f574","s":"Valid arguments are:"}
+{"off":"0x1f58a","s":"  - %s"}
+{"off":"0x1f591","s":", %s"}
+{"off":"0x1f596","s":"write error"}
+{"off":"0x1f5a2","s":"Unknown system error"}
+{"off":"0x1f5b7","s":"%s: "}
+{"off":"0x1f5bc","s":"%s:%u: "}
+{"off":"0x1f5c8","s":"system.nfs4_acl"}
+{"off":"0x1f5d8","s":"system.posix_acl_access"}
+{"off":"0x1f5f0","s":"system.posix_acl_default"}
+{"off":"0x1f609","s":"OWNER@"}
+{"off":"0x1f610","s":"GROUP@"}
+{"off":"0x1f617","s":"EVERYONE@"}
+{"off":"0x1f623","s":"POSIX"}
+{"off":"0x1f629","s":"# entries:         %lu"}
+{"off":"0x1f641","s":"# buckets:         %lu"}
+{"off":"0x1f659","s":"max bucket length: %lu"}
+{"off":"0x1f671","s":"%.0Lf"}
+{"off":"0x1f677","s":"%.1Lf"}
+{"off":"0x1f67d","s":"BLOCKSIZE"}
+{"off":"0x1f687","s":"POSIXLY_CORRECT"}
+{"off":"0x1f697","s":"eEgGkKmMpPtTyYzZ0"}
+{"off":"0x1f6a9","s":"%m/%d/%y"}
+{"off":"0x1f6b2","s":"%Y-%m-%d"}
+{"off":"0x1f6bb","s":"%H:%M:%S"}
+{"off":"0x1f6c4","s":"UTF-8"}
+{"off":"0x1f6ca","s":"LC_TIME"}
+{"off":"0x1f6d2","s":"th_TH"}
+{"off":"0x1f6d8","s":"fa_IR"}
+{"off":"0x1f6de","s":"am_ET"}
+{"off":"0x1f6e4","s":"%d/%m/%Y"}
+{"off":"0x1f7d1","s":"%OY/%Om/%Od"}
+{"off":"0x1f9bb","s":"memory exhausted"}
+{"off":"0x1f9cc","s":"/.libs/"}
+{"off":"0x1f9d8","s":"shell"}
+{"off":"0x1f9de","s":"shell-always"}
+{"off":"0x1f9eb","s":"shell-escape"}
+{"off":"0x1f9f8","s":"shell-escape-always"}
+{"off":"0x1fa0c","s":"c-maybe"}
+{"off":"0x1fa14","s":"clocale"}
+{"off":"0x1fa1c","s":"%s (%s) %s"}
+{"off":"0x1fa28","s":"%s %s"}
+{"off":"0x1fa33","s":"Written by %s."}
+{"off":"0x1fa43","s":"Written by %s and %s."}
+{"off":"0x1fa5a","s":"Written by %s, %s, and %s."}
+{"off":"0x1fa76","s":"Report bugs to: %s"}
+{"off":"0x1fa8a","s":"bug-coreutils@gnu.org"}
+{"off":"0x1faa0","s":"%s home page: <%s>"}
+{"off":"0x1fab4","s":"https://www.gnu.org/gethelp/"}
+{"off":"0x1fad1","s":"invalid %s%s argument '%s'"}
+{"off":"0x1faec","s":"%s%s argument '%s' too large"}
+{"off":"0x1fb0c","s":"ASCII"}
+{"off":"0x1fb19","s":"https://www.gnu.org/software/coreutils/"}
+{"off":"0x1fb41","s":"https://www.gnu.org/software/coreutils/manual/coreutils.html"}
+{"off":"0x1fb89","s":"cannot determine device and inode of %s"}
+{"off":"0x1fbb1","s":"%s: not listing already-listed directory"}
+{"off":"0x1fbe1","s":"Try '%s --help' for more information."}
+{"off":"0x1fc09","s":"Usage: %s [OPTION]... [FILE]..."}
+{"off":"0x1fc31","s":"List information about the FILEs (the current directory by default)."}
+{"off":"0x1fc76","s":"Sort entries alphabetically if none of -cftuvSUX nor --sort is specified."}
+{"off":"0x1fcc2","s":"Mandatory arguments to long options are mandatory for short options too."}
+{"off":"0x1fd11","s":"  -a, --all"}
+{"off":"0x1fd1d","s":"         do not ignore entries starting with ."}
+{"off":"0x1fd51","s":"  -A, --almost-all"}
+{"off":"0x1fd64","s":"         do not list implied . and .."}
+{"off":"0x1fd91","s":"      --author"}
+{"off":"0x1fda0","s":"         with -l, print the author of each file"}
+{"off":"0x1fdd1","s":"  -b, --escape"}
+{"off":"0x1fde0","s":"         print C-style escapes for nongraphic characters"}
+{"off":"0x1fe21","s":"      --block-size=SIZE"}
+{"off":"0x1fe39","s":"         with -l, scale sizes by SIZE when printing them;"}
+{"off":"0x1fe73","s":"         e.g., '--block-size=M'; see SIZE format below"}
+{"off":"0x1feb1","s":"  -B, --ignore-backups"}
+{"off":"0x1fec8","s":"         do not list implied entries ending with ~"}
+{"off":"0x1ff01","s":"  -c"}
+{"off":"0x1ff06","s":"         with -lt: sort by, and show, ctime"}
+{"off":"0x1ff32","s":"           (time of last change of file status information);"}
+{"off":"0x1ff6f","s":"         with -l: show ctime and sort by name;"}
+{"off":"0x1ff9e","s":"         otherwise: sort by ctime, newest first"}
+{"off":"0x1ffd1","s":"  -C"}
+{"off":"0x1ffd6","s":"         list entries by columns"}
+{"off":"0x1fff9","s":"      --color[=WHEN]"}
+{"off":"0x2000e","s":"         color the output WHEN; more info below"}
+{"off":"0x20041","s":"  -d, --directory"}
+{"off":"0x20053","s":"         list directories themselves, not their contents"}
+{"off":"0x20091","s":"  -D, --dired"}
+{"off":"0x2009f","s":"         generate output designed for Emacs' dired mode"}
+{"off":"0x200d9","s":"  -F, --classify[=WHEN]"}
+{"off":"0x200f1","s":"         append indicator (one of */=>@|) to entries WHEN"}
+{"off":"0x20131","s":"      --file-type"}
+{"off":"0x20143","s":"         like -F, except do not append '*'"}
+{"off":"0x20171","s":"      --format=WORD"}
+{"off":"0x20185","s":"         across,horizontal (-x), commas (-m), long (-l),"}
+{"off":"0x201be","s":"         single-column (-1), verbose (-l), vertical (-C)"}
+{"off":"0x201f9","s":"      --full-time"}
+{"off":"0x2020b","s":"         like -l --time-style=full-iso"}
+{"off":"0x20239","s":"  -g"}
+{"off":"0x2023e","s":"         like -l, but do not list owner"}
+{"off":"0x20269","s":"      --group-directories-first"}
+{"off":"0x20289","s":"         group directories before files"}
+{"off":"0x202b9","s":"  -G, --no-group"}
+{"off":"0x202ca","s":"         in a long listing, don't print group names"}
+{"off":"0x20301","s":"  -h, --human-readable"}
+{"off":"0x20318","s":"         with -l and -s, print sizes like 1K 234M 2G etc."}
+{"off":"0x20359","s":"      --si"}
+{"off":"0x20364","s":"         likewise, but use powers of 1000 not 1024"}
+{"off":"0x20399","s":"  -H, --dereference-command-line"}
+{"off":"0x203ba","s":"         follow symbolic links listed on the command line"}
+{"off":"0x203f9","s":"      --dereference-command-line-symlink-to-dir"}
+{"off":"0x20429","s":"         follow each command line symbolic link that points to a directory"}
+{"off":"0x20479","s":"      --hide=PATTERN"}
+{"off":"0x2048e","s":"         do not list implied entries matching shell PATTERN"}
+{"off":"0x204ca","s":"         (overridden by -a or -A)"}
+{"off":"0x204f1","s":"      --hyperlink[=WHEN]"}
+{"off":"0x2050a","s":"         hyperlink file names WHEN"}
+{"off":"0x20531","s":"      --indicator-style=WORD"}
+{"off":"0x2054e","s":"         append indicator with style WORD to entry names:"}
+{"off":"0x20588","s":"           none (default), slash (-p), file-type (--file-type), classify (-F)"}
+{"off":"0x205d9","s":"  -i, --inode"}
+{"off":"0x205e7","s":"         print the index number of each file"}
+{"off":"0x20619","s":"  -I, --ignore=PATTERN"}
+{"off":"0x20630","s":"         do not list implied entries matching shell PATTERN"}
+{"off":"0x20671","s":"  -k, --kibibytes"}
+{"off":"0x20683","s":"         default to 1024-byte blocks for file system usage;"}
+{"off":"0x206bf","s":"         used only with -s and per directory totals"}
+{"off":"0x206f9","s":"  -l"}
+{"off":"0x206fe","s":"         use a long listing format"}
+{"off":"0x20729","s":"  -L, --dereference"}
+{"off":"0x2073d","s":"         when showing file information for a symbolic link,"}
+{"off":"0x20779","s":"         show information for the file the link references"}
+{"off":"0x207b4","s":"         rather than for the link itself"}
+{"off":"0x207e1","s":"  -m"}
+{"off":"0x207e6","s":"         fill width with a comma separated list of entries"}
+{"off":"0x20829","s":"  -n, --numeric-uid-gid"}
+{"off":"0x20841","s":"         like -l, but list numeric user and group IDs"}
+{"off":"0x20879","s":"  -N, --literal"}
+{"off":"0x20889","s":"         print entry names without quoting"}
+{"off":"0x208b9","s":"  -o"}
+{"off":"0x208be","s":"         like -l, but do not list group information"}
+{"off":"0x208f9","s":"  -p, --indicator-style=slash"}
+{"off":"0x20917","s":"         append / indicator to directories"}
+{"off":"0x20949","s":"  -q, --hide-control-chars"}
+{"off":"0x20964","s":"         print ? instead of nongraphic characters"}
+{"off":"0x20999","s":"      --show-control-chars"}
+{"off":"0x209b4","s":"         show nongraphic characters as-is;"}
+{"off":"0x209df","s":"         the default, unless program is 'ls' and output is a terminal"}
+{"off":"0x20a29","s":"  -Q, --quote-name"}
+{"off":"0x20a3c","s":"         enclose entry names in double quotes"}
+{"off":"0x20a71","s":"      --quoting-style=WORD"}
+{"off":"0x20a8c","s":"         use quoting style WORD for entry names:"}
+{"off":"0x20abd","s":"           literal, locale, shell, shell-always,"}
+{"off":"0x20aee","s":"           shell-escape, shell-escape-always, c, escape"}
+{"off":"0x20b26","s":"         (overrides QUOTING_STYLE environment variable)"}
+{"off":"0x20b61","s":"  -r, --reverse"}
+{"off":"0x20b71","s":"         reverse order while sorting"}
+{"off":"0x20b99","s":"  -R, --recursive"}
+{"off":"0x20bab","s":"         list subdirectories recursively"}
+{"off":"0x20bd9","s":"  -s, --size"}
+{"off":"0x20be6","s":"         print the allocated size of each file, in blocks"}
+{"off":"0x20c21","s":"  -S"}
+{"off":"0x20c26","s":"         sort by file size, largest first"}
+{"off":"0x20c51","s":"      --sort=WORD"}
+{"off":"0x20c63","s":"         change default 'name' sort to WORD:"}
+{"off":"0x20c90","s":"           none (-U), size (-S), time (-t),"}
+{"off":"0x20cbc","s":"           version (-v), extension (-X), name, width"}
+{"off":"0x20cf9","s":"      --time=WORD"}
+{"off":"0x20d0b","s":"         select which timestamp used to display or sort;"}
+{"off":"0x20d44","s":"           access time (-u): atime, access, use;"}
+{"off":"0x20d75","s":"           metadata change time (-c): ctime, status;"}
+{"off":"0x20daa","s":"           modified time (default): mtime, modification;"}
+{"off":"0x20de3","s":"           birth time: birth, creation;"}
+{"off":"0x20e0b","s":"         with -l, WORD determines which time to show;"}
+{"off":"0x20e41","s":"         with --sort=time, sort by WORD (newest first)"}
+{"off":"0x20e79","s":"      --time-style=TIME_STYLE"}
+{"off":"0x20e97","s":"         time/date format with -l; see TIME_STYLE below"}
+{"off":"0x20ed1","s":"  -t"}
+{"off":"0x20ed6","s":"         sort by time, newest first; see --time"}
+{"off":"0x20f09","s":"  -T, --tabsize=COLS"}
+{"off":"0x20f1e","s":"         assume tab stops at each COLS instead of 8"}
+{"off":"0x20f59","s":"  -u"}
+{"off":"0x20f5e","s":"         with -lt: sort by, and show, access time;"}
+{"off":"0x20f91","s":"         with -l: show access time and sort by name;"}
+{"off":"0x20fc6","s":"         otherwise: sort by access time, newest first"}
+{"off":"0x21001","s":"  -U"}
+{"off":"0x21006","s":"         do not sort directory entries"}
+{"off":"0x21031","s":"  -v"}
+{"off":"0x21036","s":"         natural sort of (version) numbers within text"}
+{"off":"0x21071","s":"  -w, --width=COLS"}
+{"off":"0x21084","s":"         set output width to COLS.  0 means no limit"}
+{"off":"0x210c1","s":"  -x"}
+{"off":"0x210c6","s":"         list entries by lines instead of by columns"}
+{"off":"0x21101","s":"  -X"}
+{"off":"0x21106","s":"         sort alphabetically by entry extension"}
+{"off":"0x21139","s":"  -Z, --context"}
+{"off":"0x21149","s":"         print any security context of each file"}
+{"off":"0x21181","s":"      --zero"}
+{"off":"0x2118e","s":"         end each output line with NUL, not newline"}
+{"off":"0x211c9","s":"  -1"}
+{"off":"0x211ce","s":"         list one file per line"}
+{"off":"0x211f1","s":"      --help"}
+{"off":"0x211fe","s":"         display this help and exit"}
+{"off":"0x21229","s":"      --version"}
+{"off":"0x21239","s":"         output version information and exit"}
+{"off":"0x2126a","s":"The SIZE argument is an integer and optional unit (example: 10K is 10*1024)."}
+{"off":"0x212b7","s":"Units are K,M,G,T,P,E,Z,Y,R,Q (powers of 1024) or KB,MB,... (powers of 1000)."}
+{"off":"0x21305","s":"Binary prefixes can be used, too: KiB=K, MiB=M, and so on."}
+{"off":"0x21342","s":"The TIME_STYLE argument can be full-iso, long-iso, iso, locale, or +FORMAT."}
+{"off":"0x2138e","s":"FORMAT is interpreted like in date(1).  If FORMAT is FORMAT1<newline>FORMAT2,"}
+{"off":"0x213dc","s":"then FORMAT1 applies to non-recent files and FORMAT2 to recent files."}
+{"off":"0x21422","s":"TIME_STYLE prefixed with 'posix-' takes effect only outside the POSIX locale."}
+{"off":"0x21470","s":"Also the TIME_STYLE environment variable sets the default style to use."}
+{"off":"0x214ba","s":"The WHEN argument defaults to 'always' and can also be 'auto' or 'never'."}
+{"off":"0x2150a","s":"Using color to distinguish file types is disabled both by default and"}
+{"off":"0x21550","s":"with --color=never.  With --color=auto, ls emits color codes only when"}
+{"off":"0x21597","s":"standard output is connected to a terminal.  The LS_COLORS environment"}
+{"off":"0x215de","s":"variable can change the settings.  Use the dircolors(1) command to set it."}
+{"off":"0x21632","s":"Exit status:"}
+{"off":"0x2163f","s":" 0  if OK,"}
+{"off":"0x2164a","s":" 1  if minor problems (e.g., cannot access subdirectory),"}
+{"off":"0x21684","s":" 2  if serious trouble (e.g., cannot access command-line argument)."}
+{"off":"0x216c9","s":"Report any translation bugs to <https://translationproject.org/team/>"}
+{"off":"0x21711","s":"or available locally via: info '(coreutils) %s%s'"}
+{"off":"0x21749","s":"abcdfghiklmnopqrstuvw:xABCDFGHI:LNQRST:UXZ1"}
+{"off":"0x21779","s":"ignoring invalid width in environment variable COLUMNS: %s"}
+{"off":"0x217b9","s":"ignoring invalid tab size in environment variable TABSIZE: %s"}
+{"off":"0x217f9","s":"ignoring invalid value of environment variable QUOTING_STYLE: %s"}
+{"off":"0x21841","s":"--dired and --zero are incompatible"}
+{"off":"0x21869","s":"  - +FORMAT (e.g., +%H:%M) for a 'date'-style format"}
+{"off":"0x218a1","s":"unparsable value for LS_COLORS environment variable"}
+{"off":"0x218d9","s":"dev_ino_size <= __extension__ ({ struct obstack const *__o = (&dev_ino_obstack); (size_t) (__o->next_free - __o->object_base); })"}
+{"off":"0x21961","s":"//DIRED-OPTIONS// --quoting-style=%s"}
+{"off":"0x21989","s":"hash_get_n_entries (active_dir_set) == 0"}
+{"off":"0x219b9","s":"dereference-command-line-symlink-to-dir"}
+{"off":"0x219e1","s":"# buckets used:    %lu (%.2f%%)"}
+{"off":"0x21a29","s":"License GPLv3+: GNU GPL version 3 or later <%s>."}
+{"off":"0x21a5a","s":"This is free software: you are free to change and redistribute it."}
+{"off":"0x21a9d","s":"There is NO WARRANTY, to the extent permitted by law."}
+{"off":"0x21ad9","s":"https://gnu.org/licenses/gpl.html"}
+{"off":"0x21b01","s":"Written by %s, %s, %s,"}
+{"off":"0x21b18","s":"and %s."}
+{"off":"0x21b21","s":"Written by %s, %s, %s,"}
+{"off":"0x21b38","s":"%s, and %s."}
+{"off":"0x21b49","s":"Written by %s, %s, %s,"}
+{"off":"0x21b60","s":"%s, %s, and %s."}
+{"off":"0x21b71","s":"Written by %s, %s, %s,"}
+{"off":"0x21b88","s":"%s, %s, %s, and %s."}
+{"off":"0x21ba1","s":"Written by %s, %s, %s,"}
+{"off":"0x21bb8","s":"%s, %s, %s, %s,"}
+{"off":"0x21bc8","s":"and %s."}
+{"off":"0x21bd1","s":"Written by %s, %s, %s,"}
+{"off":"0x21be8","s":"%s, %s, %s, %s,"}
+{"off":"0x21bf8","s":"%s, and %s."}
+{"off":"0x21c09","s":"Written by %s, %s, %s,"}
+{"off":"0x21c20","s":"%s, %s, %s, %s,"}
+{"off":"0x21c30","s":"%s, %s, and others."}
+{"off":"0x21c49","s":"General help using GNU software: <%s>"}
+{"off":"0x21c71","s":"invalid suffix in %s%s argument '%s'"}
+{"off":"0x21dba","s":"KMGTPEZYRQ"}
+{"off":"0x22361","s":"Copyright %s %d Free Software Foundation, Inc."}
+{"off":"0x27261","s":"GCC: (GNU) 15.2.1 20260103"}
+{"off":"0x2727d","s":"ls.debug"}
+{"off":"0x2728e","s":".shstrtab"}
+{"off":"0x27298","s":".note.gnu.property"}
+{"off":"0x272ab","s":".note.gnu.build-id"}
+{"off":"0x272be","s":".interp"}
+{"off":"0x272c6","s":".gnu.hash"}
+{"off":"0x272d0","s":".dynsym"}
+{"off":"0x272d8","s":".dynstr"}
+{"off":"0x272e0","s":".gnu.version"}
+{"off":"0x272ed","s":".gnu.version_r"}
+{"off":"0x272fc","s":".rela.dyn"}
+{"off":"0x27306","s":".relr.dyn"}
+{"off":"0x27310","s":".init"}
+{"off":"0x27316","s":".text"}
+{"off":"0x2731c","s":".fini"}
+{"off":"0x27322","s":".rodata"}
+{"off":"0x2732a","s":".eh_frame_hdr"}
+{"off":"0x27338","s":".eh_frame"}
+{"off":"0x27342","s":".note.ABI-tag"}
+{"off":"0x27350","s":".init_array"}
+{"off":"0x2735c","s":".fini_array"}
+{"off":"0x27368","s":".data.rel.ro"}
+{"off":"0x27375","s":".dynamic"}
+{"off":"0x2737e","s":".got"}
+{"off":"0x27383","s":".data"}
+{"off":"0x27389","s":".bss"}
+{"off":"0x2738e","s":".comment"}
+{"off":"0x27397","s":".gnu_debuglink"}

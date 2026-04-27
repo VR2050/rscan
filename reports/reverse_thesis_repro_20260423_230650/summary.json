@@ -1,0 +1,48 @@
+{
+  "total": 2,
+  "ok": 2,
+  "failed": 0,
+  "elapsed_ms_avg": 19705,
+  "elapsed_ms_p95": 5149,
+  "apk_dir": "/home/vr2050/RUST/rscan_codex/黑灰产app",
+  "workspace": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/ws",
+  "out_dir": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650",
+  "rows": [
+    {
+      "sample": "/home/vr2050/RUST/rscan_codex/黑灰产app/3pPro.apk",
+      "sample_dir": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/3pPro",
+      "elapsed_ms": 5149,
+      "rc": {
+        "analyze": 0,
+        "triage": 0,
+        "android_analyze": 0,
+        "decompile_run": 0
+      },
+      "package": "com.xhs.p3",
+      "malware_confidence": 40,
+      "score_total": 100,
+      "uses_cleartext_traffic": false,
+      "dangerous_permissions_count": 8,
+      "exported_components_count": 2,
+      "ok": true
+    },
+    {
+      "sample": "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk",
+      "sample_dir": "/home/vr2050/RUST/rscan_codex/reports/reverse_thesis_repro_20260423_230650/6c685e54ee9446889353feda8dc510d8",
+      "elapsed_ms": 34261,
+      "rc": {
+        "analyze": 0,
+        "triage": 0,
+        "android_analyze": 0,
+        "decompile_run": 0
+      },
+      "package": "mpEIGo.juqQQs.esbSDO",
+      "malware_confidence": 44,
+      "score_total": 100,
+      "uses_cleartext_traffic": true,
+      "dangerous_permissions_count": 7,
+      "exported_components_count": 20,
+      "ok": true
+    }
+  ]
+}

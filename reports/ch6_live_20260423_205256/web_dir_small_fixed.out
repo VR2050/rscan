@@ -1,0 +1,8 @@
+2026-04-23T12:53:26.236772Z  INFO rscan::cli::app: Starting rscan, log_level=info
+ERROR 网络错误: error sending request for url (http://192.168.8.145/)
+ERROR 网络错误: error sending request for url (http://192.168.8.145/robots.txt)
+ERROR 网络错误: error sending request for url (http://192.168.8.145/admin)
+ERROR 网络错误: error sending request for url (http://192.168.8.145/login)
+ERROR 网络错误: error sending request for url (http://192.168.8.145/phpinfo.php)
+ERROR 网络错误: error sending request for url (http://192.168.8.145/index.php)
+ERROR 网络错误: dir scan failed for all requests (errors=6, total=6): 网络错误: error sending request for url (http://192.168.8.145/)

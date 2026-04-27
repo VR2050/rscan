@@ -1,0 +1,27 @@
+{
+  "gdb": {
+    "name": "gdb",
+    "available": true,
+    "path": "/usr/bin/gdb"
+  },
+  "pwndbg_init": {
+    "name": "pwndbg_init",
+    "available": false,
+    "path": null
+  },
+  "ghidra_headless": {
+    "name": "analyzeHeadless",
+    "available": true,
+    "path": "/home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min/run-headless.sh"
+  },
+  "jadx": {
+    "name": "jadx",
+    "available": true,
+    "path": "/usr/bin/jadx"
+  },
+  "radare2": {
+    "name": "r2",
+    "available": false,
+    "path": null
+  }
+}

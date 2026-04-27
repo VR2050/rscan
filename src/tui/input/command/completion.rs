@@ -196,6 +196,11 @@ fn build_completions(
             | "r.prune"
             | "r.doctor"
             | "r.debug"
+            | "r.backend"
+            | "r.android"
+            | "r.mal"
+            | "r.shell"
+            | "r.console"
     ) {
         return prefer_non_empty(
             reverse_alias_option_suggestions(head_str, token_idx, prefix),
@@ -213,7 +218,7 @@ fn build_completions(
     }
     if matches!(
         head_str,
-        "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa"
+        "v.lint" | "v.scan" | "v.ca" | "v.sg" | "v.sc" | "v.fa" | "v.fuzz" | "v.poc"
     ) {
         return prefer_non_empty(
             vuln_alias_option_suggestions(head_str, token_idx, prefix),
@@ -274,6 +279,8 @@ fn build_parent_command_completions(
                 "system-guard",
                 "stealth-check",
                 "fragment-audit",
+                "fuzz",
+                "poc",
             ],
             "reverse" => vec![
                 "analyze",
@@ -290,6 +297,11 @@ fn build_parent_command_completions(
                 "job-prune",
                 "job-doctor",
                 "debug-script",
+                "backend-status",
+                "android-analyze",
+                "malware-triage",
+                "shell-audit",
+                "console",
             ],
             _ => vec![],
         };
@@ -559,20 +571,34 @@ fn web_live_options(prefix: &str) -> Vec<String> {
 
 fn vuln_option_suggestions(sub: Option<&str>, token_idx: usize, prefix: &str) -> Vec<String> {
     match sub {
+        Some("lint") if token_idx >= 3 => vuln_common_output_options(prefix),
         Some("scan") if token_idx >= 3 => vuln_scan_options(prefix),
+        Some("container-audit") if token_idx >= 3 => vuln_common_output_options(prefix),
+        Some("system-guard") if token_idx >= 2 => vuln_common_output_options(prefix),
         Some("stealth-check") if token_idx >= 3 => vuln_stealth_options(prefix),
         Some("fragment-audit") if token_idx >= 3 => vuln_fragment_options(prefix),
+        Some("fuzz") if token_idx >= 3 => vuln_fuzz_options(prefix),
+        Some("poc") if token_idx >= 3 => vuln_poc_options(prefix),
         _ => Vec::new(),
     }
 }
 
 fn vuln_alias_option_suggestions(head: &str, token_idx: usize, prefix: &str) -> Vec<String> {
     match head {
+        "v.lint" if token_idx >= 2 => vuln_common_output_options(prefix),
         "v.scan" if token_idx >= 2 => vuln_scan_options(prefix),
+        "v.ca" if token_idx >= 2 => vuln_common_output_options(prefix),
+        "v.sg" if token_idx >= 1 => vuln_common_output_options(prefix),
         "v.sc" if token_idx >= 2 => vuln_stealth_options(prefix),
         "v.fa" if token_idx >= 2 => vuln_fragment_options(prefix),
+        "v.fuzz" if token_idx >= 2 => vuln_fuzz_options(prefix),
+        "v.poc" if token_idx >= 2 => vuln_poc_options(prefix),
         _ => Vec::new(),
     }
+}
+
+fn vuln_common_output_options(prefix: &str) -> Vec<String> {
+    flag_filter(&["--output", "--out"], prefix)
 }
 
 fn vuln_scan_options(prefix: &str) -> Vec<String> {
@@ -584,6 +610,8 @@ fn vuln_scan_options(prefix: &str) -> Vec<String> {
             "--timeout-ms",
             "--findings-only",
             "--success-only",
+            "--output",
+            "--out",
         ],
         prefix,
     )
@@ -594,8 +622,15 @@ fn vuln_stealth_options(prefix: &str) -> Vec<String> {
         &[
             "--timeout-ms",
             "--low-noise-requests",
+            "--low-noise-interval-ms",
             "--burst-requests",
             "--burst-concurrency",
+            "--advanced-checks",
+            "--no-advanced-checks",
+            "--variant-requests",
+            "--variant-concurrency",
+            "--output",
+            "--out",
         ],
         prefix,
     )
@@ -610,6 +645,44 @@ fn vuln_fragment_options(prefix: &str) -> Vec<String> {
             "--payload-min-bytes",
             "--payload-max-bytes",
             "--payload-step-bytes",
+            "--output",
+            "--out",
+        ],
+        prefix,
+    )
+}
+
+fn vuln_fuzz_options(prefix: &str) -> Vec<String> {
+    flag_filter(
+        &[
+            "--keyword",
+            "--keywords-file",
+            "--concurrency",
+            "--timeout-ms",
+            "--status-min",
+            "--status-max",
+            "--output",
+            "--out",
+        ],
+        prefix,
+    )
+}
+
+fn vuln_poc_options(prefix: &str) -> Vec<String> {
+    flag_filter(
+        &[
+            "--path",
+            "--method",
+            "--header",
+            "--body",
+            "--timeout-ms",
+            "--status",
+            "--word",
+            "--header-word",
+            "--match-all",
+            "--case-insensitive",
+            "--output",
+            "--out",
         ],
         prefix,
     )
@@ -630,6 +703,16 @@ fn reverse_option_suggestions(sub: Option<&str>, token_idx: usize, prefix: &str)
         Some("debug-script") if token_idx >= 4 => {
             flag_filter(&["--profile", "--pwndbg-init"], prefix)
         }
+        Some("backend-status") if token_idx >= 2 => reverse_output_option_suggestions(prefix),
+        Some("android-analyze") if token_idx >= 3 => reverse_output_option_suggestions(prefix),
+        Some("malware-triage") if token_idx >= 3 => reverse_output_option_suggestions(prefix),
+        Some("shell-audit") if token_idx >= 3 => {
+            flag_filter(&["--text", "--output", "--out"], prefix)
+        }
+        Some("console") if token_idx >= 3 => flag_filter(
+            &["--workspace", "--pwndbg-init", "--tui", "--ghidra-home"],
+            prefix,
+        ),
         _ => Vec::new(),
     }
 }
@@ -647,8 +730,20 @@ fn reverse_alias_option_suggestions(head: &str, token_idx: usize, prefix: &str) 
             prefix,
         ),
         "r.debug" if token_idx >= 3 => flag_filter(&["--profile", "--pwndbg-init"], prefix),
+        "r.backend" if token_idx >= 1 => reverse_output_option_suggestions(prefix),
+        "r.android" if token_idx >= 2 => reverse_output_option_suggestions(prefix),
+        "r.mal" if token_idx >= 2 => reverse_output_option_suggestions(prefix),
+        "r.shell" if token_idx >= 2 => flag_filter(&["--text", "--output", "--out"], prefix),
+        "r.console" if token_idx >= 2 => flag_filter(
+            &["--workspace", "--pwndbg-init", "--tui", "--ghidra-home"],
+            prefix,
+        ),
         _ => Vec::new(),
     }
+}
+
+fn reverse_output_option_suggestions(prefix: &str) -> Vec<String> {
+    flag_filter(&["--output", "--out"], prefix)
 }
 
 fn reverse_analyze_option_suggestions(token_idx: usize, prefix: &str) -> Vec<String> {
@@ -743,6 +838,14 @@ fn placeholder_suggestions(
         }
         "v.ca" => push_if_idx(&mut out, token_idx, 1, "<manifests_path>"),
         "v.sc" | "v.fa" => push_if_idx(&mut out, token_idx, 1, "<target_url>"),
+        "v.fuzz" => {
+            push_if_idx(&mut out, token_idx, 1, "<url_with_FUZZ>");
+            push_if_idx(&mut out, token_idx, 2, "<keywords_csv>");
+        }
+        "v.poc" => {
+            push_if_idx(&mut out, token_idx, 1, "<target_url>");
+            push_if_idx(&mut out, token_idx, 2, "<path>");
+        }
         "r.analyze" | "r.plan" => push_if_idx(&mut out, token_idx, 1, "<input_file>"),
         "r.run" => {
             push_if_idx(&mut out, token_idx, 1, "<input_file>");
@@ -768,6 +871,12 @@ fn placeholder_suggestions(
             push_if_idx(&mut out, token_idx, 1, "<input_file>");
             push_if_idx(&mut out, token_idx, 2, "<script_out>");
             push_if_idx(&mut out, token_idx, 3, "<profile>");
+        }
+        "r.backend" => {}
+        "r.android" | "r.mal" | "r.console" => push_if_idx(&mut out, token_idx, 1, "<input_file>"),
+        "r.shell" => {
+            push_if_idx(&mut out, token_idx, 1, "<input_file>");
+            push_if_idx(&mut out, token_idx, 1, "--text");
         }
         "zfocus" => push_if_idx(&mut out, token_idx, 1, "<control|work|inspect|reverse>"),
         "host" => match sub {
@@ -814,6 +923,14 @@ fn placeholder_suggestions(
             Some("stealth-check") | Some("fragment-audit") => {
                 push_if_idx(&mut out, token_idx, 2, "<target_url>");
             }
+            Some("fuzz") => {
+                push_if_idx(&mut out, token_idx, 2, "<url_with_FUZZ>");
+                push_if_idx(&mut out, token_idx, 3, "<keywords_csv>");
+            }
+            Some("poc") => {
+                push_if_idx(&mut out, token_idx, 2, "<target_url>");
+                push_if_idx(&mut out, token_idx, 3, "<path>");
+            }
             _ => {}
         },
         "reverse" => match sub {
@@ -842,6 +959,14 @@ fn placeholder_suggestions(
                 push_if_idx(&mut out, token_idx, 2, "<input_file>");
                 push_if_idx(&mut out, token_idx, 3, "<script_out>");
                 push_if_idx(&mut out, token_idx, 4, "<profile>");
+            }
+            Some("backend-status") => {}
+            Some("android-analyze") | Some("malware-triage") | Some("console") => {
+                push_if_idx(&mut out, token_idx, 2, "<input_file>");
+            }
+            Some("shell-audit") => {
+                push_if_idx(&mut out, token_idx, 2, "<input_file>");
+                push_if_idx(&mut out, token_idx, 2, "--text");
             }
             _ => {}
         },
@@ -908,5 +1033,34 @@ mod tests {
         let got = build_completions(buf, &tokens, 2, "--");
         assert!(got.iter().any(|item| item == "--findings-only"));
         assert!(got.iter().any(|item| item == "--success-only"));
+    }
+
+    #[test]
+    fn vuln_poc_completion_suggests_matching_flags() {
+        let buf = "v.poc https://example.com / --";
+        let tokens = vec![(0, 5), (6, 25), (26, 27), (28, 30)];
+        let got = build_completions(buf, &tokens, 3, "--");
+        assert!(got.iter().any(|item| item == "--status"));
+        assert!(got.iter().any(|item| item == "--word"));
+        assert!(got.iter().any(|item| item == "--match-all"));
+    }
+
+    #[test]
+    fn vuln_stealth_completion_includes_advanced_flags() {
+        let buf = "v.sc https://example.com --";
+        let tokens = vec![(0, 4), (5, 24), (25, 27)];
+        let got = build_completions(buf, &tokens, 2, "--");
+        assert!(got.iter().any(|item| item == "--low-noise-interval-ms"));
+        assert!(got.iter().any(|item| item == "--advanced-checks"));
+        assert!(got.iter().any(|item| item == "--variant-requests"));
+    }
+
+    #[test]
+    fn reverse_parent_completion_lists_phase1_commands() {
+        let buf = "reverse a";
+        let tokens = vec![(0, 7), (8, 9)];
+        let got = build_completions(buf, &tokens, 1, "a");
+        assert!(got.iter().any(|item| item == "analyze"));
+        assert!(got.iter().any(|item| item == "android-analyze"));
     }
 }

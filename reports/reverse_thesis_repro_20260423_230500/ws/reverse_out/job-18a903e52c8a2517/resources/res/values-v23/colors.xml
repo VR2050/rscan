@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="abc_btn_colored_borderless_text_material">resources.arsc/ .xml</color>
+    <color name="abc_btn_colored_text_material">/resources.arsc/  .xml</color>
+    <color name="abc_color_highlight_material">classes.dex/classes.dex.xml</color>
+    <color name="abc_tint_btn_checkable">/classes.dex/AndroidManifest.xml.xml</color>
+    <color name="abc_tint_default">kotlin/AndroidManifest.xml</color>
+    <color name="abc_tint_edittext">META-INF/resources.arsc.xml</color>
+    <color name="abc_tint_seek_thumb">kotlin/annotation/..xml</color>
+    <color name="abc_tint_spinner">kotlin/collections///.xml</color>
+    <color name="abc_tint_switch_track">kotlin/coroutines////.xml</color>
+    <color name="design_tint_password_toggle">kotlin/internal/////.xml</color>
+</resources>

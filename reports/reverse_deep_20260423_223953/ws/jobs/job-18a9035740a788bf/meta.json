@@ -1,0 +1,29 @@
+{
+  "id": "job-18a9035740a788bf",
+  "kind": "decompile",
+  "backend": "jadx",
+  "mode": "full",
+  "function": null,
+  "target": "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk",
+  "workspace": "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws",
+  "status": "Succeeded",
+  "created_at": 1776955201,
+  "started_at": 1776955201,
+  "ended_at": 1776955229,
+  "exit_code": 3,
+  "program": "/usr/bin/jadx",
+  "args": [
+    "-d",
+    "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws/reverse_out/job-18a9035740a788bf",
+    "/home/vr2050/RUST/rscan_codex/黑灰产app/6c685e54ee9446889353feda8dc510d8.apk"
+  ],
+  "note": "JADX source export for APK; jadx finished with non-zero exit code 3 but exported output exists",
+  "artifacts": [
+    "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws/jobs/job-18a9035740a788bf/stdout.log",
+    "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws/jobs/job-18a9035740a788bf/stderr.log",
+    "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws/reverse_out/job-18a9035740a788bf/sources",
+    "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws/reverse_out/job-18a9035740a788bf/resources",
+    "/home/vr2050/RUST/rscan_codex/reports/reverse_deep_20260423_223953/ws/reverse_out/job-18a9035740a788bf/ir.jsonl"
+  ],
+  "error": null
+}

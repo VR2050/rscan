@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Widget.Design.TabLayout" parent="@plurals/Base.Widget.Design.TabLayout">
+        <item>1</item>
+        <item>1</item>
+    </plurals>
+</resources>

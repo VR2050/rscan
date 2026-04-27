@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_gravity="center"
+    android:paddingTop="@dimen/dp_4"
+    android:paddingBottom="@dimen/dp_4"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+    <im.uwrkaxlmjj.ui.components.BackupImageView
+        android:layout_gravity="center"
+        android:id="@attr/iv_user_avatar"
+        android:background="@drawable/shape_bg_item_fc_detail_user_avatar"
+        android:layout_width="@dimen/dp_40"
+        android:layout_height="@dimen/dp_40"
+        android:scaleType="centerCrop"/>
+</FrameLayout>

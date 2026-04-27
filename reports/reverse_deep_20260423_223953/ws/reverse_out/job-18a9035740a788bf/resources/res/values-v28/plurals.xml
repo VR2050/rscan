@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="Base.Theme.AppCompat" parent="@plurals/Base.V28.Theme.AppCompat">
+    </plurals>
+    <plurals name="Base.Theme.AppCompat.Light" parent="@plurals/Base.V28.Theme.AppCompat.Light">
+    </plurals>
+    <plurals name="Base.V28.Theme.AppCompat" parent="@plurals/Base.V26.Theme.AppCompat">
+        <item>?android:attr/dialogCornerRadius</item>
+    </plurals>
+    <plurals name="Base.V28.Theme.AppCompat.Light" parent="@plurals/Base.V26.Theme.AppCompat.Light">
+        <item>?android:attr/dialogCornerRadius</item>
+    </plurals>
+    <plurals name="Theme.TMessages" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+        <item>@android:color/white</item>
+        <item>@android:color/white</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/Theme.TMessages.ListView</item>
+        <item>@plurals/MyTextViewStyle</item>
+        <item>#60808080</item>
+        <item>@plurals/ActionBar.Transparent.TMessages.Item</item>
+        <item>false</item>
+        <item>false</item>
+        <item>@drawable/list_selector_ex</item>
+        <item>@plurals/Theme.TMessages.Dialog.Alert</item>
+        <item>@plurals/Theme.TMessages.DatePicker</item>
+        <item>@plurals/Theme.TMessages.CalendarView</item>
+        <item>@drawable/bar_selector_style</item>
+        <item>#808080</item>
+        <item>#527da3</item>
+        <item>#33000000</item>
+        <item>#000000</item>
+        <item>@plurals/Theme.TMessages.TimePicker</item>
+        <item>@plurals/Theme.TMessages.Dialog.Alert</item>
+        <item>@plurals/Theme.TMessages.Dialog.Alert</item>
+        <item>1</item>
+        <item>0.9</item>
+        <item>3dp</item>
+    </plurals>
+    <plurals name="Theme.TMessages.Start" parent="@plurals/Theme.AppCompat.Light.NoActionBar">
+        <item>@android:color/white</item>
+        <item>@drawable/splash</item>
+        <item>true</item>
+        <item>@null</item>
+        <item>@plurals/MyTextViewStyle</item>
+        <item>true</item>
+        <item>false</item>
+        <item>@plurals/ActionBar.Transparent.TMessages.Start</item>
+        <item>#527da3</item>
+        <item>#426482</item>
+        <item>@android:color/transparent</item>
+        <item>1</item>
+        <item>@null</item>
+        <item>0.2</item>
+        <item>0.9</item>
+        <item>0.9</item>
+        <item>3dp</item>
+    </plurals>
+</resources>

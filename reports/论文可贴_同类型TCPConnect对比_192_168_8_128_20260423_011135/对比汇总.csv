@@ -1,0 +1,4 @@
+rank,tool_cn,mean_ms,median_ms,min_ms,max_ms,std_ms,mean_jaccard,mean_recall,mean_precision,speed_norm,score
+1,nmap(-sT),334.4,124,101,1201,433.55,1.0,1.0,1.0,1.0,1.0
+2,"rscan(aggressive, connect)",211,219,183,227,17.34,1.0,1.0,1.0,0.56621,0.848174
+3,rustscan(+nmap -sT),1262.2,1336,328,2013,539.46,1.0,1.0,1.0,0.092814,0.682485

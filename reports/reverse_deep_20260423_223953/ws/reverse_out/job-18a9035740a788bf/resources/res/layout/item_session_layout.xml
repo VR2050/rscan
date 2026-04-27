@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="68dp">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <im.uwrkaxlmjj.ui.cells.SessionCell
+            android:id="@attr/sessionCell"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </RelativeLayout>
+    <FrameLayout
+        android:layout_width="1000dp"
+        android:layout_height="match_parent">
+        <FrameLayout
+            android:background="@color/color_item_menu_red_fd7373"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:gravity="center"
+                android:id="@attr/btnDelete"
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:text="@string/Delete"/>
+        </FrameLayout>
+    </FrameLayout>
+</LinearLayout>

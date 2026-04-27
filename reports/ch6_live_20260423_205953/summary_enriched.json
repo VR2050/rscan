@@ -1,0 +1,153 @@
+{
+  "target": "192.168.8.128",
+  "out_dir": "/home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205953",
+  "generated_at": "2026-04-23T21:00:03.785024",
+  "cases": [
+    {
+      "name": "host_quick_json",
+      "rc": 0,
+      "ms": 102,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan host quick -H 192.168.8.128 -o json",
+      "open_ports": [
+        22
+      ],
+      "filtered_ports": [],
+      "open_ports_count": 1,
+      "protocol": "Tcp"
+    },
+    {
+      "name": "host_tcp_common_json",
+      "rc": 0,
+      "ms": 30,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan host tcp -H 192.168.8.128 -p 21\\,22\\,23\\,25\\,53\\,80\\,110\\,111\\,135\\,139\\,143\\,443\\,445\\,993\\,995\\,3306\\,3389 --tcp-mode turbo-adaptive -o json",
+      "open_ports": [
+        22
+      ],
+      "filtered_ports": [],
+      "open_ports_count": 1,
+      "protocol": "Tcp"
+    },
+    {
+      "name": "host_tcp_1_1024_json",
+      "rc": 0,
+      "ms": 2064,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan host tcp -H 192.168.8.128 -p 1-1024 --tcp-mode turbo-adaptive -o json",
+      "open_ports": [
+        22
+      ],
+      "filtered_ports": [],
+      "open_ports_count": 1,
+      "protocol": "Tcp"
+    },
+    {
+      "name": "host_udp_common_json",
+      "rc": 0,
+      "ms": 6018,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan host udp -H 192.168.8.128 -p 53\\,67\\,68\\,69\\,123\\,137\\,138\\,139\\,161\\,162\\,500\\,514\\,520\\,4500 -o json",
+      "open_ports": [],
+      "filtered_ports": [
+        53,
+        67,
+        68,
+        69,
+        123,
+        137,
+        138,
+        139,
+        161,
+        162,
+        500,
+        514,
+        520,
+        4500
+      ],
+      "open_ports_count": 0,
+      "protocol": "Udp"
+    },
+    {
+      "name": "web_live_http_https",
+      "rc": 1,
+      "ms": 1698,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan web live -u http://192.168.8.128 -u https://192.168.8.128 -o raw",
+      "hits_preview": [
+        " ERR GET http://192.168.8.128 error sending request for url (http://192.168.8.128/)",
+        " ERR GET https://192.168.8.128 error sending request for url (https://192.168.8.128/)"
+      ]
+    },
+    {
+      "name": "web_dir_small_fixed",
+      "rc": 1,
+      "ms": 103,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan web dir -b http://192.168.8.128 -o raw -p / -p /robots.txt -p /admin -p /login -p /phpinfo.php -p /index.php",
+      "hits_preview": [],
+      "error_preview": [
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/admin)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/index.php)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/login)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/phpinfo.php)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/robots.txt)",
+        "ERROR 网络错误: dir scan failed for all requests (errors=6, total=6): 网络错误: error sending request for url (http://192.168.8.128/admin)"
+      ],
+      "status_buckets": {}
+    },
+    {
+      "name": "web_crawl_small",
+      "rc": 0,
+      "ms": 508,
+      "cmd": "/home/vr2050/RUST/rscan_codex/target/release/rscan web crawl -s http://192.168.8.128 -d 2 -c 4 -o raw",
+      "reachable_urls": []
+    },
+    {
+      "name": "reverse_smoke",
+      "rc": 0,
+      "ms": 177,
+      "cmd": "/home/vr2050/RUST/rscan_codex/scripts/reverse_smoke.sh /home/vr2050/RUST/rscan_codex/reports/ch6_live_20260423_205953/reverse_smoke_ws"
+    }
+  ],
+  "thesis_snapshot": {
+    "host_findings": {
+      "quick_open_ports": [
+        22
+      ],
+      "tcp_common_open_ports": [
+        22
+      ],
+      "tcp_1_1024_open_ports": [
+        22
+      ],
+      "udp_common_open_ports": [],
+      "quick_filtered_ports": [],
+      "tcp_common_filtered_ports": [],
+      "tcp_1_1024_filtered_ports": [],
+      "udp_common_filtered_ports": [
+        53,
+        67,
+        68,
+        69,
+        123,
+        137,
+        138,
+        139,
+        161,
+        162,
+        500,
+        514,
+        520,
+        4500
+      ]
+    },
+    "web_findings": {
+      "web_dir_status_buckets": {},
+      "web_dir_error_preview": [
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/admin)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/index.php)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/login)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/phpinfo.php)",
+        "ERROR 网络错误: error sending request for url (http://192.168.8.128/robots.txt)",
+        "ERROR 网络错误: dir scan failed for all requests (errors=6, total=6): 网络错误: error sending request for url (http://192.168.8.128/admin)"
+      ]
+    }
+  }
+}

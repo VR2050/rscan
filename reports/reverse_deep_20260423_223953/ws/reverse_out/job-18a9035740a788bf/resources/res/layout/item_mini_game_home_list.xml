@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@attr/rl_mini_game"
+    android:padding="@dimen/dp_8"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <ImageView
+        android:id="@attr/iv_mini_game_icon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scaleType="centerCrop"
+        android:layout_alignParentTop="true"/>
+    <im.uwrkaxlmjj.ui.hviews.MryTextView
+        android:ellipsize="end"
+        android:gravity="center"
+        android:id="@attr/tv_mini_game_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:singleLine="true"
+        android:maxLength="5"
+        android:layout_below="@attr/iv_mini_game_icon"
+        android:textAlignment="center"
+        app:render="true"/>
+</RelativeLayout>

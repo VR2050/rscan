@@ -1,0 +1,7 @@
+Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-23 00:33 +0800
+Nmap scan report for 192.168.8.145
+Host is up (0.040s latency).
+All 1024 scanned ports on 192.168.8.145 are in ignored states.
+Not shown: 1014 filtered tcp ports (no-response), 10 filtered tcp ports (host-unreach)
+
+Nmap done: 1 IP address (1 host up) scanned in 5.86 seconds

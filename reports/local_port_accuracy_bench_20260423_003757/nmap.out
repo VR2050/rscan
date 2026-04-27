@@ -1,0 +1,28 @@
+Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-23 00:37 +0800
+Nmap scan report for 127.0.0.1
+Host is up (0.000025s latency).
+
+PORT      STATE  SERVICE
+42000/tcp closed unknown
+42001/tcp open   unknown
+42002/tcp closed unknown
+42003/tcp open   unknown
+42004/tcp closed unknown
+42005/tcp closed unknown
+42006/tcp closed unknown
+42007/tcp open   unknown
+42008/tcp closed unknown
+42009/tcp closed unknown
+42010/tcp closed unknown
+42011/tcp open   unknown
+42012/tcp closed unknown
+42013/tcp closed unknown
+42014/tcp closed unknown
+42015/tcp closed unknown
+42016/tcp closed unknown
+42017/tcp closed unknown
+42018/tcp closed unknown
+42019/tcp open   unknown
+42020/tcp closed unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds

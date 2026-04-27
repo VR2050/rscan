@@ -1,0 +1,23 @@
+Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-23 00:53 +0800
+Nmap scan report for 127.0.0.1
+Host is up (0.000023s latency).
+Not shown: 65519 closed tcp ports (conn-refused)
+PORT      STATE SERVICE
+3306/tcp  open  mysql
+4001/tcp  open  newoak
+4301/tcp  open  d-data
+4310/tcp  open  mirrtex
+7897/tcp  open  unknown
+8828/tcp  open  unknown
+9210/tcp  open  oma-mlp
+10754/tcp open  unknown
+11434/tcp open  ollama
+27232/tcp open  unknown
+33331/tcp open  diamondport
+34279/tcp open  unknown
+36510/tcp open  unknown
+37510/tcp open  unknown
+37986/tcp open  unknown
+46935/tcp open  unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 0.43 seconds

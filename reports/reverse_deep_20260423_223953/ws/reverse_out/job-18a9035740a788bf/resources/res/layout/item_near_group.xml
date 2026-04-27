@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<im.uwrkaxlmjj.ui.components.ColorRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/new_call_listitem_height">
+    <im.uwrkaxlmjj.ui.components.BackupImageView
+        android:id="@attr/iv_group_head_img"
+        android:layout_width="@dimen/new_call_listitem_img_width"
+        android:layout_height="@dimen/new_call_listitem_img_width"
+        android:layout_marginLeft="@dimen/new_call_listitem_left_margin"
+        android:layout_centerVertical="true"/>
+    <im.uwrkaxlmjj.ui.hcells.MryDividerCell
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_marginLeft="@dimen/new_call_listitem_div_left_margin"
+        android:layout_alignParentBottom="true"/>
+    <LinearLayout
+        android:orientation="vertical"
+        android:id="@attr/ll_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/new_call_listitem_div_left_margin"
+        android:layout_centerVertical="true">
+        <im.uwrkaxlmjj.ui.components.ColorTextView
+            android:textSize="17sp"
+            android:textColor="#222222"
+            android:id="@attr/tv_nick_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="            "
+            app:textviewType="label"/>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <im.uwrkaxlmjj.ui.components.ColorTextView
+                android:textSize="12sp"
+                android:textColor="#ff8b8d99"
+                android:id="@attr/tv_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="             "
+                android:drawablePadding="11dp"
+                app:textviewType="value"/>
+            <im.uwrkaxlmjj.ui.components.ColorTextView
+                android:textSize="12sp"
+                android:textColor="#ff8b8d99"
+                android:id="@attr/tv_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="5dp"
+                android:text="             "
+                android:drawablePadding="11dp"
+                app:textviewType="value"/>
+        </LinearLayout>
+    </LinearLayout>
+    <im.uwrkaxlmjj.ui.components.ColorTextView
+        android:textSize="17sp"
+        android:textColor="#0095f4"
+        android:id="@attr/tv_create_group"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/NearbyCreateGroup"
+        android:layout_toRightOf="@attr/iv_group_head_img"
+        android:layout_alignLeft="@attr/ll_name"
+        android:layout_centerVertical="true"
+        app:stringkey="NearbyCreateGroup"
+        app:textviewType="label"/>
+    <im.uwrkaxlmjj.ui.components.ColorTextView
+        android:textSize="12sp"
+        android:textColor="#ff8b8d99"
+        android:id="@attr/tv_sign"
+        android:background="@drawable/item_near_person_text_bg"
+        android:padding="5dp"
+        android:visibility="gone"
+        android:layout_width="96dp"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="15dp"
+        android:text="             "
+        android:maxLines="2"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        app:textviewType="title"/>
+</im.uwrkaxlmjj.ui.components.ColorRelativeLayout>

@@ -129,4 +129,71 @@ pub enum VulnActions {
         #[arg(short = 'f', long)]
         out: Option<PathBuf>,
     },
+    /// URL fuzz over FUZZ placeholder with async requests
+    #[command(visible_alias = "fz")]
+    Fuzz {
+        /// URL template containing FUZZ, e.g. https://example.com/FUZZ
+        #[arg(short = 'u', long)]
+        url: String,
+        /// fuzz keywords, repeat or comma-separated
+        #[arg(short = 'k', long = "keyword", value_delimiter = ',')]
+        keywords: Vec<String>,
+        /// optional keyword file (one keyword per line)
+        #[arg(long)]
+        keywords_file: Option<PathBuf>,
+        #[arg(short = 'c', long, default_value_t = 16)]
+        concurrency: usize,
+        #[arg(short = 'T', long, default_value_t = 5000)]
+        timeout_ms: u64,
+        /// keep hits with status >= min
+        #[arg(long)]
+        status_min: Option<u16>,
+        /// keep hits with status <= max
+        #[arg(long)]
+        status_max: Option<u16>,
+        #[arg(short = 'o', long, default_value = "json")]
+        output: String,
+        #[arg(short = 'f', long)]
+        out: Option<PathBuf>,
+    },
+    /// Single-target HTTP PoC probe with explicit match conditions
+    #[command(visible_alias = "p")]
+    Poc {
+        /// base target URL, e.g. https://example.com
+        #[arg(short = 'u', long)]
+        target: String,
+        /// request path, e.g. /login (or absolute URL)
+        #[arg(long, default_value = "/")]
+        path: String,
+        /// HTTP method
+        #[arg(long, default_value = "GET")]
+        method: String,
+        /// repeatable header, format: 'Name: Value'
+        #[arg(long = "header")]
+        headers: Vec<String>,
+        /// optional request body
+        #[arg(long)]
+        body: Option<String>,
+        #[arg(short = 'T', long, default_value_t = 5000)]
+        timeout_ms: u64,
+        /// expected status list (repeat or comma-separated)
+        #[arg(long = "status", value_delimiter = ',')]
+        statuses: Vec<u16>,
+        /// expected body words (repeat or comma-separated)
+        #[arg(long = "word", value_delimiter = ',')]
+        words: Vec<String>,
+        /// expected header words (repeat or comma-separated)
+        #[arg(long = "header-word", value_delimiter = ',')]
+        header_words: Vec<String>,
+        /// require all expectations to match
+        #[arg(long, default_value_t = false)]
+        match_all: bool,
+        /// case insensitive word matching
+        #[arg(long, default_value_t = false)]
+        case_insensitive: bool,
+        #[arg(short = 'o', long, default_value = "json")]
+        output: String,
+        #[arg(short = 'f', long)]
+        out: Option<PathBuf>,
+    },
 }

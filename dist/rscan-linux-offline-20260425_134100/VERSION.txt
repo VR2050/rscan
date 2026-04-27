@@ -1,0 +1,4 @@
+build_time=2026-04-25T05:41:00Z
+target=x86_64-unknown-linux-gnu
+rscan_bin=target/release/rscan
+ghidra_backend_dir=/home/vr2050/RUST/rscan_codex/third_party/ghidra_core_headless_x86_min

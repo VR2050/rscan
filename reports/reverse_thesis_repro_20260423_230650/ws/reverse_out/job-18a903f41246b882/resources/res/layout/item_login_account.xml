@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="70dp">
+    <im.uwrkaxlmjj.ui.components.BackupImageView
+        android:id="@attr/iv_avatar"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_marginLeft="15dp"/>
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp">
+        <im.uwrkaxlmjj.ui.hviews.MryTextView
+            android:textSize="16sp"
+            android:id="@attr/tv_phone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:render="true"/>
+        <im.uwrkaxlmjj.ui.hviews.MryTextView
+            android:textSize="10dp"
+            android:textColor="#ff3bbcff"
+            android:id="@attr/tv_current"
+            android:background="#ffedf9ff"
+            android:paddingLeft="2dp"
+            android:paddingRight="2dp"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="@string/CurrentUsed"/>
+    </LinearLayout>
+</LinearLayout>

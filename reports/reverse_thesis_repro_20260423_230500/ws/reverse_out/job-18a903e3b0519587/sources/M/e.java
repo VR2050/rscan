@@ -1,0 +1,29 @@
+package M;
+
+import L.f;
+import android.net.Uri;
+import android.webkit.WebView;
+import java.lang.reflect.InvocationHandler;
+import org.chromium.support_lib_boundary.WebMessageBoundaryInterface;
+import org.chromium.support_lib_boundary.WebMessageListenerBoundaryInterface;
+
+/* JADX INFO: loaded from: classes.dex */
+public class e implements WebMessageListenerBoundaryInterface {
+
+    /* JADX INFO: renamed from: a, reason: collision with root package name */
+    private f.a f1750a;
+
+    public e(f.a aVar) {
+        this.f1750a = aVar;
+    }
+
+    @Override // org.chromium.support_lib_boundary.FeatureFlagHolderBoundaryInterface
+    public String[] getSupportedFeatures() {
+        return new String[]{"WEB_MESSAGE_LISTENER"};
+    }
+
+    @Override // org.chromium.support_lib_boundary.WebMessageListenerBoundaryInterface
+    public void onPostMessage(WebView webView, InvocationHandler invocationHandler, Uri uri, boolean z3, InvocationHandler invocationHandler2) {
+        this.f1750a.a(webView, d.b((WebMessageBoundaryInterface) S2.a.a(WebMessageBoundaryInterface.class, invocationHandler)), uri, z3, c.a(invocationHandler2));
+    }
+}

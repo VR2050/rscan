@@ -933,7 +933,7 @@ fn smart_command_candidates(input: &str) -> Vec<String> {
             current_prefix,
             arg_index,
             "<templates_path>",
-            no_flags(),
+            vuln_common_output_flags(),
         ),
         "v.scan" => {
             if arg_index == 1 {
@@ -951,9 +951,11 @@ fn smart_command_candidates(input: &str) -> Vec<String> {
             current_prefix,
             arg_index,
             "<manifests_path>",
-            no_flags(),
+            vuln_common_output_flags(),
         ),
-        "v.sg" => {}
+        "v.sg" => {
+            push_prefixed(&mut out, &base, current_prefix, vuln_common_output_flags());
+        }
         "v.sc" => suggest_alias_simple(
             &mut out,
             &base,
@@ -969,6 +971,22 @@ fn smart_command_candidates(input: &str) -> Vec<String> {
             arg_index,
             "<target_url>",
             vuln_fragment_flags(),
+        ),
+        "v.fuzz" => suggest_alias_simple(
+            &mut out,
+            &base,
+            current_prefix,
+            arg_index,
+            "<url_with_FUZZ>",
+            vuln_fuzz_flags(),
+        ),
+        "v.poc" => suggest_alias_simple(
+            &mut out,
+            &base,
+            current_prefix,
+            arg_index,
+            "<target_url>",
+            vuln_poc_flags(),
         ),
         "r.analyze" => suggest_alias_simple(
             &mut out,
@@ -1054,6 +1072,37 @@ fn smart_command_candidates(input: &str) -> Vec<String> {
                 );
             }
         }
+        "r.backend" => {
+            push_prefixed(&mut out, &base, current_prefix, reverse_output_flags());
+        }
+        "r.android" | "r.mal" => suggest_alias_simple(
+            &mut out,
+            &base,
+            current_prefix,
+            arg_index,
+            "<input_file>",
+            reverse_output_flags(),
+        ),
+        "r.shell" => {
+            if arg_index == 1 {
+                push_prefixed(&mut out, &base, current_prefix, ["<input_file>", "--text"]);
+            } else {
+                push_prefixed(
+                    &mut out,
+                    &base,
+                    current_prefix,
+                    ["--text", "--output", "--out"],
+                );
+            }
+        }
+        "r.console" => suggest_alias_simple(
+            &mut out,
+            &base,
+            current_prefix,
+            arg_index,
+            "<input_file>",
+            reverse_console_flags(),
+        ),
         "zrun" => {
             if arg_index == 1 {
                 push_prefixed(&mut out, &base, current_prefix, ["<shell_command...>"]);
@@ -1254,14 +1303,21 @@ fn suggest_vuln_long(
                 "system-guard",
                 "stealth-check",
                 "fragment-audit",
+                "fuzz",
+                "poc",
             ],
         );
         return;
     }
     match sub.unwrap_or_default() {
-        "lint" => {
-            suggest_alias_simple(out, base, prefix, arg_index, "<templates_path>", no_flags())
-        }
+        "lint" => suggest_alias_simple(
+            out,
+            base,
+            prefix,
+            arg_index,
+            "<templates_path>",
+            vuln_common_output_flags(),
+        ),
         "scan" => {
             if arg_index == 2 {
                 push_prefixed(out, base, prefix, ["<target_url>"]);
@@ -1272,10 +1328,17 @@ fn suggest_vuln_long(
                 push_prefixed(out, base, prefix, vuln_scan_flags());
             }
         }
-        "container-audit" => {
-            suggest_alias_simple(out, base, prefix, arg_index, "<manifests_path>", no_flags())
+        "container-audit" => suggest_alias_simple(
+            out,
+            base,
+            prefix,
+            arg_index,
+            "<manifests_path>",
+            vuln_common_output_flags(),
+        ),
+        "system-guard" => {
+            push_prefixed(out, base, prefix, vuln_common_output_flags());
         }
-        "system-guard" => {}
         "stealth-check" => suggest_alias_simple(
             out,
             base,
@@ -1291,6 +1354,22 @@ fn suggest_vuln_long(
             arg_index,
             "<target_url>",
             vuln_fragment_flags(),
+        ),
+        "fuzz" => suggest_alias_simple(
+            out,
+            base,
+            prefix,
+            arg_index,
+            "<url_with_FUZZ>",
+            vuln_fuzz_flags(),
+        ),
+        "poc" => suggest_alias_simple(
+            out,
+            base,
+            prefix,
+            arg_index,
+            "<target_url>",
+            vuln_poc_flags(),
         ),
         _ => {}
     }
@@ -1323,6 +1402,11 @@ fn suggest_reverse_long(
                 "job-prune",
                 "job-doctor",
                 "debug-script",
+                "backend-status",
+                "android-analyze",
+                "malware-triage",
+                "shell-audit",
+                "console",
             ],
         );
         return;
@@ -1399,6 +1483,32 @@ fn suggest_reverse_long(
                 push_prefixed(out, base, prefix, ["--pwndbg-init", "--profile"]);
             }
         }
+        "backend-status" => {
+            push_prefixed(out, base, prefix, reverse_output_flags());
+        }
+        "android-analyze" | "malware-triage" => suggest_alias_simple(
+            out,
+            base,
+            prefix,
+            arg_index,
+            "<input_file>",
+            reverse_output_flags(),
+        ),
+        "shell-audit" => {
+            if arg_index == 2 {
+                push_prefixed(out, base, prefix, ["<input_file>", "--text"]);
+            } else {
+                push_prefixed(out, base, prefix, ["--text", "--output", "--out"]);
+            }
+        }
+        "console" => suggest_alias_simple(
+            out,
+            base,
+            prefix,
+            arg_index,
+            "<input_file>",
+            reverse_console_flags(),
+        ),
         _ => {}
     }
 }
@@ -1454,6 +1564,8 @@ fn root_heads() -> &'static [&'static str] {
         "v.sg",
         "v.sc",
         "v.fa",
+        "v.fuzz",
+        "v.poc",
         "r.analyze",
         "r.plan",
         "r.run",
@@ -1468,6 +1580,11 @@ fn root_heads() -> &'static [&'static str] {
         "r.prune",
         "r.doctor",
         "r.debug",
+        "r.backend",
+        "r.android",
+        "r.mal",
+        "r.shell",
+        "r.console",
         "zrun",
         "zlogs",
         "zshell",
@@ -1475,10 +1592,6 @@ fn root_heads() -> &'static [&'static str] {
         "zrev",
         "zfocus",
     ]
-}
-
-fn no_flags() -> &'static [&'static str] {
-    &[]
 }
 
 fn host_flags_quick() -> &'static [&'static str] {
@@ -1583,6 +1696,8 @@ fn vuln_scan_flags() -> &'static [&'static str] {
         "--timeout-ms",
         "--findings-only",
         "--success-only",
+        "--output",
+        "--out",
     ]
 }
 
@@ -1591,7 +1706,14 @@ fn vuln_stealth_flags() -> &'static [&'static str] {
         "--timeout-ms",
         "--burst-concurrency",
         "--low-noise-requests",
+        "--low-noise-interval-ms",
         "--burst-requests",
+        "--advanced-checks",
+        "--no-advanced-checks",
+        "--variant-requests",
+        "--variant-concurrency",
+        "--output",
+        "--out",
     ]
 }
 
@@ -1603,7 +1725,43 @@ fn vuln_fragment_flags() -> &'static [&'static str] {
         "--payload-min-bytes",
         "--payload-max-bytes",
         "--payload-step-bytes",
+        "--output",
+        "--out",
     ]
+}
+
+fn vuln_fuzz_flags() -> &'static [&'static str] {
+    &[
+        "--keyword",
+        "--keywords-file",
+        "--concurrency",
+        "--timeout-ms",
+        "--status-min",
+        "--status-max",
+        "--output",
+        "--out",
+    ]
+}
+
+fn vuln_poc_flags() -> &'static [&'static str] {
+    &[
+        "--path",
+        "--method",
+        "--header",
+        "--body",
+        "--timeout-ms",
+        "--status",
+        "--word",
+        "--header-word",
+        "--match-all",
+        "--case-insensitive",
+        "--output",
+        "--out",
+    ]
+}
+
+fn vuln_common_output_flags() -> &'static [&'static str] {
+    &["--output", "--out"]
 }
 
 fn reverse_analyze_flags() -> &'static [&'static str] {
@@ -1629,6 +1787,14 @@ fn reverse_run_flags() -> &'static [&'static str] {
     ]
 }
 
+fn reverse_output_flags() -> &'static [&'static str] {
+    &["--output", "--out"]
+}
+
+fn reverse_console_flags() -> &'static [&'static str] {
+    &["--workspace", "--pwndbg-init", "--tui", "--ghidra-home"]
+}
+
 fn reverse_prune_flags() -> &'static [&'static str] {
     &["--keep", "--older-than-days", "--include-running"]
 }
@@ -1650,6 +1816,14 @@ mod tests {
         let got = smart_command_candidates("vuln scan https://x ");
         assert!(got.contains(&"vuln scan https://x --severity".to_string()));
         assert!(got.contains(&"vuln scan https://x --findings-only".to_string()));
+
+        let stealth = smart_command_candidates("v.sc https://x ");
+        assert!(stealth.contains(&"v.sc https://x --advanced-checks".to_string()));
+        assert!(stealth.contains(&"v.sc https://x --variant-requests".to_string()));
+
+        let rev = smart_command_candidates("reverse ");
+        assert!(rev.contains(&"reverse backend-status".to_string()));
+        assert!(rev.contains(&"reverse android-analyze".to_string()));
     }
 
     #[test]
